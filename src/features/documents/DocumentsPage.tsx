@@ -4,6 +4,7 @@ import { PageHeader, StatusBadge } from "@/components/shared";
 import { DocumentUpload } from "./DocumentUpload";
 import { DocumentList } from "./DocumentList";
 import { DocumentDetail } from "./DocumentDetail";
+import { DocumentInspector } from "./DocumentInspector";
 import { runMockOcr } from "./mockOcr";
 import { useDocumentsStore } from "./documentStore";
 import type { DocumentFilters } from "./types";
@@ -107,41 +108,57 @@ export function DocumentsPage() {
         onFiltersChange={(patch) => setFilters((f) => ({ ...f, ...patch }))}
       />
 
-      {editingDocument ? (
-        <div className="mb-2 flex items-center gap-2 text-sm">
-          <span>Bearbeitung:</span>
-          <span className="font-medium">{editingDocument.fileName}</span>
-          <StatusBadge status={editingDocument.status} />
-          <button className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-muted" onClick={() => setEditingId(null)}>
-            Bearbeitung beenden
-          </button>
+      <div className="grid gap-4 xl:grid-cols-5">
+        <div className="xl:col-span-4">
+          {editingDocument ? (
+            <>
+              <div className="mb-2 flex items-center gap-2 text-sm">
+                <span>Bearbeitung:</span>
+                <span className="font-medium">{editingDocument.fileName}</span>
+                <StatusBadge status={editingDocument.status} />
+                <button className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-muted" onClick={() => setEditingId(null)}>
+                  Bearbeitung beenden
+                </button>
+              </div>
+              <DocumentDetail
+                document={editingDocument}
+                isOcrRunning={isOcrRunning}
+                onReplaceFile={(file) => {
+                  if (file.type === "application/pdf") {
+                    replaceDocumentFile(editingDocument.id, file.name, URL.createObjectURL(file), file.size);
+                  }
+                }}
+                onChangeData={(patch) => updateDocumentData(editingDocument.id, patch)}
+                onMarkChecked={() => setDocumentStatus(editingDocument.id, "Geprueft")}
+                onRunOcr={async () => {
+                  setOcrRunning(true);
+                  const res = await runMockOcr(editingDocument);
+                  applyOcrResult(editingDocument.id, res.data, res.confidence);
+                  setOcrRunning(false);
+                }}
+                onBook={() => bookDocument(editingDocument.id)}
+              />
+            </>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
+              Bearbeitungsansicht ist ausgeblendet. Waehle einen Beleg und starte mit "Beleg erfassen".
+            </div>
+          )}
         </div>
-      ) : null}
 
-      {editingDocument ? (
-        <DocumentDetail
-          document={editingDocument}
-          isOcrRunning={isOcrRunning}
-          onReplaceFile={(file) => {
-            if (file.type === "application/pdf") {
-              replaceDocumentFile(editingDocument.id, file.name, URL.createObjectURL(file), file.size);
-            }
-          }}
-          onChangeData={(patch) => updateDocumentData(editingDocument.id, patch)}
-          onMarkChecked={() => setDocumentStatus(editingDocument.id, "Geprueft")}
-          onRunOcr={async () => {
-            setOcrRunning(true);
-            const res = await runMockOcr(editingDocument);
-            applyOcrResult(editingDocument.id, res.data, res.confidence);
-            setOcrRunning(false);
-          }}
-          onBook={() => bookDocument(editingDocument.id)}
-        />
-      ) : (
-        <div className="rounded-2xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
-          Detailansicht ist ausgeblendet. Waehle bei einem Beleg "Bearbeiten" oder lade einen neuen Beleg hoch.
+        <div className="xl:col-span-1">
+          {selected ? (
+            <DocumentInspector
+              document={selected}
+              onStartCapture={() => setEditingId(selected.id)}
+            />
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border bg-white p-6 text-sm text-muted-foreground">
+              Waehle einen Beleg aus der Liste, um die rechte Sidebar anzuzeigen.
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
