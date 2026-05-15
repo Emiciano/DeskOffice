@@ -3,4 +3,5 @@ dist/
 .DS_Store
 *.log
 *.tsbuildinfo
-
+deploy_key
+deploy_key.pub

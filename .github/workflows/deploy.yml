@@ -39,7 +39,11 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p "${SSH_PORT:-22}" "$SSH_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -T 15 -p "${SSH_PORT:-22}" "$SSH_HOST" 2>/dev/null | tee -a ~/.ssh/known_hosts
+          if [ ! -s ~/.ssh/known_hosts ]; then
+            echo "ERROR: ssh-keyscan returned no host key. Check SSH_HOST/SSH_PORT and server firewall."
+            exit 1
+          fi
 
       - name: Ensure target directory exists
         env:
@@ -58,4 +62,3 @@ jobs:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
           rsync -az --delete -e "ssh -p ${SSH_PORT:-22}" dist/ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/"
-

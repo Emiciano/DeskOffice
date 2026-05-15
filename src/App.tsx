@@ -14,7 +14,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 export default function App() {
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="mx-auto flex max-w-[1500px] gap-6">
+      <div className="flex w-full gap-6">
         <Sidebar />
         <main className="min-w-0 flex-1">
           <Topbar />
