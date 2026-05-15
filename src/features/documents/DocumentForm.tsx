@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { AccountAutocomplete } from "@/features/accounting/components/AccountAutocomplete";
 import type { DocumentData } from "./types";
 
 type Props = {
@@ -14,8 +15,6 @@ const frame = (name: keyof DocumentData, confidence?: Record<keyof DocumentData,
 
 const supplierHints = ["CloudStack GmbH", "Nordlicht Media GmbH", "Musterlieferant AG"];
 const categories = ["Software", "Werbung", "Büro", "Reisekosten", "Beratung", "Sonstiges"];
-const accounts = ["3400", "1200", "8400", "4930", "6670"];
-
 export function DocumentForm({ data, confidence, onChange }: Props) {
   return (
     <div className="space-y-4">
@@ -87,10 +86,18 @@ export function DocumentForm({ data, confidence, onChange }: Props) {
           </div>
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Buchungskonto</label>
-            <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("account", confidence)}`} value={data.account} onChange={(e) => onChange({ account: e.target.value })}>
-              <option value="">Konto wählen</option>
-              {accounts.map((a) => <option key={a}>{a}</option>)}
-            </select>
+            <div className={frame("account", confidence)}>
+              <AccountAutocomplete
+                value={data.account}
+                onSelect={(account) => {
+                  onChange({
+                    account: account.number,
+                    category: data.category || account.category,
+                    vatAmount: data.vatAmount || Number(((data.netAmount * account.taxRate) / 100).toFixed(2)),
+                  });
+                }}
+              />
+            </div>
           </div>
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Kostenstelle</label>
