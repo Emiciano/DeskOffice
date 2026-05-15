@@ -45,17 +45,25 @@ export function DocumentList({ documents, selectedId, onSelect, onEdit, filters,
             {documents.length === 0 ? (
               <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Keine Belege fuer die aktuelle Filterung.</td></tr>
             ) : documents.map((d) => (
-              <tr key={d.id} className={`cursor-pointer border-t border-border ${selectedId === d.id ? "bg-muted/60" : ""}`} onClick={() => onSelect(d.id)}>
+              <tr
+                key={d.id}
+                className={`cursor-pointer border-t border-border align-top transition ${selectedId === d.id ? "bg-primary/5" : "hover:bg-muted/40"}`}
+                onClick={() => onSelect(d.id)}
+              >
                 <td className="py-3">
                   <p className="font-medium">{d.fileName}</p>
-                  <p className="text-xs text-muted-foreground">{d.id}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span>{d.id}</span>
+                    <span>•</span>
+                    <span>hochgeladen: {d.uploadedAt}</span>
+                  </div>
                 </td>
-                <td>{d.supplierOrCustomer || "-"}</td>
-                <td>{d.category || "-"}</td>
-                <td>{d.date || "-"}</td>
-                <td>EUR {d.amount.toFixed(2)}</td>
-                <td><StatusBadge status={d.status} /></td>
-                <td>
+                <td className="py-3">{d.supplierOrCustomer || "-"}</td>
+                <td className="py-3">{d.category || "-"}</td>
+                <td className="py-3">{d.date || "-"}</td>
+                <td className="py-3 font-medium">EUR {d.amount.toFixed(2)}</td>
+                <td className="py-3"><StatusBadge status={d.status} /></td>
+                <td className="py-3">
                   <button
                     className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-muted"
                     onClick={(e) => {

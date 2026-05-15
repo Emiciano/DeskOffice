@@ -99,17 +99,31 @@ export function DocumentsPage() {
         }}
       />
 
-      <DocumentList
-        documents={filtered}
-        selectedId={selectedId}
-        onSelect={setSelectedId}
-        onEdit={setEditingId}
-        filters={filters}
-        onFiltersChange={(patch) => setFilters((f) => ({ ...f, ...patch }))}
-      />
-
       <div className="grid gap-4 xl:grid-cols-5">
         <div className="xl:col-span-4">
+          <DocumentList
+            documents={filtered}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onEdit={setEditingId}
+            filters={filters}
+            onFiltersChange={(patch) => setFilters((f) => ({ ...f, ...patch }))}
+          />
+        </div>
+        <div className="xl:col-span-1">
+          {selected ? (
+            <div className="sticky top-24">
+              <DocumentInspector
+                document={selected}
+                onStartCapture={() => setEditingId(selected.id)}
+              />
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="grid gap-4">
+        <div>
           {editingDocument ? (
             <>
               <div className="mb-2 flex items-center gap-2 text-sm">
@@ -142,19 +156,6 @@ export function DocumentsPage() {
           ) : (
             <div className="rounded-2xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
               Bearbeitungsansicht ist ausgeblendet. Waehle einen Beleg und starte mit "Beleg erfassen".
-            </div>
-          )}
-        </div>
-
-        <div className="xl:col-span-1">
-          {selected ? (
-            <DocumentInspector
-              document={selected}
-              onStartCapture={() => setEditingId(selected.id)}
-            />
-          ) : (
-            <div className="rounded-2xl border border-dashed border-border bg-white p-6 text-sm text-muted-foreground">
-              Waehle einen Beleg aus der Liste, um die rechte Sidebar anzuzeigen.
             </div>
           )}
         </div>
