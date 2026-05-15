@@ -103,7 +103,7 @@ export const useDocumentsStore = create<DocumentsState>()(
   persist(
     (set, get) => ({
       documents: seedDocuments,
-      selectedId: seedDocuments[0]?.id ?? null,
+      selectedId: null,
       isOcrRunning: false,
       setSelectedId: (id) => set({ selectedId: id }),
       setOcrRunning: (value) => set({ isOcrRunning: value }),
