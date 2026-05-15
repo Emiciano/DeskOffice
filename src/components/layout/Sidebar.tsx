@@ -7,7 +7,7 @@ const links = [
   ["Rechnungen", "/rechnungen", FileText],
   ["Angebote", "/angebote", Receipt],
   ["Kunden", "/kunden", Users],
-  ["Ausgaben", "/ausgaben", CreditCard],
+  ["Belege", "/belege", CreditCard],
   ["Banking", "/banking", Building2],
   ["Produkte", "/produkte", Package],
   ["Berichte", "/berichte", BarChart3],

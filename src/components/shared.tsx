@@ -27,11 +27,13 @@ export function StatCard({ label, value, trend }: { label: string; value: string
 
 export function StatusBadge({ status }: { status: string }) {
   const tone =
-    status === "Bezahlt" || status === "Angenommen" || status === "geprüft"
+    status === "Bezahlt" || status === "Angenommen" || status === "Geprueft" || status === "geprueft"
       ? "bg-emerald-100 text-emerald-700"
-      : status === "Überfällig" || status === "Abgelehnt"
+      : status === "Ueberfaellig" || status === "Überfällig" || status === "Abgelehnt"
         ? "bg-rose-100 text-rose-700"
-        : "bg-slate-100 text-slate-700";
+        : status === "Gebucht"
+          ? "bg-indigo-100 text-indigo-700"
+          : "bg-slate-100 text-slate-700";
   return <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", tone)}>{status}</span>;
 }
 

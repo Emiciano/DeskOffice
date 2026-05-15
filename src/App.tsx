@@ -5,11 +5,11 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { InvoicesPage } from "@/pages/InvoicesPage";
 import { OffersPage } from "@/pages/OffersPage";
 import { CustomersPage } from "@/pages/CustomersPage";
-import { ExpensesPage } from "@/pages/ExpensesPage";
 import { BankingPage } from "@/pages/BankingPage";
 import { ProductsPage } from "@/pages/ProductsPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { DocumentsPage } from "@/features/documents/DocumentsPage";
 
 export default function App() {
   return (
@@ -23,7 +23,7 @@ export default function App() {
             <Route path="/rechnungen" element={<InvoicesPage />} />
             <Route path="/angebote" element={<OffersPage />} />
             <Route path="/kunden" element={<CustomersPage />} />
-            <Route path="/ausgaben" element={<ExpensesPage />} />
+            <Route path="/belege" element={<DocumentsPage />} />
             <Route path="/banking" element={<BankingPage />} />
             <Route path="/produkte" element={<ProductsPage />} />
             <Route path="/berichte" element={<ReportsPage />} />
