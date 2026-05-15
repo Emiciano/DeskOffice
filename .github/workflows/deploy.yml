@@ -72,8 +72,9 @@ jobs:
           PM2_APP_NAME: portfolio-cms
         run: |
           ssh -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "\
-            mkdir -p ~/.pm2 ~/.pm2/logs ~/.pm2/pids; \
-            touch ~/.pm2/pm2.log ~/.pm2/pm2.pid; \
+            export PM2_HOME='${DEPLOY_PATH}/.pm2'; \
+            mkdir -p \"${DEPLOY_PATH}\" \"$PM2_HOME\" \"$PM2_HOME/logs\" \"$PM2_HOME/pids\"; \
+            touch \"$PM2_HOME/pm2.log\" \"$PM2_HOME/pm2.pid\"; \
             if pm2 describe '${PM2_APP_NAME}' > /dev/null 2>&1; then \
               pm2 restart '${PM2_APP_NAME}'; \
             else \
