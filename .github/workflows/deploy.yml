@@ -62,3 +62,19 @@ jobs:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
           rsync -az --delete -e "ssh -p ${SSH_PORT:-22}" dist/ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/"
+
+      - name: Start or restart PM2 app
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          PM2_APP_NAME: portfolio-cms
+        run: |
+          ssh -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "\
+            if pm2 describe '${PM2_APP_NAME}' > /dev/null 2>&1; then \
+              pm2 restart '${PM2_APP_NAME}'; \
+            else \
+              pm2 serve '${DEPLOY_PATH}' 3050 --name '${PM2_APP_NAME}' --spa; \
+            fi; \
+            pm2 save"
