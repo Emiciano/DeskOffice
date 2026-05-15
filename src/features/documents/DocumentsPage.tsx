@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatusBadge } from "@/components/shared";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -38,11 +39,22 @@ export function DocumentsPage() {
   const [captureOpen, setCaptureOpen] = useState(false);
   const [docGroup, setDocGroup] = useState<"Alle" | "Ausgangsbelege" | "Eingangsbelege">("Alle");
   const [docSubType, setDocSubType] = useState("");
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     setSelectedId(null);
     setEditingId(null);
   }, [setSelectedId]);
+
+  useEffect(() => {
+    const group = searchParams.get("group");
+    const subType = searchParams.get("subType");
+    const validGroup = group === "Ausgangsbelege" || group === "Eingangsbelege" ? group : "Alle";
+    setDocGroup(validGroup);
+    setDocSubType(subType ?? "");
+    setSelectedId(null);
+    setEditingId(null);
+  }, [searchParams, setSelectedId]);
 
   const selected = documents.find((d) => d.id === selectedId) ?? null;
   const editingDocument = documents.find((d) => d.id === editingId) ?? null;
@@ -96,7 +108,7 @@ export function DocumentsPage() {
     <div className="space-y-4">
       <PageHeader
         title="Belege"
-        subtitle="Upload, OCR, Prüfung und Buchung in einem durchgängigen Workflow"
+        subtitle="Upload, OCR, Pruefung und Buchung in einem durchgaengigen Workflow"
         action={<Button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Beleg hochladen</Button>}
       />
 
@@ -137,14 +149,6 @@ export function DocumentsPage() {
           <div className="sticky top-24">
             <DocumentInspector
               document={selected}
-              group={docGroup}
-              subType={docSubType}
-              onTypeChange={(group, subType) => {
-                setDocGroup(group);
-                setDocSubType(subType);
-                setSelectedId(null);
-                setEditingId(null);
-              }}
               onStartCapture={() => {
                 if (!selected) return;
                 setEditingId(selected.id);
@@ -195,7 +199,7 @@ export function DocumentsPage() {
               </div>
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground">Kein Beleg für die Erfassung ausgewählt.</div>
+            <div className="text-sm text-muted-foreground">Kein Beleg fuer die Erfassung ausgewaehlt.</div>
           )}
         </DialogContent>
       </Dialog>

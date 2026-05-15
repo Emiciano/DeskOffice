@@ -6,40 +6,10 @@ import type { DocumentItem } from "./types";
 type Props = {
   document: DocumentItem | null;
   onStartCapture: () => void;
-  group: "Alle" | "Ausgangsbelege" | "Eingangsbelege";
-  subType: string;
-  onTypeChange: (group: "Alle" | "Ausgangsbelege" | "Eingangsbelege", subType: string) => void;
 };
-
-const outgoing = ["Angebote", "Auftragsbestätigungen", "Rechnungen", "Lieferscheine", "Rechnungskorrekturen"];
-const incoming = ["Ausgaben", "Ausgabenminderung", "Einnahmen", "Einnahmenminderung"];
-
-export function DocumentInspector({ document, onStartCapture, group, subType, onTypeChange }: Props) {
+export function DocumentInspector({ document, onStartCapture }: Props) {
   return (
     <Card className="h-fit">
-      <div className="mb-4 space-y-1 text-sm">
-        <button className="block font-medium" onClick={() => onTypeChange("Ausgangsbelege", "")}>Ausgangsbelege</button>
-        {group === "Ausgangsbelege" ? (
-          <div className="ml-5 space-y-1">
-            {outgoing.map((item) => (
-              <button key={item} className={`block text-left ${subType === item ? "font-medium text-foreground" : "text-muted-foreground"}`} onClick={() => onTypeChange("Ausgangsbelege", item)}>
-                {item}
-              </button>
-            ))}
-          </div>
-        ) : null}
-        <button className="mt-2 block font-medium" onClick={() => onTypeChange("Eingangsbelege", "")}>Eingangsbelege</button>
-        {group === "Eingangsbelege" ? (
-          <div className="ml-5 space-y-1">
-            {incoming.map((item) => (
-              <button key={item} className={`block text-left ${subType === item ? "font-medium text-foreground" : "text-muted-foreground"}`} onClick={() => onTypeChange("Eingangsbelege", item)}>
-                {item}
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </div>
-
       {document ? (
         <>
       <div className="mb-3 flex items-center justify-between">

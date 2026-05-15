@@ -1,27 +1,30 @@
 import { BarChart3, Building2, CreditCard, FileText, LayoutDashboard, Package, Receipt, Settings, Users } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const links = [
-  ["Dashboard", "/", LayoutDashboard],
-  ["Rechnungen", "/rechnungen", FileText],
-  ["Angebote", "/angebote", Receipt],
-  ["Kunden", "/kunden", Users],
-  ["Belege", "/belege", CreditCard],
-  ["Banking", "/banking", Building2],
-  ["Produkte", "/produkte", Package],
-  ["Berichte", "/berichte", BarChart3],
-  ["Einstellungen", "/einstellungen", Settings],
+  { label: "Dashboard", to: "/", icon: LayoutDashboard },
+  { label: "Rechnungen", to: "/rechnungen", icon: FileText },
+  { label: "Angebote", to: "/angebote", icon: Receipt },
+  { label: "Kunden", to: "/kunden", icon: Users },
+  { label: "Belege", to: "/belege", icon: CreditCard },
+  { label: "Banking", to: "/banking", icon: Building2 },
+  { label: "Produkte", to: "/produkte", icon: Package },
+  { label: "Berichte", to: "/berichte", icon: BarChart3 },
+  { label: "Einstellungen", to: "/einstellungen", icon: Settings },
 ] as const;
 
 export function Sidebar() {
+  const location = useLocation();
+  const showDocumentChildren = location.pathname === "/belege";
+
   return (
     <aside className="sticky top-6 h-[calc(100vh-3rem)] w-64 rounded-2xl border border-border bg-white p-4 shadow-soft">
       <div className="mb-6 px-2 text-lg font-semibold">Buchhaltung CMS</div>
       <nav className="space-y-1">
-        {links.map(([label, to, Icon]) => (
+        {links.map(({ label, to, icon: Icon }) => (
+          <div key={to}>
           <NavLink
-            key={to}
             to={to}
             className={({ isActive }) =>
               cn(
@@ -33,6 +36,17 @@ export function Sidebar() {
             <Icon size={17} />
             {label}
           </NavLink>
+          {showDocumentChildren && to === "/belege" ? (
+            <div className="ml-8 mt-1 space-y-1">
+              <NavLink to="/belege?group=Ausgangsbelege" className="block rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80">Ausgangsbelege</NavLink>
+              <NavLink to="/belege?group=Eingangsbelege" className="block rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80">Eingangsbelege</NavLink>
+              <NavLink to="/belege?group=Eingangsbelege&subType=Ausgaben" className="block rounded-lg px-2 py-1 pl-4 text-xs text-muted-foreground hover:bg-muted/80">Ausgaben</NavLink>
+              <NavLink to="/belege?group=Eingangsbelege&subType=Ausgabenminderung" className="block rounded-lg px-2 py-1 pl-4 text-xs text-muted-foreground hover:bg-muted/80">Ausgabenminderung</NavLink>
+              <NavLink to="/belege?group=Eingangsbelege&subType=Einnahmen" className="block rounded-lg px-2 py-1 pl-4 text-xs text-muted-foreground hover:bg-muted/80">Einnahmen</NavLink>
+              <NavLink to="/belege?group=Eingangsbelege&subType=Einnahmenminderung" className="block rounded-lg px-2 py-1 pl-4 text-xs text-muted-foreground hover:bg-muted/80">Einnahmenminderung</NavLink>
+            </div>
+          ) : null}
+          </div>
         ))}
       </nav>
     </aside>
