@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String     @id @default(cuid())
+  name      String
+  createdAt DateTime   @default(now())
+  accounts  Account[]
+  documents Document[]
+  bookings  Booking[]
+}
+
+model Account {
+  id        String   @id @default(cuid())
+  number    String
+  name      String
+  type      String
+  skrType   String
+  taxRate   Float
+  category  String
+  active    Boolean  @default(true)
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, skrType])
+  @@unique([companyId, number, skrType])
+}
+
+model Document {
+  id           String    @id @default(cuid())
+  fileName      String
+  status        String
+  accountNumber String?
+  category      String?
+  grossAmount   Float     @default(0)
+  taxAmount     Float     @default(0)
+  netAmount     Float     @default(0)
+  partner       String?
+  documentDate  DateTime?
+  dueDate       DateTime?
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  booking       Booking?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([companyId, status])
+}
+
+model Booking {
+  id            String   @id @default(cuid())
+  documentId     String   @unique
+  document       Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  debitAccount   String
+  creditAccount  String
+  amount         Float
+  taxAmount      Float
+  bookingText    String
+  bookingDate    DateTime
+  category       String
+  status         String
+  companyId      String
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+}

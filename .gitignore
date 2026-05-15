@@ -5,3 +5,5 @@ dist/
 *.tsbuildinfo
 deploy_key
 deploy_key.pub
+dist-server/
+.env

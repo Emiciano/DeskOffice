@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import type { AccountFilters, AccountType, ChartAccount, SkrType } from "../type
 const defaultFilters: AccountFilters = { query: "", skrType: "Alle", type: "Alle", active: "Alle" };
 
 export function AccountsPage() {
-  const { accounts, addAccount, updateAccount, toggleActive, selectedSkr, setSelectedSkr } = useAccountingStore();
+  const { accounts, addAccount, updateAccount, toggleActive, selectedSkr, setSelectedSkr, hydrateFromApi } = useAccountingStore();
   const [filters, setFilters] = useState<AccountFilters>(defaultFilters);
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState(false);
@@ -38,6 +38,10 @@ export function AccountsPage() {
   const pageSize = 14;
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const rows = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    hydrateFromApi();
+  }, [hydrateFromApi]);
 
   return (
     <div className="space-y-4">
