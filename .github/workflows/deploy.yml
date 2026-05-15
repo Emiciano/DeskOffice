@@ -54,6 +54,17 @@ jobs:
         run: |
           ssh -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "mkdir -p '${DEPLOY_PATH}'"
 
+      - name: Create backup of current release
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ssh -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "\
+            mkdir -p '${DEPLOY_PATH}.backup'; \
+            rsync -az --delete --exclude '.pm2' '${DEPLOY_PATH}/' '${DEPLOY_PATH}.backup/'"
+
       - name: Deploy dist to server
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -81,3 +92,24 @@ jobs:
               pm2 serve '${DEPLOY_PATH}' 3050 --name '${PM2_APP_NAME}' --spa; \
             fi; \
             pm2 save"
+
+      - name: Healthcheck and rollback on failure
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          PM2_APP_NAME: portfolio-cms
+        run: |
+          ssh -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "\
+            set -e; \
+            if curl -fsS --max-time 10 http://127.0.0.1:3050/ > /dev/null; then \
+              echo 'Healthcheck passed'; \
+            else \
+              echo 'Healthcheck failed, rolling back'; \
+              rsync -az --delete --exclude '.pm2' '${DEPLOY_PATH}.backup/' '${DEPLOY_PATH}/'; \
+              export PM2_HOME='${DEPLOY_PATH}/.pm2'; \
+              pm2 restart '${PM2_APP_NAME}'; \
+              pm2 save; \
+              exit 1; \
+            fi"
