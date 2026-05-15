@@ -1,11 +1,11 @@
 import express from "express";
 import cors from "cors";
-import { accountsRouter } from "./routes/accounts";
-import { bookingsRouter } from "./routes/bookings";
-import { documentsRouter } from "./routes/documents";
-import { APP_PORT, CORS_ORIGIN, DEFAULT_COMPANY_NAME } from "./config";
-import { prisma } from "./db";
-import { chartOfAccountsSeed } from "../data/chartOfAccounts";
+import { accountsRouter } from "./routes/accounts.js";
+import { bookingsRouter } from "./routes/bookings.js";
+import { documentsRouter } from "./routes/documents.js";
+import { APP_PORT, CORS_ORIGIN, DEFAULT_COMPANY_NAME } from "./config.js";
+import { prisma } from "./db.js";
+import { chartOfAccountsSeed } from "../data/chartOfAccounts.js";
 
 async function ensureSeedData() {
   const company = await prisma.company.upsert({
