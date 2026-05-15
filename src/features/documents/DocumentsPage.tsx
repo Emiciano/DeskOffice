@@ -32,8 +32,10 @@ export function DocumentsPage() {
     dateTo: "",
     sortBy: "date_desc",
   });
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const selected = documents.find((d) => d.id === selectedId) ?? null;
+  const editingDocument = documents.find((d) => d.id === editingId) ?? null;
 
   const filtered = useMemo(() => {
     const rows = documents.filter((d) => {
@@ -92,6 +94,7 @@ export function DocumentsPage() {
         onUploadDone={(payload) => {
           const created = addDocumentFromUpload(payload);
           setSelectedId(created.id);
+          setEditingId(created.id);
         }}
       />
 
@@ -99,37 +102,46 @@ export function DocumentsPage() {
         documents={filtered}
         selectedId={selectedId}
         onSelect={setSelectedId}
+        onEdit={setEditingId}
         filters={filters}
         onFiltersChange={(patch) => setFilters((f) => ({ ...f, ...patch }))}
       />
 
-      {selected ? (
+      {editingDocument ? (
         <div className="mb-2 flex items-center gap-2 text-sm">
-          <span>Ausgewaehlt:</span>
-          <span className="font-medium">{selected.fileName}</span>
-          <StatusBadge status={selected.status} />
+          <span>Bearbeitung:</span>
+          <span className="font-medium">{editingDocument.fileName}</span>
+          <StatusBadge status={editingDocument.status} />
+          <button className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-muted" onClick={() => setEditingId(null)}>
+            Bearbeitung beenden
+          </button>
         </div>
       ) : null}
 
-      <DocumentDetail
-        document={selected}
-        isOcrRunning={isOcrRunning}
-        onReplaceFile={(file) => {
-          if (selected && file.type === "application/pdf") {
-            replaceDocumentFile(selected.id, file.name, URL.createObjectURL(file), file.size);
-          }
-        }}
-        onChangeData={(patch) => selected && updateDocumentData(selected.id, patch)}
-        onMarkChecked={() => selected && setDocumentStatus(selected.id, "Geprueft")}
-        onRunOcr={async () => {
-          if (!selected) return;
-          setOcrRunning(true);
-          const res = await runMockOcr(selected);
-          applyOcrResult(selected.id, res.data, res.confidence);
-          setOcrRunning(false);
-        }}
-        onBook={() => (selected ? bookDocument(selected.id) : { ok: false, errors: ["Kein Beleg ausgewaehlt."] })}
-      />
+      {editingDocument ? (
+        <DocumentDetail
+          document={editingDocument}
+          isOcrRunning={isOcrRunning}
+          onReplaceFile={(file) => {
+            if (file.type === "application/pdf") {
+              replaceDocumentFile(editingDocument.id, file.name, URL.createObjectURL(file), file.size);
+            }
+          }}
+          onChangeData={(patch) => updateDocumentData(editingDocument.id, patch)}
+          onMarkChecked={() => setDocumentStatus(editingDocument.id, "Geprueft")}
+          onRunOcr={async () => {
+            setOcrRunning(true);
+            const res = await runMockOcr(editingDocument);
+            applyOcrResult(editingDocument.id, res.data, res.confidence);
+            setOcrRunning(false);
+          }}
+          onBook={() => bookDocument(editingDocument.id)}
+        />
+      ) : (
+        <div className="rounded-2xl border border-dashed border-border bg-white p-10 text-center text-sm text-muted-foreground">
+          Detailansicht ist ausgeblendet. Waehle bei einem Beleg "Bearbeiten" oder lade einen neuen Beleg hoch.
+        </div>
+      )}
     </div>
   );
 }

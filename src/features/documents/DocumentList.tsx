@@ -6,11 +6,12 @@ type Props = {
   documents: DocumentItem[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onEdit: (id: string) => void;
   filters: DocumentFilters;
   onFiltersChange: (patch: Partial<DocumentFilters>) => void;
 };
 
-export function DocumentList({ documents, selectedId, onSelect, filters, onFiltersChange }: Props) {
+export function DocumentList({ documents, selectedId, onSelect, onEdit, filters, onFiltersChange }: Props) {
   return (
     <Card>
       <div className="mb-4 grid gap-3 md:grid-cols-5">
@@ -37,12 +38,12 @@ export function DocumentList({ documents, selectedId, onSelect, filters, onFilte
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-muted-foreground">
-              <th>Beleg</th><th>Partner</th><th>Kategorie</th><th>Datum</th><th>Betrag</th><th>Status</th>
+              <th>Beleg</th><th>Partner</th><th>Kategorie</th><th>Datum</th><th>Betrag</th><th>Status</th><th></th>
             </tr>
           </thead>
           <tbody>
             {documents.length === 0 ? (
-              <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">Keine Belege fuer die aktuelle Filterung.</td></tr>
+              <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Keine Belege fuer die aktuelle Filterung.</td></tr>
             ) : documents.map((d) => (
               <tr key={d.id} className={`cursor-pointer border-t border-border ${selectedId === d.id ? "bg-muted/60" : ""}`} onClick={() => onSelect(d.id)}>
                 <td className="py-3">
@@ -54,6 +55,17 @@ export function DocumentList({ documents, selectedId, onSelect, filters, onFilte
                 <td>{d.date || "-"}</td>
                 <td>EUR {d.amount.toFixed(2)}</td>
                 <td><StatusBadge status={d.status} /></td>
+                <td>
+                  <button
+                    className="rounded-lg border border-border px-2 py-1 text-xs hover:bg-muted"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(d.id);
+                    }}
+                  >
+                    Bearbeiten
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
