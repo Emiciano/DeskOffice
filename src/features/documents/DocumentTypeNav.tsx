@@ -8,7 +8,7 @@ type Props = {
   onChange: (group: Group, subType: string) => void;
 };
 
-const outgoing = ["Angebote", "Auftragsbestaetigungen", "Rechnungen", "Lieferscheine", "Rechnungskorrekturen"];
+const outgoing = ["Angebote", "Auftragsbestätigungen", "Rechnungen", "Lieferscheine", "Rechnungskorrekturen"];
 const incoming = ["Ausgaben", "Ausgabenminderung", "Einnahmen", "Einnahmenminderung"];
 
 export function DocumentTypeNav({ group, subType, onChange }: Props) {

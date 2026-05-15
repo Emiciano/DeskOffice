@@ -72,6 +72,7 @@ export function DocumentsPage() {
 
       return queryHit && statusHit && categoryHit && partnerHit && fromHit && toHit && groupHit && subTypeHit;
     });
+
     rows.sort((a, b) => {
       if (filters.sortBy === "date_desc") return b.date.localeCompare(a.date);
       if (filters.sortBy === "date_asc") return a.date.localeCompare(b.date);
@@ -79,6 +80,7 @@ export function DocumentsPage() {
       if (filters.sortBy === "amount_asc") return a.amount - b.amount;
       return a.status.localeCompare(b.status);
     });
+
     return rows;
   }, [documents, filters, docGroup, docSubType]);
 
@@ -95,7 +97,7 @@ export function DocumentsPage() {
     <div className="space-y-4">
       <PageHeader
         title="Belege"
-        subtitle="Upload, OCR, Pruefung und Buchung in einem durchgaengigen Workflow"
+        subtitle="Upload, OCR, Prüfung und Buchung in einem durchgängigen Workflow"
         action={<Button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Beleg hochladen</Button>}
       />
 
@@ -114,14 +116,6 @@ export function DocumentsPage() {
         </div>
       </div>
 
-      <DocumentUpload
-        onUploadDone={(payload) => {
-          const created = addDocumentFromUpload(payload);
-          setSelectedId(created.id);
-          setEditingId(null);
-        }}
-      />
-
       <DocumentTypeNav
         group={docGroup}
         subType={docSubType}
@@ -134,7 +128,14 @@ export function DocumentsPage() {
       />
 
       <div className="grid gap-4 xl:grid-cols-5">
-        <div className="xl:col-span-4">
+        <div className="xl:col-span-4 space-y-3">
+          <DocumentUpload
+            onUploadDone={(payload) => {
+              const created = addDocumentFromUpload(payload);
+              setSelectedId(created.id);
+              setEditingId(null);
+            }}
+          />
           <DocumentList
             documents={filtered}
             selectedId={selectedId}
@@ -199,7 +200,7 @@ export function DocumentsPage() {
               </div>
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground">Kein Beleg fuer die Erfassung ausgewaehlt.</div>
+            <div className="text-sm text-muted-foreground">Kein Beleg für die Erfassung ausgewählt.</div>
           )}
         </DialogContent>
       </Dialog>

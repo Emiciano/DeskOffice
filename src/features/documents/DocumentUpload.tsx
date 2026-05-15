@@ -37,7 +37,7 @@ export function DocumentUpload({ onUploadDone }: Props) {
   };
 
   return (
-    <Card>
+    <Card className="p-3">
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -50,12 +50,14 @@ export function DocumentUpload({ onUploadDone }: Props) {
           const file = e.dataTransfer.files?.[0];
           if (file) handleFile(file);
         }}
-        className={`rounded-xl border border-dashed p-6 text-center ${dragOver ? "border-primary bg-primary/5" : "border-border"}`}
+        className={`rounded-xl border border-dashed p-3 text-center ${dragOver ? "border-primary bg-primary/5" : "border-border"}`}
       >
-        <Upload className="mx-auto mb-2" size={24} />
-        <p className="text-sm text-muted-foreground">PDF hier ablegen oder per Dateiauswahl hochladen</p>
-        <Button variant="outline" className="mt-3" onClick={() => inputRef.current?.click()}>
-          Beleg auswaehlen
+        <div className="mx-auto flex max-w-2xl items-center justify-center gap-3">
+          <Upload size={18} />
+          <p className="text-sm text-muted-foreground">PDF hier ablegen oder per Dateiauswahl hochladen</p>
+        </div>
+        <Button variant="outline" className="mt-2 h-9" onClick={() => inputRef.current?.click()}>
+          Beleg auswählen
         </Button>
         <input
           ref={inputRef}
