@@ -1,0 +1,37 @@
+import { Navigate, Route, Routes } from "react-router-dom";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { Topbar } from "@/components/layout/Topbar";
+import { DashboardPage } from "@/pages/DashboardPage";
+import { InvoicesPage } from "@/pages/InvoicesPage";
+import { OffersPage } from "@/pages/OffersPage";
+import { CustomersPage } from "@/pages/CustomersPage";
+import { ExpensesPage } from "@/pages/ExpensesPage";
+import { BankingPage } from "@/pages/BankingPage";
+import { ProductsPage } from "@/pages/ProductsPage";
+import { ReportsPage } from "@/pages/ReportsPage";
+import { SettingsPage } from "@/pages/SettingsPage";
+
+export default function App() {
+  return (
+    <div className="min-h-screen bg-background p-6">
+      <div className="mx-auto flex max-w-[1500px] gap-6">
+        <Sidebar />
+        <main className="min-w-0 flex-1">
+          <Topbar />
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/rechnungen" element={<InvoicesPage />} />
+            <Route path="/angebote" element={<OffersPage />} />
+            <Route path="/kunden" element={<CustomersPage />} />
+            <Route path="/ausgaben" element={<ExpensesPage />} />
+            <Route path="/banking" element={<BankingPage />} />
+            <Route path="/produkte" element={<ProductsPage />} />
+            <Route path="/berichte" element={<ReportsPage />} />
+            <Route path="/einstellungen" element={<SettingsPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </div>
+    </div>
+  );
+}
