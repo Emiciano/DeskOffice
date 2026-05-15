@@ -1,5 +1,5 @@
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import type { DocumentData } from "./types";
 
 type Props = {
@@ -9,44 +9,133 @@ type Props = {
 };
 
 const low = (v?: number) => (v ?? 1) < 0.75;
+const frame = (name: keyof DocumentData, confidence?: Record<keyof DocumentData, number>) =>
+  low(confidence?.[name]) ? "border-amber-400 ring-1 ring-amber-200" : "";
 
-export function DocumentForm({ data, onChange, confidence }: Props) {
-  const fieldCls = (name: keyof DocumentData) => (low(confidence?.[name]) ? "border-amber-400 ring-1 ring-amber-200" : "");
+const supplierHints = ["CloudStack GmbH", "Nordlicht Media GmbH", "Musterlieferant AG"];
+const categories = ["Software", "Werbung", "Büro", "Reisekosten", "Beratung", "Sonstiges"];
+const accounts = ["3400", "1200", "8400", "4930", "6670"];
 
+export function DocumentForm({ data, confidence, onChange }: Props) {
   return (
-    <Card>
-      <h3 className="mb-4 text-sm font-medium">Belegdaten</h3>
-      <div className="grid gap-3 md:grid-cols-2">
-        <select className={`h-10 rounded-xl border border-border px-3 text-sm ${fieldCls("type")}`} value={data.type} onChange={(e) => onChange({ type: e.target.value as DocumentData["type"] })}>
-          {["Eingangsrechnung", "Ausgangsrechnung", "Quittung", "Gutschrift", "Sonstiger Beleg"].map((s) => <option key={s}>{s}</option>)}
-        </select>
-        <Input className={fieldCls("invoiceNumber")} placeholder="Rechnungsnummer" value={data.invoiceNumber} onChange={(e) => onChange({ invoiceNumber: e.target.value })} />
-        <Input className={fieldCls("documentDate")} type="date" value={data.documentDate} onChange={(e) => onChange({ documentDate: e.target.value })} />
-        <Input className={fieldCls("dueDate")} type="date" value={data.dueDate} onChange={(e) => onChange({ dueDate: e.target.value })} />
-        <Input className={fieldCls("partner")} placeholder="Lieferant/Kunde" value={data.partner} onChange={(e) => onChange({ partner: e.target.value })} />
-        <Input className={fieldCls("category")} placeholder="Kategorie" value={data.category} onChange={(e) => onChange({ category: e.target.value })} />
-        <Input className={fieldCls("netAmount")} type="number" placeholder="Betrag netto" value={data.netAmount} onChange={(e) => onChange({ netAmount: Number(e.target.value) })} />
-        <Input className={fieldCls("vatAmount")} type="number" placeholder="Umsatzsteuer" value={data.vatAmount} onChange={(e) => onChange({ vatAmount: Number(e.target.value) })} />
-        <Input className={fieldCls("grossAmount")} type="number" placeholder="Betrag brutto" value={data.grossAmount} onChange={(e) => onChange({ grossAmount: Number(e.target.value) })} />
-        <Input className={fieldCls("currency")} placeholder="Waehrung" value={data.currency} onChange={(e) => onChange({ currency: e.target.value })} />
-        <select className={`h-10 rounded-xl border border-border px-3 text-sm ${fieldCls("paymentStatus")}`} value={data.paymentStatus} onChange={(e) => onChange({ paymentStatus: e.target.value as DocumentData["paymentStatus"] })}>
-          {["Offen", "Teilweise bezahlt", "Bezahlt"].map((s) => <option key={s}>{s}</option>)}
-        </select>
-        <select className={`h-10 rounded-xl border border-border px-3 text-sm ${fieldCls("paymentMethod")}`} value={data.paymentMethod} onChange={(e) => onChange({ paymentMethod: e.target.value as DocumentData["paymentMethod"] })}>
-          {["Ueberweisung", "Lastschrift", "Kreditkarte", "Bar", "Sonstiges"].map((s) => <option key={s}>{s}</option>)}
-        </select>
-        <Input className={fieldCls("account")} placeholder="Buchungskonto" value={data.account} onChange={(e) => onChange({ account: e.target.value })} />
-        <Input className={fieldCls("costCenter")} placeholder="Kostenstelle" value={data.costCenter} onChange={(e) => onChange({ costCenter: e.target.value })} />
-        <textarea
-          className={`min-h-24 rounded-xl border border-border px-3 py-2 text-sm md:col-span-2 ${fieldCls("notes")}`}
-          placeholder="Notizen"
-          value={data.notes}
-          onChange={(e) => onChange({ notes: e.target.value })}
-        />
-      </div>
-      {confidence ? (
-        <p className="mt-3 text-xs text-amber-700">Gelb markierte Felder haben niedrige OCR-Sicherheit und sollten geprueft werden.</p>
-      ) : null}
-    </Card>
+    <div className="space-y-4">
+      <Card>
+        <h3 className="mb-4 text-lg font-semibold">Belegdaten</h3>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-xs text-muted-foreground">Lieferant</label>
+            <input
+              list="supplier-hints"
+              className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("partner", confidence)}`}
+              value={data.partner}
+              placeholder="Lieferant eingeben oder wählen"
+              onChange={(e) => onChange({ partner: e.target.value })}
+            />
+            <datalist id="supplier-hints">
+              {supplierHints.map((s) => <option key={s} value={s} />)}
+            </datalist>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Belegtyp</label>
+            <select
+              className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("type", confidence)}`}
+              value={data.type}
+              onChange={(e) => onChange({ type: e.target.value as DocumentData["type"] })}
+            >
+              {["Eingangsrechnung", "Ausgangsrechnung", "Quittung", "Gutschrift", "Sonstiger Beleg"].map((s) => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Belegnummer</label>
+            <Input className={frame("invoiceNumber", confidence)} value={data.invoiceNumber} onChange={(e) => onChange({ invoiceNumber: e.target.value })} />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Belegdatum</label>
+            <Input className={frame("documentDate", confidence)} type="date" value={data.documentDate} onChange={(e) => onChange({ documentDate: e.target.value })} />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Fälligkeitsdatum</label>
+            <Input className={frame("dueDate", confidence)} type="date" value={data.dueDate} onChange={(e) => onChange({ dueDate: e.target.value })} />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-xs text-muted-foreground">Beschreibung (optional)</label>
+            <textarea
+              className={`min-h-20 w-full rounded-xl border border-border px-3 py-2 text-sm ${frame("notes", confidence)}`}
+              maxLength={255}
+              value={data.notes}
+              onChange={(e) => onChange({ notes: e.target.value })}
+            />
+            <p className="mt-1 text-right text-xs text-muted-foreground">{data.notes.length} / 255</p>
+          </div>
+        </div>
+      </Card>
+
+      <Card>
+        <h3 className="mb-4 text-lg font-semibold">Kategorisierung</h3>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-xs text-muted-foreground">Kategorie</label>
+            <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("category", confidence)}`} value={data.category} onChange={(e) => onChange({ category: e.target.value })}>
+              <option value="">Suchbegriff, Kategorie oder Sachkonto ...</option>
+              {categories.map((c) => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Buchungskonto</label>
+            <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("account", confidence)}`} value={data.account} onChange={(e) => onChange({ account: e.target.value })}>
+              <option value="">Konto wählen</option>
+              {accounts.map((a) => <option key={a}>{a}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Kostenstelle</label>
+            <Input className={frame("costCenter", confidence)} value={data.costCenter} onChange={(e) => onChange({ costCenter: e.target.value })} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Nettobetrag</label>
+            <Input className={frame("netAmount", confidence)} type="number" value={data.netAmount} onChange={(e) => onChange({ netAmount: Number(e.target.value) })} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Umsatzsteuer</label>
+            <Input className={frame("vatAmount", confidence)} type="number" value={data.vatAmount} onChange={(e) => onChange({ vatAmount: Number(e.target.value) })} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Gesamtbetrag inkl. Steuer</label>
+            <Input className={frame("grossAmount", confidence)} type="number" value={data.grossAmount} onChange={(e) => onChange({ grossAmount: Number(e.target.value) })} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Währung</label>
+            <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("currency", confidence)}`} value={data.currency} onChange={(e) => onChange({ currency: e.target.value })}>
+              <option>EUR</option>
+              <option>USD</option>
+              <option>CHF</option>
+            </select>
+          </div>
+        </div>
+      </Card>
+
+      <Card>
+        <h3 className="mb-4 text-lg font-semibold">Belegstatus</h3>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Zahlungsstatus</label>
+            <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("paymentStatus", confidence)}`} value={data.paymentStatus} onChange={(e) => onChange({ paymentStatus: e.target.value as DocumentData["paymentStatus"] })}>
+              {["Offen", "Teilweise bezahlt", "Bezahlt"].map((s) => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Zahlungsart</label>
+            <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("paymentMethod", confidence)}`} value={data.paymentMethod} onChange={(e) => onChange({ paymentMethod: e.target.value as DocumentData["paymentMethod"] })}>
+              {["Ueberweisung", "Lastschrift", "Kreditkarte", "Bar", "Sonstiges"].map((s) => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+      </Card>
+    </div>
   );
 }
