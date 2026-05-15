@@ -6,7 +6,6 @@ import { DocumentUpload } from "./DocumentUpload";
 import { DocumentList } from "./DocumentList";
 import { DocumentDetail } from "./DocumentDetail";
 import { DocumentInspector } from "./DocumentInspector";
-import { DocumentTypeNav } from "./DocumentTypeNav";
 import { runMockOcr } from "./mockOcr";
 import { useDocumentsStore } from "./documentStore";
 import type { DocumentFilters } from "./types";
@@ -116,17 +115,6 @@ export function DocumentsPage() {
         </div>
       </div>
 
-      <DocumentTypeNav
-        group={docGroup}
-        subType={docSubType}
-        onChange={(group, subType) => {
-          setDocGroup(group);
-          setDocSubType(subType);
-          setSelectedId(null);
-          setEditingId(null);
-        }}
-      />
-
       <div className="grid gap-4 xl:grid-cols-5">
         <div className="xl:col-span-4 space-y-3">
           <DocumentUpload
@@ -146,17 +134,24 @@ export function DocumentsPage() {
           />
         </div>
         <div className="xl:col-span-1">
-          {selected ? (
-            <div className="sticky top-24">
-              <DocumentInspector
-                document={selected}
-                onStartCapture={() => {
-                  setEditingId(selected.id);
-                  setCaptureOpen(true);
-                }}
-              />
-            </div>
-          ) : null}
+          <div className="sticky top-24">
+            <DocumentInspector
+              document={selected}
+              group={docGroup}
+              subType={docSubType}
+              onTypeChange={(group, subType) => {
+                setDocGroup(group);
+                setDocSubType(subType);
+                setSelectedId(null);
+                setEditingId(null);
+              }}
+              onStartCapture={() => {
+                if (!selected) return;
+                setEditingId(selected.id);
+                setCaptureOpen(true);
+              }}
+            />
+          </div>
         </div>
       </div>
 
