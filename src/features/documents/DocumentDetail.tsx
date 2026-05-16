@@ -21,11 +21,11 @@ export function DocumentDetail({ document, onReplaceFile, onChangeData, onMarkCh
   }
 
   return (
-    <div className="grid min-h-0 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,1fr)]">
-      <div className="min-w-0">
+    <div className="grid h-full min-h-0 gap-3 xl:grid-cols-[minmax(0,1.3fr)_minmax(340px,0.95fr)]">
+      <div className="min-h-0 min-w-0">
         <PdfPreview document={document} onReplace={onReplaceFile} />
       </div>
-      <div className="min-w-0 space-y-4">
+      <div className="no-scrollbar min-h-0 min-w-0 space-y-3 overflow-y-auto pr-1">
         <DocumentForm data={document.data} confidence={document.ocrConfidence} onChange={onChangeData} />
         <BookingPanel document={document} onBook={onBook} onMarkChecked={onMarkChecked} />
       </div>

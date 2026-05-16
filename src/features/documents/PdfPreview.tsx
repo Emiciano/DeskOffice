@@ -11,12 +11,12 @@ type Props = {
 
 export function PdfPreview({ document, onReplace }: Props) {
   const [zoom, setZoom] = useState(100);
-  const pdfSrc = useMemo(() => `${document.pdfUrl}#toolbar=0&navpanes=0&scrollbar=1`, [document.pdfUrl]);
+  const pdfSrc = useMemo(() => `${document.pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`, [document.pdfUrl]);
   const pageScale = zoom / 100;
 
   return (
-    <Card className="h-full min-w-0">
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <Card className="flex h-full min-w-0 flex-col p-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <h3 className="text-sm font-medium">PDF Vorschau</h3>
         <div className="flex items-center gap-2">
           <Button variant="outline" className="h-9 px-2" onClick={() => setZoom((z) => Math.max(70, z - 10))}><ZoomOut size={16} /></Button>
@@ -25,7 +25,7 @@ export function PdfPreview({ document, onReplace }: Props) {
         </div>
       </div>
 
-      <div className="mb-3 h-[min(78vh,880px)] overflow-auto rounded-xl border border-border bg-muted/20 p-3">
+      <div className="no-scrollbar mb-2 h-[calc(96vh-250px)] overflow-auto rounded-xl border border-border bg-muted/20 p-2">
         <div
           className="origin-top-left"
           style={{
@@ -39,7 +39,7 @@ export function PdfPreview({ document, onReplace }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="mt-auto flex flex-wrap items-center gap-2">
         <a href={document.pdfUrl} download={document.fileName}>
           <Button variant="outline" className="h-9"><Download size={14} className="mr-2" />Download</Button>
         </a>

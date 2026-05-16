@@ -158,14 +158,14 @@ export function DocumentsPage() {
       </div>
 
       <Dialog open={captureOpen} onOpenChange={setCaptureOpen}>
-        <DialogContent className="max-h-[92vh] overflow-hidden p-4">
+        <DialogContent className="h-[96vh] max-h-[96vh] overflow-hidden p-3">
           {editingDocument ? (
-            <div className="flex max-h-[calc(92vh-2rem)] min-h-0 flex-col">
-              <div className="mb-3 flex items-center gap-2 text-sm">
+            <div className="flex h-full min-h-0 flex-col">
+              <div className="mb-2 flex items-center gap-2 text-sm">
                 <span className="font-medium">{editingDocument.fileName}</span>
                 <StatusBadge status={editingDocument.status} />
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+              <div className="min-h-0 flex-1 overflow-hidden">
                 <DocumentDetail
                   document={editingDocument}
                   onReplaceFile={(file) => {
@@ -178,7 +178,7 @@ export function DocumentsPage() {
                   onBook={() => bookDocument(editingDocument.id)}
                 />
               </div>
-              <div className="mt-4 flex justify-end gap-2">
+              <div className="mt-2 flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setCaptureOpen(false)}>Abbrechen</Button>
                 <Button
                   onClick={() => {

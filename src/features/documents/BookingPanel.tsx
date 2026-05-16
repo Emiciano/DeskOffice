@@ -11,7 +11,7 @@ type Props = {
 export function BookingPanel({ document, onBook, onMarkChecked }: Props) {
   const booking = document.booking as BookingRecord | undefined;
   return (
-    <Card>
+    <Card className="p-4">
       <h3 className="mb-3 text-sm font-medium">Buchung</h3>
       <div className="space-y-2">
         <Button variant="outline" className="w-full" onClick={onMarkChecked}>

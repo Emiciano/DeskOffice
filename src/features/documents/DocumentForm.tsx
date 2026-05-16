@@ -18,10 +18,10 @@ const categories = ["Software", "Werbung", "Büro", "Reisekosten", "Beratung", "
 
 export function DocumentForm({ data, confidence, onChange }: Props) {
   return (
-    <div className="space-y-4">
-      <Card>
-        <h3 className="mb-4 text-lg font-semibold">Belegdaten</h3>
-        <div className="grid gap-3 md:grid-cols-2">
+    <div className="space-y-3">
+      <Card className="p-4">
+        <h3 className="mb-3 text-lg font-semibold">Belegdaten</h3>
+        <div className="grid gap-2.5 md:grid-cols-2">
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs text-muted-foreground">Lieferant</label>
             <input
@@ -65,7 +65,7 @@ export function DocumentForm({ data, confidence, onChange }: Props) {
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs text-muted-foreground">Beschreibung (optional)</label>
             <textarea
-              className={`min-h-20 w-full rounded-xl border border-border px-3 py-2 text-sm ${frame("notes", confidence)}`}
+              className={`min-h-16 w-full rounded-xl border border-border px-3 py-2 text-sm ${frame("notes", confidence)}`}
               maxLength={255}
               value={data.notes}
               onChange={(e) => onChange({ notes: e.target.value })}
@@ -75,9 +75,9 @@ export function DocumentForm({ data, confidence, onChange }: Props) {
         </div>
       </Card>
 
-      <Card>
-        <h3 className="mb-4 text-lg font-semibold">Kategorisierung</h3>
-        <div className="grid gap-3 md:grid-cols-2">
+      <Card className="p-4">
+        <h3 className="mb-3 text-lg font-semibold">Kategorisierung</h3>
+        <div className="grid gap-2.5 md:grid-cols-2">
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs text-muted-foreground">Kategorie</label>
             <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("category", confidence)}`} value={data.category} onChange={(e) => onChange({ category: e.target.value })}>
@@ -127,9 +127,9 @@ export function DocumentForm({ data, confidence, onChange }: Props) {
         </div>
       </Card>
 
-      <Card>
-        <h3 className="mb-4 text-lg font-semibold">Belegstatus</h3>
-        <div className="grid gap-3 md:grid-cols-2">
+      <Card className="p-4">
+        <h3 className="mb-3 text-lg font-semibold">Belegstatus</h3>
+        <div className="grid gap-2.5 md:grid-cols-2">
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Zahlungsstatus</label>
             <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("paymentStatus", confidence)}`} value={data.paymentStatus} onChange={(e) => onChange({ paymentStatus: e.target.value as DocumentData["paymentStatus"] })}>
