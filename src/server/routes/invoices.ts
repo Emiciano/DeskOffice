@@ -6,16 +6,60 @@ export const invoicesRouter = Router();
 invoicesRouter.get("/", async (req, res) => {
   const companyId = String(req.query.companyId ?? "");
   if (!companyId) return res.status(400).json({ error: "companyId required" });
-  const items = await prisma.invoice.findMany({ where: { companyId }, orderBy: { createdAt: "desc" } });
+  const items = await prisma.invoice.findMany({
+    where: { companyId },
+    include: { items: true },
+    orderBy: { createdAt: "desc" },
+  });
   res.json(items);
 });
 
 invoicesRouter.post("/", async (req, res) => {
+  const { items = [], ...raw } = req.body as {
+    companyId: string;
+    number: string;
+    customer: string;
+    dueDate: string;
+    status: string;
+    kind?: string;
+    items?: Array<{ description: string; quantity: number; unitPrice: number; taxRate: number }>;
+  };
+
+  const normalizedItems = items.map((item) => {
+    const amountNet = Number((item.quantity * item.unitPrice).toFixed(2));
+    const amountTax = Number(((amountNet * item.taxRate) / 100).toFixed(2));
+    const amountGross = Number((amountNet + amountTax).toFixed(2));
+    return {
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      taxRate: item.taxRate,
+      amountNet,
+      amountTax,
+      amountGross,
+    };
+  });
+
+  const amountNet = Number(normalizedItems.reduce((sum, i) => sum + i.amountNet, 0).toFixed(2));
+  const amountTax = Number(normalizedItems.reduce((sum, i) => sum + i.amountTax, 0).toFixed(2));
+  const amountGross = Number(normalizedItems.reduce((sum, i) => sum + i.amountGross, 0).toFixed(2));
+
   const created = await prisma.invoice.create({
     data: {
-      ...req.body,
-      dueDate: new Date(req.body.dueDate),
+      companyId: raw.companyId,
+      number: raw.number,
+      customer: raw.customer,
+      status: raw.status,
+      kind: raw.kind ?? "Rechnung",
+      amountNet,
+      amountTax,
+      amountGross,
+      dueDate: new Date(raw.dueDate),
+      items: {
+        create: normalizedItems,
+      },
     },
+    include: { items: true },
   });
   res.status(201).json(created);
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/shared";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,20 +26,48 @@ type Rule = {
 export function ReportsPage() {
   const [companyId, setCompanyId] = useState("");
   const [snapshot, setSnapshot] = useState<TaxSnapshot | null>(null);
+  const [mode, setMode] = useState<"monat" | "quartal">("monat");
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [rules, setRules] = useState<Rule[]>([]);
   const [ruleName, setRuleName] = useState("");
   const [rulePattern, setRulePattern] = useState("");
   const [ruleCategory, setRuleCategory] = useState("");
   const [ruleAccount, setRuleAccount] = useState("");
 
-  async function load(company: string) {
-    const now = new Date();
-    const [taxRes, ruleRes] = await Promise.all([
-      fetch(`/api/taxes/snapshot?companyId=${company}&year=${now.getFullYear()}&month=${now.getMonth() + 1}`),
-      fetch(`/api/rules?companyId=${company}`),
-    ]);
-    setSnapshot(await taxRes.json());
-    setRules(await ruleRes.json());
+  const quarterMonths = useMemo(() => {
+    const quarter = Math.floor((month - 1) / 3);
+    const start = quarter * 3 + 1;
+    return [start, start + 1, start + 2];
+  }, [month]);
+
+  async function loadRules(company: string) {
+    const res = await fetch(`/api/rules?companyId=${company}`);
+    setRules(await res.json());
+  }
+
+  async function loadTax(company: string, y: number, m: number) {
+    const res = await fetch(`/api/taxes/snapshot?companyId=${company}&year=${y}&month=${m}`);
+    return (await res.json()) as TaxSnapshot;
+  }
+
+  async function refresh(company: string, y: number, m: number, currentMode: "monat" | "quartal") {
+    if (currentMode === "monat") {
+      setSnapshot(await loadTax(company, y, m));
+      return;
+    }
+
+    const months = quarterMonths;
+    const all = await Promise.all(months.map((mm) => loadTax(company, y, mm)));
+    const aggregated: TaxSnapshot = {
+      periodLabel: `Q${Math.floor((m - 1) / 3) + 1} ${y}`,
+      vatOutput19: Number(all.reduce((s, x) => s + x.vatOutput19, 0).toFixed(2)),
+      vatInput: Number(all.reduce((s, x) => s + x.vatInput, 0).toFixed(2)),
+      vatLiability: Number(all.reduce((s, x) => s + x.vatLiability, 0).toFixed(2)),
+      euerRevenue: Number(all.reduce((s, x) => s + x.euerRevenue, 0).toFixed(2)),
+      euerExpense: Number(all.reduce((s, x) => s + x.euerExpense, 0).toFixed(2)),
+    };
+    setSnapshot(aggregated);
   }
 
   useEffect(() => {
@@ -47,9 +75,16 @@ export function ReportsPage() {
       const boot = await fetch("/api/bootstrap").then((r) => r.json());
       if (!boot.companyId) return;
       setCompanyId(boot.companyId);
-      await load(boot.companyId);
+      await Promise.all([refresh(boot.companyId, year, month, mode), loadRules(boot.companyId)]);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!companyId) return;
+    void refresh(companyId, year, month, mode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId, year, month, mode]);
 
   async function createRule() {
     if (!companyId || !ruleName || !rulePattern) return;
@@ -70,12 +105,33 @@ export function ReportsPage() {
     setRulePattern("");
     setRuleCategory("");
     setRuleAccount("");
-    await load(companyId);
+    await loadRules(companyId);
   }
 
   return (
     <div>
-      <PageHeader title="Berichte & Steuer" subtitle="Steuer-Snapshot, EÜR-Basis und Buchungsregeln" />
+      <PageHeader title="Berichte & Steuer" subtitle="Monats-/Quartalsansicht, EÜR-Basis und Buchungsregeln" />
+
+      <Card className="mb-4 flex flex-wrap items-end gap-3">
+        <div>
+          <label className="mb-1 block text-xs text-muted-foreground">Zeitraum</label>
+          <div className="flex gap-2">
+            <Button variant={mode === "monat" ? "default" : "outline"} onClick={() => setMode("monat")}>Monat</Button>
+            <Button variant={mode === "quartal" ? "default" : "outline"} onClick={() => setMode("quartal")}>Quartal</Button>
+          </div>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-muted-foreground">Jahr</label>
+          <Input type="number" value={year} onChange={(e) => setYear(Number(e.target.value) || year)} />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-muted-foreground">Monat</label>
+          <select className="h-10 rounded-xl border border-border px-3 text-sm" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+      </Card>
+
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-1">
           <h3 className="font-medium">Steuerübersicht ({snapshot?.periodLabel ?? "-"})</h3>

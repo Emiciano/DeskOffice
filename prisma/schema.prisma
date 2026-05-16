@@ -87,13 +87,30 @@ model Invoice {
   dueDate     DateTime
   status      String
   sourceOfferId String?
+  kind        String   @default("Rechnung")
   companyId   String
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  items       InvoiceItem[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([companyId, status])
   @@unique([companyId, number])
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Float
+  unitPrice   Float
+  taxRate     Float
+  amountNet   Float
+  amountTax   Float
+  amountGross Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Offer {
@@ -124,6 +141,9 @@ model BankTransaction {
   currency    String   @default("EUR")
   type        String
   status      String
+  category    String?
+  suggestedAccount String?
+  matchedRuleId String?
   matchedInvoiceId String?
   matchedDocumentId String?
   companyId   String

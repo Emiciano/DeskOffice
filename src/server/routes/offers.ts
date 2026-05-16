@@ -36,6 +36,7 @@ offersRouter.post("/:id/convert", async (req, res) => {
         amountGross: offer.amountGross,
         dueDate: new Date(),
         status: "Offen",
+        kind: "Rechnung",
         sourceOfferId: offer.id,
         companyId: offer.companyId,
       },
