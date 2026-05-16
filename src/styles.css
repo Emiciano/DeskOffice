@@ -52,15 +52,15 @@ div {
 }
 
 .rounded-2xl:hover {
-  transform: translateY(-1px);
+  transform: none;
 }
 
 tr:hover {
-  transform: translateX(1px);
+  transform: none;
 }
 
 button:hover {
-  filter: saturate(1.05);
+  filter: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -110,4 +110,35 @@ button:hover {
 
 .theme-dark .shadow-soft {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+.theme-dark input,
+.theme-dark select,
+.theme-dark textarea {
+  background: #14181c !important;
+  color: #e8edf3 !important;
+  border-color: #2b323a !important;
+}
+
+.theme-dark input::placeholder,
+.theme-dark textarea::placeholder {
+  color: #95a1af !important;
+}
+
+.theme-dark th,
+.theme-dark td {
+  color: #dbe3ec;
+}
+
+.theme-dark tr:hover td {
+  background: #1a2026 !important;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

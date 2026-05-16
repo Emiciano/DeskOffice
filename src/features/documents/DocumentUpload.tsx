@@ -19,9 +19,11 @@ export function DocumentUpload({ onUploadDone }: Props) {
       setError("Es sind nur PDF-Dateien erlaubt.");
       return;
     }
+
     setError("");
     setUploadingName(file.name);
     setProgress(0);
+
     const url = URL.createObjectURL(file);
     const interval = window.setInterval(() => {
       setProgress((p) => {
@@ -56,9 +58,11 @@ export function DocumentUpload({ onUploadDone }: Props) {
           <Upload size={18} />
           <p className="text-sm text-muted-foreground">PDF hier ablegen oder per Dateiauswahl hochladen</p>
         </div>
+
         <Button variant="outline" className="mt-2 h-9" onClick={() => inputRef.current?.click()}>
           Beleg auswählen
         </Button>
+
         <input
           ref={inputRef}
           type="file"
@@ -69,14 +73,15 @@ export function DocumentUpload({ onUploadDone }: Props) {
             if (file) handleFile(file);
           }}
         />
+
         {uploadingName ? (
           <div className="mt-4 text-left">
-            <p className="mb-1 text-xs text-muted-foreground">Upload: {uploadingName}</p>
             <div className="h-2 rounded-full bg-muted">
               <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
             </div>
           </div>
         ) : null}
+
         {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
       </div>
     </Card>
