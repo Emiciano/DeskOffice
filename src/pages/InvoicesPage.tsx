@@ -52,14 +52,14 @@ function InvoicePreview({
 }) {
   const frameClass =
     template === "modern"
-      ? "bg-slate-50 border-slate-200"
+      ? "bg-gradient-to-br from-indigo-50 to-white border-indigo-200"
       : template === "compact"
         ? "bg-white border-slate-300"
         : "bg-white border-slate-200";
 
   return (
     <div className={`h-full rounded-xl border p-4 text-slate-900 ${frameClass}`}>
-      <div className="mb-4 flex items-start justify-between border-b pb-3">
+      <div className={`mb-4 flex items-start justify-between border-b pb-3 ${template === "modern" ? "border-indigo-200" : ""}`}>
         <div>
           <p className="text-lg font-semibold">DeskOffice GmbH</p>
           <p className="text-xs text-slate-500">Musterstraße 12, 55116 Mainz</p>
@@ -106,7 +106,7 @@ function InvoicePreview({
         </tbody>
       </table>
 
-      <div className="ml-auto w-full max-w-xs space-y-1 text-sm">
+      <div className={`ml-auto w-full max-w-xs space-y-1 rounded-lg border p-3 text-sm ${template === "modern" ? "border-indigo-200 bg-indigo-50/60" : "border-slate-200"}`}>
         <div className="flex justify-between"><span>Netto</span><b>{totals.net.toFixed(2)} EUR</b></div>
         <div className="flex justify-between"><span>Umsatzsteuer</span><b>{totals.tax.toFixed(2)} EUR</b></div>
         <div className="flex justify-between border-t pt-1 text-base"><span>Brutto</span><b>{totals.gross.toFixed(2)} EUR</b></div>
@@ -173,8 +173,6 @@ export function InvoicesPage() {
     () => `RE-${new Date().getFullYear()}-${String(invoices.length + 101).padStart(4, "0")}`,
     [invoices.length],
   );
-
-  const invoiceDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const printableHtml = useMemo(() => {
     const rows = items
@@ -272,27 +270,49 @@ export function InvoicesPage() {
                   </div>
 
                   <div className="space-y-3">
-                    <Input placeholder="Kunde / Firma" value={customer} onChange={(e) => setCustomer(e.target.value)} />
-                    <Input type="date" value={invoiceDate} readOnly />
-                    <Input type="date" value={serviceDate} onChange={(e) => setServiceDate(e.target.value)} />
-                    <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                    <div className="rounded-xl border border-border bg-muted/20 px-3 py-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Rechnungsnummer</span>
+                        <b>{draftNumber}</b>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Kunde / Firma</p>
+                      <Input placeholder="Kunde / Firma" value={customer} onChange={(e) => setCustomer(e.target.value)} />
+                    </div>
                     <div className="grid gap-2 sm:grid-cols-2">
-                      <Input
-                        type="number"
-                        min={1}
-                        step="1"
-                        placeholder="Zahlungsziel (Tage)"
-                        value={paymentTermDays}
-                        onChange={(e) => setPaymentTermDays(Number(e.target.value) || 1)}
-                      />
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.1"
-                        placeholder="Skonto %"
-                        value={discountPercent}
-                        onChange={(e) => setDiscountPercent(Number(e.target.value) || 0)}
-                      />
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Leistungsdatum</p>
+                        <Input type="date" value={serviceDate} onChange={(e) => setServiceDate(e.target.value)} />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Fälligkeitsdatum</p>
+                        <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Zahlungsziel (Tage)</p>
+                        <Input
+                          type="number"
+                          min={1}
+                          step="1"
+                          placeholder="Zahlungsziel (Tage)"
+                          value={paymentTermDays}
+                          onChange={(e) => setPaymentTermDays(Number(e.target.value) || 1)}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Skonto in %</p>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.1"
+                          placeholder="Skonto %"
+                          value={discountPercent}
+                          onChange={(e) => setDiscountPercent(Number(e.target.value) || 0)}
+                        />
+                      </div>
                     </div>
                     <textarea
                       className="min-h-16 w-full rounded-xl border border-border px-3 py-2 text-sm"
@@ -300,15 +320,26 @@ export function InvoicesPage() {
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                     />
-                    <select
-                      className="h-10 w-full rounded-xl border border-border px-3 text-sm"
-                      value={template}
-                      onChange={(e) => setTemplate(e.target.value as TemplateMode)}
-                    >
-                      <option value="clean">Vorlage: Clean</option>
-                      <option value="modern">Vorlage: Modern</option>
-                      <option value="compact">Vorlage: Compact</option>
-                    </select>
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">Rechnungsvorlage</p>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        {[
+                          { id: "clean", label: "Clean", style: "bg-white border-slate-300" },
+                          { id: "modern", label: "Modern", style: "bg-gradient-to-br from-indigo-50 to-violet-50 border-indigo-300" },
+                          { id: "compact", label: "Compact", style: "bg-slate-50 border-slate-400" },
+                        ].map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => setTemplate(option.id as TemplateMode)}
+                            className={`rounded-xl border px-3 py-3 text-left text-sm transition ${option.style} ${template === option.id ? "ring-2 ring-primary" : "hover:border-primary/50"}`}
+                          >
+                            <div className="font-medium">{option.label}</div>
+                            <div className="mt-1 text-xs text-muted-foreground">Vorschau-Layout</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
                     <div className="rounded-xl border border-border p-3">
                       <div className="mb-2 flex items-center justify-between">
@@ -368,16 +399,19 @@ export function InvoicesPage() {
                             >
                               ×
                             </Button>
+                            <div className="md:col-span-12 text-right text-xs text-muted-foreground">
+                              Positionssumme: {((item.quantity * item.unitPrice) * (1 + item.taxRate / 100)).toFixed(2)} EUR
+                            </div>
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-3 border-t pt-3 text-sm">
+                  <div className="mt-3 rounded-xl border border-border bg-muted/20 p-3 text-sm">
                     <div className="flex justify-between"><span>Netto</span><b>{totals.net.toFixed(2)} EUR</b></div>
                     <div className="flex justify-between"><span>USt.</span><b>{totals.tax.toFixed(2)} EUR</b></div>
-                    <div className="flex justify-between"><span>Brutto</span><b>{totals.gross.toFixed(2)} EUR</b></div>
+                    <div className="mt-1 flex justify-between border-t border-border pt-2 text-base"><span>Brutto gesamt</span><b>{totals.gross.toFixed(2)} EUR</b></div>
                   </div>
 
                   <div className="mt-3 flex justify-end gap-2">
