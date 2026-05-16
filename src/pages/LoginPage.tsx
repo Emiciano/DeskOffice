@@ -23,8 +23,9 @@ export function LoginPage() {
       } else {
         await register({ name, companyName, email, password });
       }
-    } catch {
-      setError(mode === "login" ? "Login fehlgeschlagen." : "Registrierung fehlgeschlagen.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      setError(message || (mode === "login" ? "Login fehlgeschlagen." : "Registrierung fehlgeschlagen."));
     } finally {
       setLoading(false);
     }

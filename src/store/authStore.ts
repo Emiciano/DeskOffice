@@ -30,6 +30,27 @@ function storeToken(token: string | null) {
   else localStorage.removeItem("auth-token");
 }
 
+function toAuthUser(input: unknown): AuthUser | null {
+  if (!input || typeof input !== "object") return null;
+  const obj = input as Record<string, unknown>;
+  const userId = String(obj.userId ?? obj.id ?? "");
+  const companyId = String(obj.companyId ?? "");
+  const role = String(obj.role ?? "owner");
+  const name = String(obj.name ?? "");
+  const email = String(obj.email ?? "");
+  if (!userId || !companyId) return null;
+  return { userId, companyId, role, name, email };
+}
+
+async function getErrorText(res: Response): Promise<string> {
+  try {
+    const data = await res.json();
+    return String(data?.error ?? "Unbekannter Fehler");
+  } catch {
+    return `HTTP ${res.status}`;
+  }
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   loading: true,
@@ -43,7 +64,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         return set({ user: null, loading: false });
       }
       const data = await res.json();
-      set({ user: data.user ?? null, loading: false });
+      set({ user: toAuthUser(data.user), loading: false });
     } catch {
       storeToken(null);
       set({ user: null, loading: false });
@@ -55,10 +76,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
-    if (!res.ok) throw new Error("Login fehlgeschlagen");
+    if (!res.ok) throw new Error(await getErrorText(res));
     const data = await res.json();
     storeToken(String(data.token ?? ""));
-    set({ user: data.user ?? null });
+    set({ user: toAuthUser(data.user) });
   },
   register: async (payload) => {
     const res = await apiFetch("/api/auth/register", {
@@ -66,10 +87,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("Registrierung fehlgeschlagen");
+    if (!res.ok) throw new Error(await getErrorText(res));
     const data = await res.json();
     storeToken(String(data.token ?? ""));
-    set({ user: data.user ?? null });
+    set({ user: toAuthUser(data.user) });
   },
   logout: async () => {
     await apiFetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
