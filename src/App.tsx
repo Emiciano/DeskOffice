@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { DashboardPage } from "@/pages/DashboardPage";
@@ -16,6 +16,7 @@ import { useUiStore } from "@/store/uiStore";
 
 export default function App() {
   const { theme } = useUiStore();
+  const location = useLocation();
 
   useEffect(() => {
     document.documentElement.classList.toggle("theme-dark", theme === "dark");
@@ -27,19 +28,21 @@ export default function App() {
         <Sidebar />
         <main className="min-w-0 flex-1">
           <Topbar />
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/rechnungen" element={<InvoicesPage />} />
-            <Route path="/angebote" element={<OffersPage />} />
-            <Route path="/kunden" element={<CustomersPage />} />
-            <Route path="/belege" element={<DocumentsPage />} />
-            <Route path="/banking" element={<BankingPage />} />
-            <Route path="/produkte" element={<ProductsPage />} />
-            <Route path="/kontenrahmen" element={<AccountsPage />} />
-            <Route path="/berichte" element={<ReportsPage />} />
-            <Route path="/einstellungen" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <div key={location.pathname} className="page-enter">
+            <Routes>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/rechnungen" element={<InvoicesPage />} />
+              <Route path="/angebote" element={<OffersPage />} />
+              <Route path="/kunden" element={<CustomersPage />} />
+              <Route path="/belege" element={<DocumentsPage />} />
+              <Route path="/banking" element={<BankingPage />} />
+              <Route path="/produkte" element={<ProductsPage />} />
+              <Route path="/kontenrahmen" element={<AccountsPage />} />
+              <Route path="/berichte" element={<ReportsPage />} />
+              <Route path="/einstellungen" element={<SettingsPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
         </main>
       </div>
     </div>

@@ -16,6 +16,61 @@ body {
   background: hsl(240 18% 98%);
 }
 
+a,
+button,
+input,
+select,
+textarea,
+tr,
+td,
+th,
+div {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 220ms ease,
+    transform 220ms ease,
+    opacity 220ms ease;
+}
+
+.page-enter {
+  animation: pageEnter 240ms ease;
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.rounded-2xl:hover {
+  transform: translateY(-1px);
+}
+
+tr:hover {
+  transform: translateX(1px);
+}
+
+button:hover {
+  filter: saturate(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  .page-enter {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 .theme-dark body {
   background: #101214;
   color: #e5e7eb;
