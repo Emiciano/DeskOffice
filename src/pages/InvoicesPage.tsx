@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { CompanySettings, defaultCompanySettings } from "@/types/companySettings";
 
 type InvoiceItem = {
   description: string;
@@ -27,18 +28,7 @@ type Invoice = {
 
 type TemplateMode = "clean" | "modern" | "compact";
 
-function InvoicePreview({
-  number,
-  customer,
-  dueDate,
-  serviceDate,
-  paymentTermDays,
-  discountPercent,
-  items,
-  totals,
-  template,
-  note,
-}: {
+function InvoicePreview(props: {
   number: string;
   customer: string;
   dueDate: string;
@@ -49,20 +39,43 @@ function InvoicePreview({
   totals: { net: number; tax: number; gross: number };
   template: TemplateMode;
   note: string;
+  settings: CompanySettings;
 }) {
+  const {
+    number,
+    customer,
+    dueDate,
+    serviceDate,
+    paymentTermDays,
+    discountPercent,
+    items,
+    totals,
+    template,
+    note,
+    settings,
+  } = props;
+  const companyDisplayName = settings.companySuffix
+    ? `${settings.companyName} ${settings.companySuffix}`.trim()
+    : settings.companyName;
+  const companyLine = [settings.street, settings.postalCode, settings.city].filter(Boolean).join(", ");
+  const bankLine = [settings.bankName, settings.iban ? `IBAN: ${settings.iban}` : "", settings.bic ? `BIC: ${settings.bic}` : ""]
+    .filter(Boolean)
+    .join(" • ");
+
   const headerByTemplate =
     template === "modern" ? (
       <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50/70 p-4">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xl font-semibold tracking-tight text-indigo-900">DeskOffice GmbH</p>
-            <p className="text-xs text-indigo-700">Musterstraße 12, 55116 Mainz</p>
-            <p className="text-xs text-indigo-700">USt-ID: DE123456789</p>
+            {settings.logoUrl ? <img src={settings.logoUrl} alt="Logo" className="mb-2 max-h-10 object-contain" /> : null}
+            <p className="text-xl font-semibold tracking-tight text-indigo-900">{companyDisplayName || "Firmenname"}</p>
+            <p className="text-xs text-indigo-700">{companyLine || "Adresse"}</p>
+            {settings.vatId ? <p className="text-xs text-indigo-700">USt-ID: {settings.vatId}</p> : null}
           </div>
           <div className="rounded-lg bg-white px-3 py-2 text-right shadow-sm">
             <p className="text-xs text-slate-500">Rechnung</p>
             <p className="font-semibold">{number || "RE-YYYY-0000"}</p>
-            <p className="text-xs text-slate-500">Fällig: {dueDate || "-"}</p>
+            <p className="text-xs text-slate-500">Faellig: {dueDate || "-"}</p>
             <p className="text-xs text-slate-500">Leistungsdatum: {serviceDate || "-"}</p>
           </div>
         </div>
@@ -70,23 +83,27 @@ function InvoicePreview({
     ) : template === "compact" ? (
       <div className="mb-3 border-b-2 border-slate-300 pb-2">
         <div className="flex items-center justify-between">
-          <p className="text-base font-bold tracking-wide">DESKOFFICE GMBH</p>
+          <div>
+            {settings.logoUrl ? <img src={settings.logoUrl} alt="Logo" className="mb-1 max-h-8 object-contain" /> : null}
+            <p className="text-base font-bold tracking-wide">{companyDisplayName || "FIRMENNAME"}</p>
+          </div>
           <p className="text-sm font-semibold">{number || "RE-YYYY-0000"}</p>
         </div>
-        <p className="text-[11px] text-slate-500">Musterstraße 12, 55116 Mainz • USt-ID: DE123456789</p>
-        <p className="text-[11px] text-slate-500">Fällig: {dueDate || "-"} • Leistungsdatum: {serviceDate || "-"}</p>
+        <p className="text-[11px] text-slate-500">{companyLine || "Adresse"}{settings.vatId ? ` • USt-ID: ${settings.vatId}` : ""}</p>
+        <p className="text-[11px] text-slate-500">Faellig: {dueDate || "-"} • Leistungsdatum: {serviceDate || "-"}</p>
       </div>
     ) : (
       <div className="mb-4 flex items-start justify-between border-b pb-3">
         <div>
-          <p className="text-lg font-semibold">DeskOffice GmbH</p>
-          <p className="text-xs text-slate-500">Musterstraße 12, 55116 Mainz</p>
-          <p className="text-xs text-slate-500">USt-ID: DE123456789</p>
+          {settings.logoUrl ? <img src={settings.logoUrl} alt="Logo" className="mb-2 max-h-10 object-contain" /> : null}
+          <p className="text-lg font-semibold">{companyDisplayName || "Firmenname"}</p>
+          <p className="text-xs text-slate-500">{companyLine || "Adresse"}</p>
+          {settings.vatId ? <p className="text-xs text-slate-500">USt-ID: {settings.vatId}</p> : null}
         </div>
         <div className="text-right">
           <p className="text-xs text-slate-500">Rechnung</p>
           <p className="font-semibold">{number || "RE-YYYY-0000"}</p>
-          <p className="text-xs text-slate-500">Fällig: {dueDate || "-"}</p>
+          <p className="text-xs text-slate-500">Faellig: {dueDate || "-"}</p>
           <p className="text-xs text-slate-500">Leistungsdatum: {serviceDate || "-"}</p>
         </div>
       </div>
@@ -102,12 +119,10 @@ function InvoicePreview({
   return (
     <div className={`h-full rounded-xl border p-4 text-slate-900 ${frameClass}`}>
       {headerByTemplate}
-
       <div className="mb-4">
         <p className="text-xs text-slate-500">Rechnung an</p>
         <p className="font-medium">{customer || "Kunde / Firma"}</p>
       </div>
-
       <table className="mb-4 w-full text-sm">
         <thead>
           <tr className="border-b text-left text-xs text-slate-500">
@@ -135,19 +150,19 @@ function InvoicePreview({
           })}
         </tbody>
       </table>
-
       <div className={`ml-auto w-full max-w-xs space-y-1 rounded-lg border p-3 text-sm ${template === "modern" ? "border-indigo-200 bg-indigo-50/60" : "border-slate-200"}`}>
         <div className="flex justify-between"><span>Netto</span><b>{totals.net.toFixed(2)} EUR</b></div>
         <div className="flex justify-between"><span>Umsatzsteuer</span><b>{totals.tax.toFixed(2)} EUR</b></div>
         <div className="flex justify-between border-t pt-1 text-base"><span>Brutto</span><b>{totals.gross.toFixed(2)} EUR</b></div>
       </div>
-
       <div className="mt-4 border-t pt-3 text-xs text-slate-500">
-        <p>Zahlungsziel: {paymentTermDays} Tage (fällig bis {dueDate || "-"})</p>
+        <p>Zahlungsziel: {paymentTermDays} Tage (faellig bis {dueDate || "-"})</p>
         {discountPercent > 0 ? <p>Skonto: {discountPercent.toFixed(1)}% bei Sofortzahlung</p> : null}
         {note ? <p className="mt-1">{note}</p> : null}
         <div className="mt-3 border-t pt-2">
-          <p>Bank: Musterbank AG • IBAN: DE12 5001 0517 1234 5678 90 • BIC: INGDDEFFXXX</p>
+          {bankLine ? <p>{bankLine}</p> : null}
+          {settings.taxNumber ? <p>Steuernummer: {settings.taxNumber}</p> : null}
+          {settings.commercialRegisterNo ? <p>Handelsregister: {settings.commercialRegisterNo}</p> : null}
         </div>
       </div>
     </div>
@@ -170,18 +185,24 @@ export function InvoicesPage() {
   const [note, setNote] = useState("");
   const [template, setTemplate] = useState<TemplateMode>("clean");
   const [items, setItems] = useState<InvoiceItem[]>([{ description: "", quantity: 1, unitPrice: 0, taxRate: 19 }]);
+  const [companySettings, setCompanySettings] = useState<CompanySettings>(defaultCompanySettings);
 
   async function load(company: string) {
-    const res = await fetch(`/api/invoices?companyId=${company}`);
-    setInvoices(await res.json());
+    const [invoiceRes, settingsRes] = await Promise.all([
+      fetch(`/api/invoices?companyId=${company}`),
+      fetch(`/api/settings?companyId=${company}`),
+    ]);
+    setInvoices(await invoiceRes.json());
+    setCompanySettings({ ...defaultCompanySettings, ...(await settingsRes.json()), companyId: company });
   }
 
   useEffect(() => {
     void (async () => {
       const boot = await fetch("/api/bootstrap").then((r) => r.json());
       if (!boot.companyId) return;
-      setCompanyId(boot.companyId);
-      await load(boot.companyId);
+      const id = String(boot.companyId);
+      setCompanyId(id);
+      await load(id);
     })();
   }, []);
 
@@ -223,6 +244,11 @@ export function InvoicesPage() {
       })
       .join("");
 
+    const address = [companySettings.street, companySettings.postalCode, companySettings.city].filter(Boolean).join(", ");
+    const bankLine = [companySettings.bankName, companySettings.iban ? `IBAN: ${companySettings.iban}` : "", companySettings.bic ? `BIC: ${companySettings.bic}` : ""]
+      .filter(Boolean)
+      .join(" • ");
+
     return `<!doctype html>
       <html><head><meta charset="utf-8"/><title>${draftNumber}</title>
       <style>
@@ -232,52 +258,41 @@ export function InvoicesPage() {
       .totals{max-width:360px;margin-left:auto;margin-top:12px}
       .totals div{display:flex;justify-content:space-between;padding:4px 0}
       </style></head><body>
-      <div class="head"><div><div style="font-size:20px;font-weight:700;">DeskOffice GmbH</div><div class="small">Musterstraße 12, 55116 Mainz</div><div class="small">USt-ID: DE123456789</div></div>
-      <div style="text-align:right"><div class="small">Rechnung</div><div style="font-size:18px;font-weight:700">${draftNumber}</div><div class="small">Fällig: ${dueDate || "-"}</div><div class="small">Leistungsdatum: ${serviceDate || "-"}</div></div></div>
+      <div class="head"><div>${companySettings.logoUrl ? `<img src="${companySettings.logoUrl}" style="max-height:40px;display:block;margin-bottom:8px;" />` : ""}<div style="font-size:20px;font-weight:700;">${companySettings.companyName || "Firmenname"}</div><div class="small">${address || "Adresse"}</div><div class="small">${companySettings.vatId ? `USt-ID: ${companySettings.vatId}` : ""}</div></div>
+      <div style="text-align:right"><div class="small">Rechnung</div><div style="font-size:18px;font-weight:700">${draftNumber}</div><div class="small">Faellig: ${dueDate || "-"}</div><div class="small">Leistungsdatum: ${serviceDate || "-"}</div></div></div>
       <div style="margin-bottom:16px"><div class="small">Rechnung an</div><div style="font-weight:600">${customer || "Kunde / Firma"}</div></div>
       <table><thead><tr style="text-align:left;font-size:12px;color:#64748b;border-bottom:1px solid #e2e8f0"><th style="padding-bottom:8px">Position</th><th style="padding-bottom:8px;text-align:right">Menge</th><th style="padding-bottom:8px;text-align:right">Preis</th><th style="padding-bottom:8px;text-align:right">USt.</th><th style="padding-bottom:8px;text-align:right">Summe</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="totals"><div><span>Netto</span><b>${totals.net.toFixed(2)} EUR</b></div><div><span>Umsatzsteuer</span><b>${totals.tax.toFixed(2)} EUR</b></div><div style="border-top:1px solid #e2e8f0;padding-top:8px"><span>Brutto</span><b>${totals.gross.toFixed(2)} EUR</b></div></div>
       <div style="margin-top:20px;border-top:1px solid #e2e8f0;padding-top:10px" class="small">
-      <div>Zahlungsziel: ${paymentTermDays} Tage (fällig bis ${dueDate || "-"})</div>
+      <div>Zahlungsziel: ${paymentTermDays} Tage (faellig bis ${dueDate || "-"})</div>
       ${discountPercent > 0 ? `<div>Skonto: ${discountPercent.toFixed(1)}% bei Sofortzahlung</div>` : ""}
       ${note ? `<div>${note}</div>` : ""}
-      <div style="margin-top:8px">Bank: Musterbank AG • IBAN: DE12 5001 0517 1234 5678 90 • BIC: INGDDEFFXXX</div></div>
+      <div style="margin-top:8px">${bankLine}</div>
+      <div>${companySettings.taxNumber ? `Steuernummer: ${companySettings.taxNumber}` : ""}</div>
+      <div>${companySettings.commercialRegisterNo ? `Handelsregister: ${companySettings.commercialRegisterNo}` : ""}</div></div>
       </body></html>`;
-  }, [customer, discountPercent, draftNumber, dueDate, items, note, paymentTermDays, serviceDate, totals.gross, totals.net, totals.tax]);
+  }, [companySettings, customer, discountPercent, draftNumber, dueDate, items, note, paymentTermDays, serviceDate, totals.gross, totals.net, totals.tax]);
 
   const handlePdfExport = () => {
     const blob = new Blob([printableHtml], { type: "text/html;charset=utf-8" });
     const previewUrl = URL.createObjectURL(blob);
     const printWindow = window.open(previewUrl, "_blank");
     if (!printWindow) {
-      setFormError("Popup blockiert. Bitte Popups für diese Seite erlauben.");
+      setFormError("Popup blockiert. Bitte Popups fuer diese Seite erlauben.");
       return;
     }
-    printWindow.addEventListener(
-      "load",
-      () => {
-        printWindow.focus();
-        printWindow.print();
-      },
-      { once: true },
-    );
+    printWindow.addEventListener("load", () => {
+      printWindow.focus();
+      printWindow.print();
+    }, { once: true });
     setTimeout(() => URL.revokeObjectURL(previewUrl), 60_000);
   };
 
   const handleCreate = async () => {
     setFormError("");
-    if (!companyId) {
-      setFormError("Firma konnte nicht geladen werden. Seite bitte neu laden.");
-      return;
-    }
-    if (!customer.trim()) {
-      setFormError("Bitte Kunde/Firma ausfüllen.");
-      return;
-    }
-    if (!items.some((i) => i.description.trim())) {
-      setFormError("Mindestens eine Position mit Beschreibung ist erforderlich.");
-      return;
-    }
+    if (!companyId) return setFormError("Firma konnte nicht geladen werden. Seite neu laden.");
+    if (!customer.trim()) return setFormError("Bitte Kunde/Firma ausfuellen.");
+    if (!items.some((i) => i.description.trim())) return setFormError("Mindestens eine Position mit Beschreibung ist erforderlich.");
     try {
       setSaving(true);
       const response = await fetch("/api/invoices", {
@@ -293,10 +308,7 @@ export function InvoicesPage() {
           items: items.filter((i) => i.description.trim()),
         }),
       });
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Rechnung konnte nicht gespeichert werden.");
-      }
+      if (!response.ok) throw new Error((await response.text()) || "Rechnung konnte nicht gespeichert werden.");
       setCustomer("");
       setDueDate(new Date().toISOString().slice(0, 10));
       setServiceDate(new Date().toISOString().slice(0, 10));
@@ -308,8 +320,7 @@ export function InvoicesPage() {
       setOpen(false);
       await load(companyId);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Speichern fehlgeschlagen.";
-      setFormError(message);
+      setFormError(error instanceof Error ? error.message : "Speichern fehlgeschlagen.");
     } finally {
       setSaving(false);
     }
@@ -333,13 +344,8 @@ export function InvoicesPage() {
                       Live Vorschau
                     </div>
                   </div>
-
                   <div className="space-y-3">
-                    {formError ? (
-                      <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
-                        {formError}
-                      </div>
-                    ) : null}
+                    {formError ? <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div> : null}
                     <div className="rounded-xl border border-border bg-muted/20 px-3 py-2 text-sm">
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Rechnungsnummer</span>
@@ -356,32 +362,18 @@ export function InvoicesPage() {
                         <Input type="date" value={serviceDate} onChange={(e) => setServiceDate(e.target.value)} />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Fälligkeitsdatum</p>
+                        <p className="text-xs text-muted-foreground">Faelligkeitsdatum</p>
                         <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                       </div>
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2">
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Zahlungsziel (Tage)</p>
-                        <Input
-                          type="number"
-                          min={1}
-                          step="1"
-                          placeholder="Zahlungsziel (Tage)"
-                          value={paymentTermDays}
-                          onChange={(e) => setPaymentTermDays(Number(e.target.value) || 1)}
-                        />
+                        <Input type="number" min={1} step="1" value={paymentTermDays} onChange={(e) => setPaymentTermDays(Number(e.target.value) || 1)} />
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Skonto in %</p>
-                        <Input
-                          type="number"
-                          min={0}
-                          step="0.1"
-                          placeholder="Skonto %"
-                          value={discountPercent}
-                          onChange={(e) => setDiscountPercent(Number(e.target.value) || 0)}
-                        />
+                        <Input type="number" min={0} step="0.1" value={discountPercent} onChange={(e) => setDiscountPercent(Number(e.target.value) || 0)} />
                       </div>
                     </div>
                     <textarea
@@ -410,76 +402,36 @@ export function InvoicesPage() {
                         ))}
                       </div>
                     </div>
-
                     <div className="rounded-xl border border-border p-3">
                       <div className="mb-2 flex items-center justify-between">
                         <p className="text-sm font-medium">Positionen</p>
-                        <Button
-                          variant="outline"
-                          className="h-8 px-2 text-xs"
-                          onClick={() => setItems((prev) => [...prev, { description: "", quantity: 1, unitPrice: 0, taxRate: 19 }])}
-                        >
-                          <Plus size={14} className="mr-1" />
-                          Position
+                        <Button variant="outline" className="h-8 px-2 text-xs" onClick={() => setItems((prev) => [...prev, { description: "", quantity: 1, unitPrice: 0, taxRate: 19 }])}>
+                          <Plus size={14} className="mr-1" />Position
                         </Button>
                       </div>
-
                       <div className="space-y-2">
                         {items.map((item, idx) => (
                           <div key={idx} className="rounded-lg border border-border/70 p-2">
                             <div className="grid gap-2 md:grid-cols-12">
                               <div className="md:col-span-5 space-y-1">
                                 <p className="text-[11px] text-muted-foreground">Beschreibung</p>
-                                <Input
-                                  placeholder="z. B. Webdesign Retainer Mai"
-                                  value={item.description}
-                                  onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, description: e.target.value } : x)))}
-                                />
+                                <Input placeholder="z. B. Webdesign Retainer Mai" value={item.description} onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, description: e.target.value } : x)))} />
                               </div>
                               <div className="md:col-span-2 space-y-1">
                                 <p className="text-[11px] text-muted-foreground">Menge</p>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  step="0.01"
-                                  placeholder="1.00"
-                                  value={item.quantity}
-                                  onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) || 0 } : x)))}
-                                />
+                                <Input type="number" min={0} step="0.01" placeholder="1.00" value={item.quantity} onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) || 0 } : x)))} />
                               </div>
                               <div className="md:col-span-2 space-y-1">
                                 <p className="text-[11px] text-muted-foreground">Einzelpreis (EUR)</p>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  step="0.01"
-                                  placeholder="0.00"
-                                  value={item.unitPrice}
-                                  onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, unitPrice: Number(e.target.value) || 0 } : x)))}
-                                />
+                                <Input type="number" min={0} step="0.01" placeholder="0.00" value={item.unitPrice} onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, unitPrice: Number(e.target.value) || 0 } : x)))} />
                               </div>
                               <div className="md:col-span-2 space-y-1">
                                 <p className="text-[11px] text-muted-foreground">USt. (%)</p>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  step="0.01"
-                                  placeholder="19"
-                                  value={item.taxRate}
-                                  onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, taxRate: Number(e.target.value) || 0 } : x)))}
-                                />
+                                <Input type="number" min={0} step="0.01" placeholder="19" value={item.taxRate} onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, taxRate: Number(e.target.value) || 0 } : x)))} />
                               </div>
                               <div className="md:col-span-1 space-y-1">
-                                <p className="text-[11px] text-muted-foreground">Löschen</p>
-                                <Button
-                                  variant="outline"
-                                  className="w-full"
-                                  onClick={() =>
-                                    setItems((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== idx)))
-                                  }
-                                >
-                                  ×
-                                </Button>
+                                <p className="text-[11px] text-muted-foreground">Loeschen</p>
+                                <Button variant="outline" className="w-full" onClick={() => setItems((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== idx)))}>×</Button>
                               </div>
                             </div>
                             <div className="mt-2 flex items-center justify-between rounded-md bg-muted/30 px-2 py-1 text-xs">
@@ -491,26 +443,20 @@ export function InvoicesPage() {
                       </div>
                     </div>
                   </div>
-
                   <div className="mt-3 rounded-xl border border-border bg-muted/20 p-3 text-sm">
                     <div className="flex justify-between"><span>Netto</span><b>{totals.net.toFixed(2)} EUR</b></div>
                     <div className="flex justify-between"><span>USt.</span><b>{totals.tax.toFixed(2)} EUR</b></div>
                     <div className="mt-1 flex justify-between border-t border-border pt-2 text-base"><span>Brutto gesamt</span><b>{totals.gross.toFixed(2)} EUR</b></div>
                   </div>
-
                   <div className="mt-3 flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={handlePdfExport}>PDF exportieren</Button>
                     <Button type="button" variant="outline" onClick={() => setOpen(false)}>Abbrechen</Button>
-                    <Button type="button" onClick={handleCreate} disabled={saving}>
-                      {saving ? "Speichern..." : "Rechnung speichern"}
-                    </Button>
+                    <Button type="button" onClick={handleCreate} disabled={saving}>{saving ? "Speichern..." : "Rechnung speichern"}</Button>
                   </div>
                 </Card>
-
                 <Card className="min-h-0 overflow-hidden p-3">
                   <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-                    <FileText size={16} />
-                    Vorlagenansicht
+                    <FileText size={16} />Vorlagenansicht
                   </div>
                   <div className="no-scrollbar h-[calc(94vh-120px)] overflow-y-auto">
                     <InvoicePreview
@@ -524,6 +470,7 @@ export function InvoicesPage() {
                       totals={totals}
                       template={template}
                       note={note}
+                      settings={companySettings}
                     />
                   </div>
                 </Card>
@@ -532,7 +479,6 @@ export function InvoicesPage() {
           </Dialog>
         }
       />
-
       <Card>
         <div className="mb-4 flex gap-3">
           <Input placeholder="Rechnung oder Kunde suchen..." value={query} onChange={(e) => setQuery(e.target.value)} />

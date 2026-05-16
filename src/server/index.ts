@@ -8,6 +8,7 @@ import { offersRouter } from "./routes/offers.js";
 import { bankingRouter } from "./routes/banking.js";
 import { rulesRouter } from "./routes/rules.js";
 import { taxesRouter } from "./routes/taxes.js";
+import { settingsRouter } from "./routes/settings.js";
 import { APP_PORT, CORS_ORIGIN, DEFAULT_COMPANY_NAME } from "./config.js";
 import { prisma } from "./db.js";
 import { chartOfAccountsSeed } from "../data/chartOfAccounts.js";
@@ -34,6 +35,21 @@ async function ensureSeedData() {
       })),
     });
   }
+
+  await prisma.companySettings.upsert({
+    where: { companyId: company.id },
+    update: {},
+    create: {
+      companyId: company.id,
+      companyName: company.name,
+      defaultTaxRate: 19,
+      accountFrame: "SKR04",
+      priceInputMode: "brutto",
+      vatMode: "standard",
+      profitMethod: "euer",
+      country: "Deutschland",
+    },
+  });
 }
 
 async function start() {
@@ -56,6 +72,7 @@ async function start() {
   app.use("/api/banking", bankingRouter);
   app.use("/api/rules", rulesRouter);
   app.use("/api/taxes", taxesRouter);
+  app.use("/api/settings", settingsRouter);
 
   app.listen(APP_PORT, () => {
     console.log(`API running on :${APP_PORT}`);

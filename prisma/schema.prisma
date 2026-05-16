@@ -19,6 +19,42 @@ model Company {
   bankTransactions BankTransaction[]
   autoRules Rule[]
   taxSnapshots TaxSnapshot[]
+  settings  CompanySettings?
+}
+
+model CompanySettings {
+  id                     String   @id @default(cuid())
+  companyId              String   @unique
+  company                Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyName            String   @default("")
+  companySuffix          String   @default("")
+  legalForm              String   @default("")
+  managingDirector       String   @default("")
+  street                 String   @default("")
+  postalCode             String   @default("")
+  city                   String   @default("")
+  country                String   @default("Deutschland")
+  phone                  String   @default("")
+  fax                    String   @default("")
+  email                  String   @default("")
+  website                String   @default("")
+  vatId                  String   @default("")
+  taxNumber              String   @default("")
+  districtCourt          String   @default("")
+  commercialRegisterNo   String   @default("")
+  vatMode                String   @default("standard")
+  profitMethod           String   @default("euer")
+  defaultTaxRate         Float    @default(19)
+  accountFrame           String   @default("SKR04")
+  priceInputMode         String   @default("brutto")
+  bankName               String   @default("")
+  accountNumber          String   @default("")
+  bankCode               String   @default("")
+  iban                   String   @default("")
+  bic                    String   @default("")
+  logoUrl                String   @default("")
+  updatedAt              DateTime @updatedAt
+  createdAt              DateTime @default(now())
 }
 
 model Account {
