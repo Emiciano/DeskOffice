@@ -20,3 +20,9 @@ rulesRouter.patch("/:id", async (req, res) => {
   const updated = await prisma.rule.update({ where: { id }, data: req.body });
   res.json(updated);
 });
+
+rulesRouter.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+  await prisma.rule.delete({ where: { id } });
+  res.status(204).send();
+});

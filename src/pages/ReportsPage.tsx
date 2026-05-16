@@ -35,6 +35,7 @@ export function ReportsPage() {
   const [rulePattern, setRulePattern] = useState("");
   const [ruleCategory, setRuleCategory] = useState("");
   const [ruleAccount, setRuleAccount] = useState("");
+  const [ruleActionLoading, setRuleActionLoading] = useState("");
 
   const quarterMonths = useMemo(() => {
     const quarter = Math.floor((month - 1) / 3);
@@ -58,8 +59,7 @@ export function ReportsPage() {
       return;
     }
 
-    const months = quarterMonths;
-    const all = await Promise.all(months.map((mm) => loadTax(company, y, mm)));
+    const all = await Promise.all(quarterMonths.map((mm) => loadTax(company, y, mm)));
     const aggregated: TaxSnapshot = {
       periodLabel: `Q${Math.floor((m - 1) / 3) + 1} ${y}`,
       vatOutput19: Number(all.reduce((s, x) => s + x.vatOutput19, 0).toFixed(2)),
@@ -107,6 +107,32 @@ export function ReportsPage() {
     setRuleCategory("");
     setRuleAccount("");
     await loadRules(companyId);
+  }
+
+  async function toggleRule(ruleId: string, active: boolean) {
+    if (!companyId) return;
+    setRuleActionLoading(ruleId);
+    try {
+      await apiFetch(`/api/rules/${ruleId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !active }),
+      });
+      await loadRules(companyId);
+    } finally {
+      setRuleActionLoading("");
+    }
+  }
+
+  async function deleteRule(ruleId: string) {
+    if (!companyId) return;
+    setRuleActionLoading(ruleId);
+    try {
+      await apiFetch(`/api/rules/${ruleId}`, { method: "DELETE" });
+      await loadRules(companyId);
+    } finally {
+      setRuleActionLoading("");
+    }
   }
 
   return (
@@ -170,7 +196,7 @@ export function ReportsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-muted-foreground">
-              <th>Name</th><th>Pattern</th><th>Kategorie</th><th>Konto</th><th>Confidence</th><th>Aktiv</th>
+              <th>Name</th><th>Pattern</th><th>Kategorie</th><th>Konto</th><th>Confidence</th><th>Aktiv</th><th>Aktion</th>
             </tr>
           </thead>
           <tbody>
@@ -182,6 +208,26 @@ export function ReportsPage() {
                 <td>{r.accountNumber || "-"}</td>
                 <td>{Math.round(r.confidence * 100)}%</td>
                 <td>{r.active ? "Ja" : "Nein"}</td>
+                <td className="py-2">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="h-8 px-2 text-xs"
+                      disabled={ruleActionLoading === r.id}
+                      onClick={() => void toggleRule(r.id, r.active)}
+                    >
+                      {r.active ? "Deaktivieren" : "Aktivieren"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-8 px-2 text-xs"
+                      disabled={ruleActionLoading === r.id}
+                      onClick={() => void deleteRule(r.id)}
+                    >
+                      Löschen
+                    </Button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>

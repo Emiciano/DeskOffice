@@ -67,6 +67,28 @@ invoicesRouter.post("/", async (req, res) => {
 invoicesRouter.patch("/:id/status", async (req, res) => {
   const { id } = req.params;
   const { status } = req.body as { status: string };
+  const allowed = new Set(["Entwurf", "Offen", "Bezahlt", "Ueberfaellig", "Storniert", "Versendet"]);
+  if (!allowed.has(status)) {
+    return res.status(400).json({ error: "invalid status" });
+  }
   const updated = await prisma.invoice.update({ where: { id }, data: { status } });
   res.json(updated);
+});
+
+invoicesRouter.post("/:id/reminder", async (req, res) => {
+  const { id } = req.params;
+  const invoice = await prisma.invoice.findUnique({ where: { id } });
+  if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+  if (invoice.status === "Bezahlt" || invoice.status === "Storniert") {
+    return res.status(400).json({ error: "Reminder not allowed for this status" });
+  }
+  const updated = await prisma.invoice.update({
+    where: { id },
+    data: { status: "Ueberfaellig" },
+  });
+  res.json({
+    ok: true,
+    invoice: updated,
+    message: `Mahnung für ${invoice.number} vorgemerkt`,
+  });
 });

@@ -76,7 +76,7 @@ function InvoicePreview(props: {
           <div className="rounded-lg bg-white px-3 py-2 text-right shadow-sm">
             <p className="text-xs text-slate-500">Rechnung</p>
             <p className="font-semibold">{number || "RE-YYYY-0000"}</p>
-            <p className="text-xs text-slate-500">Faellig: {dueDate || "-"}</p>
+            <p className="text-xs text-slate-500">Fällig: {dueDate || "-"}</p>
             <p className="text-xs text-slate-500">Leistungsdatum: {serviceDate || "-"}</p>
           </div>
         </div>
@@ -91,7 +91,7 @@ function InvoicePreview(props: {
           <p className="text-sm font-semibold">{number || "RE-YYYY-0000"}</p>
         </div>
         <p className="text-[11px] text-slate-500">{companyLine || "Adresse"}{settings.vatId ? ` • USt-ID: ${settings.vatId}` : ""}</p>
-        <p className="text-[11px] text-slate-500">Faellig: {dueDate || "-"} • Leistungsdatum: {serviceDate || "-"}</p>
+        <p className="text-[11px] text-slate-500">Fällig: {dueDate || "-"} • Leistungsdatum: {serviceDate || "-"}</p>
       </div>
     ) : (
       <div className="mb-4 flex items-start justify-between border-b pb-3">
@@ -104,7 +104,7 @@ function InvoicePreview(props: {
         <div className="text-right">
           <p className="text-xs text-slate-500">Rechnung</p>
           <p className="font-semibold">{number || "RE-YYYY-0000"}</p>
-          <p className="text-xs text-slate-500">Faellig: {dueDate || "-"}</p>
+          <p className="text-xs text-slate-500">Fällig: {dueDate || "-"}</p>
           <p className="text-xs text-slate-500">Leistungsdatum: {serviceDate || "-"}</p>
         </div>
       </div>
@@ -187,6 +187,7 @@ export function InvoicesPage() {
   const [template, setTemplate] = useState<TemplateMode>("clean");
   const [items, setItems] = useState<InvoiceItem[]>([{ description: "", quantity: 1, unitPrice: 0, taxRate: 19 }]);
   const [companySettings, setCompanySettings] = useState<CompanySettings>(defaultCompanySettings);
+  const [rowActionLoading, setRowActionLoading] = useState<string>("");
 
   async function load(company: string) {
     const [invoiceRes, settingsRes] = await Promise.all([
@@ -260,7 +261,7 @@ export function InvoicesPage() {
       .totals div{display:flex;justify-content:space-between;padding:4px 0}
       </style></head><body>
       <div class="head"><div>${companySettings.logoUrl ? `<img src="${companySettings.logoUrl}" style="max-height:40px;display:block;margin-bottom:8px;" />` : ""}<div style="font-size:20px;font-weight:700;">${companySettings.companyName || "Firmenname"}</div><div class="small">${address || "Adresse"}</div><div class="small">${companySettings.vatId ? `USt-ID: ${companySettings.vatId}` : ""}</div></div>
-      <div style="text-align:right"><div class="small">Rechnung</div><div style="font-size:18px;font-weight:700">${draftNumber}</div><div class="small">Faellig: ${dueDate || "-"}</div><div class="small">Leistungsdatum: ${serviceDate || "-"}</div></div></div>
+      <div style="text-align:right"><div class="small">Rechnung</div><div style="font-size:18px;font-weight:700">${draftNumber}</div><div class="small">Fällig: ${dueDate || "-"}</div><div class="small">Leistungsdatum: ${serviceDate || "-"}</div></div></div>
       <div style="margin-bottom:16px"><div class="small">Rechnung an</div><div style="font-weight:600">${customer || "Kunde / Firma"}</div></div>
       <table><thead><tr style="text-align:left;font-size:12px;color:#64748b;border-bottom:1px solid #e2e8f0"><th style="padding-bottom:8px">Position</th><th style="padding-bottom:8px;text-align:right">Menge</th><th style="padding-bottom:8px;text-align:right">Preis</th><th style="padding-bottom:8px;text-align:right">USt.</th><th style="padding-bottom:8px;text-align:right">Summe</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="totals"><div><span>Netto</span><b>${totals.net.toFixed(2)} EUR</b></div><div><span>Umsatzsteuer</span><b>${totals.tax.toFixed(2)} EUR</b></div><div style="border-top:1px solid #e2e8f0;padding-top:8px"><span>Brutto</span><b>${totals.gross.toFixed(2)} EUR</b></div></div>
@@ -327,6 +328,32 @@ export function InvoicesPage() {
     }
   };
 
+  const updateInvoiceStatus = async (invoiceId: string, nextStatus: string) => {
+    if (!companyId) return;
+    setRowActionLoading(invoiceId);
+    try {
+      await apiFetch(`/api/invoices/${invoiceId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      await load(companyId);
+    } finally {
+      setRowActionLoading("");
+    }
+  };
+
+  const createReminder = async (invoiceId: string) => {
+    if (!companyId) return;
+    setRowActionLoading(invoiceId);
+    try {
+      await apiFetch(`/api/invoices/${invoiceId}/reminder`, { method: "POST" });
+      await load(companyId);
+    } finally {
+      setRowActionLoading("");
+    }
+  };
+
   return (
     <div>
       <PageHeader
@@ -363,7 +390,7 @@ export function InvoicesPage() {
                         <Input type="date" value={serviceDate} onChange={(e) => setServiceDate(e.target.value)} />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Faelligkeitsdatum</p>
+                        <p className="text-xs text-muted-foreground">Fälligkeitsdatum</p>
                         <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                       </div>
                     </div>
@@ -431,7 +458,7 @@ export function InvoicesPage() {
                                 <Input type="number" min={0} step="0.01" placeholder="19" value={item.taxRate} onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, taxRate: Number(e.target.value) || 0 } : x)))} />
                               </div>
                               <div className="md:col-span-1 space-y-1">
-                                <p className="text-[11px] text-muted-foreground">Loeschen</p>
+                                <p className="text-[11px] text-muted-foreground">Löschen</p>
                                 <Button variant="outline" className="w-full" onClick={() => setItems((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== idx)))}>×</Button>
                               </div>
                             </div>
@@ -484,13 +511,21 @@ export function InvoicesPage() {
         <div className="mb-4 flex gap-3">
           <Input placeholder="Rechnung oder Kunde suchen..." value={query} onChange={(e) => setQuery(e.target.value)} />
           <select className="rounded-xl border border-border px-3 text-sm" value={status} onChange={(e) => setStatus(e.target.value)}>
-            {["Alle", "Entwurf", "Offen", "Bezahlt", "Ueberfaellig", "Storniert"].map((s) => <option key={s} value={s}>{s}</option>)}
+            {[
+              { value: "Alle", label: "Alle" },
+              { value: "Entwurf", label: "Entwurf" },
+              { value: "Offen", label: "Offen" },
+              { value: "Bezahlt", label: "Bezahlt" },
+              { value: "Ueberfaellig", label: "Überfällig" },
+              { value: "Storniert", label: "Storniert" },
+              { value: "Versendet", label: "Versendet" },
+            ].map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-muted-foreground">
-              <th>Nr.</th><th>Kunde</th><th>Netto</th><th>Steuer</th><th>Brutto</th><th>Faellig</th><th>Status</th>
+              <th>Nr.</th><th>Kunde</th><th>Netto</th><th>Steuer</th><th>Brutto</th><th>Fällig</th><th>Status</th><th>Aktion</th>
             </tr>
           </thead>
           <tbody>
@@ -503,6 +538,35 @@ export function InvoicesPage() {
                 <td>EUR {i.amountGross.toFixed(2)}</td>
                 <td>{new Date(i.dueDate).toISOString().slice(0, 10)}</td>
                 <td><StatusBadge status={i.status} /></td>
+                <td className="py-2">
+                  <div className="flex items-center gap-2">
+                    <select
+                      className="h-8 rounded-lg border border-border px-2 text-xs"
+                      value={i.status}
+                      onChange={(e) => void updateInvoiceStatus(i.id, e.target.value)}
+                      disabled={rowActionLoading === i.id}
+                    >
+                      {[
+                        { value: "Entwurf", label: "Entwurf" },
+                        { value: "Versendet", label: "Versendet" },
+                        { value: "Offen", label: "Offen" },
+                        { value: "Bezahlt", label: "Bezahlt" },
+                        { value: "Ueberfaellig", label: "Überfällig" },
+                        { value: "Storniert", label: "Storniert" },
+                      ].map((s) => (
+                        <option key={s.value} value={s.value}>{s.label}</option>
+                      ))}
+                    </select>
+                    <Button
+                      variant="outline"
+                      className="h-8 px-2 text-xs"
+                      onClick={() => void createReminder(i.id)}
+                      disabled={rowActionLoading === i.id || i.status === "Bezahlt" || i.status === "Storniert"}
+                    >
+                      Mahnung
+                    </Button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>

@@ -60,13 +60,29 @@ bankingRouter.patch("/transactions/:id/match", async (req, res) => {
     status?: string;
   };
 
-  const updated = await prisma.bankTransaction.update({
-    where: { id },
-    data: {
-      matchedInvoiceId: matchedInvoiceId ?? null,
-      matchedDocumentId: matchedDocumentId ?? null,
-      status: status ?? "Zugeordnet",
-    },
+  const updated = await prisma.$transaction(async (tx) => {
+    const row = await tx.bankTransaction.update({
+      where: { id },
+      data: {
+        matchedInvoiceId: matchedInvoiceId ?? null,
+        matchedDocumentId: matchedDocumentId ?? null,
+        status: status ?? "Zugeordnet",
+      },
+    });
+
+    if (matchedInvoiceId) {
+      await tx.invoice.update({
+        where: { id: matchedInvoiceId },
+        data: { status: "Bezahlt" },
+      });
+    }
+    if (matchedDocumentId) {
+      await tx.document.update({
+        where: { id: matchedDocumentId },
+        data: { status: "Bezahlt" },
+      });
+    }
+    return row;
   });
   res.json(updated);
 });
