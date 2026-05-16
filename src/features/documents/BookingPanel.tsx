@@ -6,14 +6,18 @@ type Props = {
   document: DocumentItem;
   onBook: () => { ok: true } | { ok: false; errors: string[] };
   onMarkChecked: () => void;
+  onRunOcr: () => void;
 };
 
-export function BookingPanel({ document, onBook, onMarkChecked }: Props) {
+export function BookingPanel({ document, onBook, onMarkChecked, onRunOcr }: Props) {
   const booking = document.booking as BookingRecord | undefined;
   return (
     <Card className="p-4">
       <h3 className="mb-3 text-sm font-medium">Buchung</h3>
       <div className="space-y-2">
+        <Button variant="outline" className="w-full" onClick={onRunOcr}>
+          Daten automatisch auslesen
+        </Button>
         <Button variant="outline" className="w-full" onClick={onMarkChecked}>
           Als geprueft markieren
         </Button>

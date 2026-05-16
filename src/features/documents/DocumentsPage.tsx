@@ -19,6 +19,7 @@ export function DocumentsPage() {
     updateDocumentData,
     setDocumentStatus,
     replaceDocumentFile,
+    runMockOcr,
     bookDocument,
   } = useDocumentsStore();
 
@@ -175,6 +176,7 @@ export function DocumentsPage() {
                   }}
                   onChangeData={(patch) => updateDocumentData(editingDocument.id, patch)}
                   onMarkChecked={() => setDocumentStatus(editingDocument.id, "Geprueft")}
+                  onRunOcr={() => runMockOcr(editingDocument.id)}
                   onBook={() => bookDocument(editingDocument.id)}
                 />
               </div>

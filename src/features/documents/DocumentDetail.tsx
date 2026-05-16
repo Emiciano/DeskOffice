@@ -8,10 +8,11 @@ type Props = {
   onReplaceFile: (file: File) => void;
   onChangeData: (patch: Partial<DocumentData>) => void;
   onMarkChecked: () => void;
+  onRunOcr: () => void;
   onBook: () => { ok: true } | { ok: false; errors: string[] };
 };
 
-export function DocumentDetail({ document, onReplaceFile, onChangeData, onMarkChecked, onBook }: Props) {
+export function DocumentDetail({ document, onReplaceFile, onChangeData, onMarkChecked, onRunOcr, onBook }: Props) {
   if (!document) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-white p-12 text-center text-sm text-muted-foreground">
@@ -27,7 +28,7 @@ export function DocumentDetail({ document, onReplaceFile, onChangeData, onMarkCh
       </div>
       <div className="no-scrollbar min-h-0 min-w-0 space-y-3 overflow-y-auto pr-1">
         <DocumentForm data={document.data} confidence={document.ocrConfidence} onChange={onChangeData} />
-        <BookingPanel document={document} onBook={onBook} onMarkChecked={onMarkChecked} />
+        <BookingPanel document={document} onBook={onBook} onMarkChecked={onMarkChecked} onRunOcr={onRunOcr} />
       </div>
     </div>
   );
