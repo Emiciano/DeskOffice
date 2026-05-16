@@ -3,6 +3,11 @@ import cors from "cors";
 import { accountsRouter } from "./routes/accounts.js";
 import { bookingsRouter } from "./routes/bookings.js";
 import { documentsRouter } from "./routes/documents.js";
+import { invoicesRouter } from "./routes/invoices.js";
+import { offersRouter } from "./routes/offers.js";
+import { bankingRouter } from "./routes/banking.js";
+import { rulesRouter } from "./routes/rules.js";
+import { taxesRouter } from "./routes/taxes.js";
 import { APP_PORT, CORS_ORIGIN, DEFAULT_COMPANY_NAME } from "./config.js";
 import { prisma } from "./db.js";
 import { chartOfAccountsSeed } from "../data/chartOfAccounts.js";
@@ -46,6 +51,11 @@ async function start() {
   app.use("/api/accounts", accountsRouter);
   app.use("/api/documents", documentsRouter);
   app.use("/api/bookings", bookingsRouter);
+  app.use("/api/invoices", invoicesRouter);
+  app.use("/api/offers", offersRouter);
+  app.use("/api/banking", bankingRouter);
+  app.use("/api/rules", rulesRouter);
+  app.use("/api/taxes", taxesRouter);
 
   app.listen(APP_PORT, () => {
     console.log(`API running on :${APP_PORT}`);

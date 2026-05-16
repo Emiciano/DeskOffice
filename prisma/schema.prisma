@@ -14,6 +14,11 @@ model Company {
   accounts  Account[]
   documents Document[]
   bookings  Booking[]
+  invoices  Invoice[]
+  offers    Offer[]
+  bankTransactions BankTransaction[]
+  autoRules Rule[]
+  taxSnapshots TaxSnapshot[]
 }
 
 model Account {
@@ -70,4 +75,96 @@ model Booking {
   companyId      String
   company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt      DateTime @default(now())
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  number      String
+  customer    String
+  amountNet   Float
+  amountTax   Float
+  amountGross Float
+  dueDate     DateTime
+  status      String
+  sourceOfferId String?
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId, status])
+  @@unique([companyId, number])
+}
+
+model Offer {
+  id          String   @id @default(cuid())
+  number      String
+  customer    String
+  amountNet   Float
+  amountTax   Float
+  amountGross Float
+  validUntil  DateTime
+  status      String
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId, status])
+  @@unique([companyId, number])
+}
+
+model BankTransaction {
+  id          String   @id @default(cuid())
+  bookingDate DateTime
+  valueDate   DateTime?
+  purpose     String
+  counterparty String?
+  amount      Float
+  currency    String   @default("EUR")
+  type        String
+  status      String
+  matchedInvoiceId String?
+  matchedDocumentId String?
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId, bookingDate])
+}
+
+model Rule {
+  id          String   @id @default(cuid())
+  name        String
+  pattern     String
+  accountNumber String?
+  category    String?
+  confidence  Float    @default(0.9)
+  active      Boolean  @default(true)
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId, active])
+}
+
+model TaxSnapshot {
+  id            String   @id @default(cuid())
+  periodLabel    String
+  year           Int
+  month          Int
+  vatOutput19    Float   @default(0)
+  vatInput       Float   @default(0)
+  vatLiability   Float   @default(0)
+  euerRevenue    Float   @default(0)
+  euerExpense    Float   @default(0)
+  companyId      String
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([companyId, year, month])
+  @@unique([companyId, year, month])
 }
