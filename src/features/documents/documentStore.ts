@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { BookingRecord, DocumentData, DocumentItem, DocumentStatus } from "./types";
 
 type DocumentsState = {
@@ -33,9 +32,7 @@ function newDraftData(): DocumentData {
   };
 }
 
-export const useDocumentsStore = create<DocumentsState>()(
-  persist(
-    (set, get) => ({
+export const useDocumentsStore = create<DocumentsState>()((set, get) => ({
       documents: [],
       selectedId: null,
       setSelectedId: (id) => set({ selectedId: id }),
@@ -110,6 +107,4 @@ export const useDocumentsStore = create<DocumentsState>()(
         return { ok: true };
       },
     }),
-    { name: "documents-store-v2" },
-  ),
 );
