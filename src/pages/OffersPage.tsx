@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { apiFetch } from "@/lib/api";
 
 type Offer = {
   id: string;
@@ -23,13 +24,13 @@ export function OffersPage() {
   const [validUntil, setValidUntil] = useState(new Date().toISOString().slice(0, 10));
 
   async function load(company: string) {
-    const res = await fetch(`/api/offers?companyId=${company}`);
+    const res = await apiFetch(`/api/offers?companyId=${company}`);
     setOffers(await res.json());
   }
 
   useEffect(() => {
     void (async () => {
-      const boot = await fetch("/api/bootstrap").then((r) => r.json());
+      const boot = await apiFetch("/api/bootstrap").then((r) => r.json());
       if (!boot.companyId) return;
       setCompanyId(boot.companyId);
       await load(boot.companyId);
@@ -43,7 +44,7 @@ export function OffersPage() {
     const tax = Number((gross - net).toFixed(2));
     const number = `AN-${new Date().getFullYear()}-${String(offers.length + 31).padStart(4, "0")}`;
 
-    await fetch("/api/offers", {
+    await apiFetch("/api/offers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -64,7 +65,7 @@ export function OffersPage() {
   }
 
   async function convertOffer(id: string) {
-    await fetch(`/api/offers/${id}/convert`, { method: "POST" });
+    await apiFetch(`/api/offers/${id}/convert`, { method: "POST" });
     await load(companyId);
   }
 

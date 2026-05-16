@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { chartOfAccountsSeed } from "@/data/chartOfAccounts";
+import { apiFetch } from "@/lib/api";
 import type { ChartAccount, SkrType } from "../types/accountingTypes";
 
 type AccountingState = {
@@ -23,9 +24,9 @@ export const useAccountingStore = create<AccountingState>()(
       setSelectedSkr: (selectedSkr) => set({ selectedSkr }),
       hydrateFromApi: async () => {
         try {
-          const b = await fetch("/api/bootstrap").then((r) => r.json());
+          const b = await apiFetch("/api/bootstrap").then((r) => r.json());
           const companyId = String(b.companyId ?? "default-company");
-          const items = await fetch(`/api/accounts?companyId=${companyId}`).then((r) => r.json());
+          const items = await apiFetch(`/api/accounts?companyId=${companyId}`).then((r) => r.json());
           if (Array.isArray(items) && items.length > 0) {
             set({ accounts: items, companyId });
           } else {

@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { CompanySettings, defaultCompanySettings } from "@/types/companySettings";
+import { apiFetch } from "@/lib/api";
 
 type InvoiceItem = {
   description: string;
@@ -189,8 +190,8 @@ export function InvoicesPage() {
 
   async function load(company: string) {
     const [invoiceRes, settingsRes] = await Promise.all([
-      fetch(`/api/invoices?companyId=${company}`),
-      fetch(`/api/settings?companyId=${company}`),
+      apiFetch(`/api/invoices?companyId=${company}`),
+      apiFetch(`/api/settings?companyId=${company}`),
     ]);
     setInvoices(await invoiceRes.json());
     setCompanySettings({ ...defaultCompanySettings, ...(await settingsRes.json()), companyId: company });
@@ -198,7 +199,7 @@ export function InvoicesPage() {
 
   useEffect(() => {
     void (async () => {
-      const boot = await fetch("/api/bootstrap").then((r) => r.json());
+      const boot = await apiFetch("/api/bootstrap").then((r) => r.json());
       if (!boot.companyId) return;
       const id = String(boot.companyId);
       setCompanyId(id);
@@ -295,7 +296,7 @@ export function InvoicesPage() {
     if (!items.some((i) => i.description.trim())) return setFormError("Mindestens eine Position mit Beschreibung ist erforderlich.");
     try {
       setSaving(true);
-      const response = await fetch("/api/invoices", {
+      const response = await apiFetch("/api/invoices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

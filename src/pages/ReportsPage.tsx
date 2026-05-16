@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { apiFetch } from "@/lib/api";
 
 type TaxSnapshot = {
   periodLabel: string;
@@ -42,12 +43,12 @@ export function ReportsPage() {
   }, [month]);
 
   async function loadRules(company: string) {
-    const res = await fetch(`/api/rules?companyId=${company}`);
+    const res = await apiFetch(`/api/rules?companyId=${company}`);
     setRules(await res.json());
   }
 
   async function loadTax(company: string, y: number, m: number) {
-    const res = await fetch(`/api/taxes/snapshot?companyId=${company}&year=${y}&month=${m}`);
+    const res = await apiFetch(`/api/taxes/snapshot?companyId=${company}&year=${y}&month=${m}`);
     return (await res.json()) as TaxSnapshot;
   }
 
@@ -72,7 +73,7 @@ export function ReportsPage() {
 
   useEffect(() => {
     void (async () => {
-      const boot = await fetch("/api/bootstrap").then((r) => r.json());
+      const boot = await apiFetch("/api/bootstrap").then((r) => r.json());
       if (!boot.companyId) return;
       setCompanyId(boot.companyId);
       await Promise.all([refresh(boot.companyId, year, month, mode), loadRules(boot.companyId)]);
@@ -88,7 +89,7 @@ export function ReportsPage() {
 
   async function createRule() {
     if (!companyId || !ruleName || !rulePattern) return;
-    await fetch("/api/rules", {
+    await apiFetch("/api/rules", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

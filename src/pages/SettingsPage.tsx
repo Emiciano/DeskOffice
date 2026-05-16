@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CompanySettings, defaultCompanySettings } from "@/types/companySettings";
+import { apiFetch } from "@/lib/api";
 
 type SettingsSection = "general" | "tax" | "bank" | "logo";
 
@@ -24,14 +25,14 @@ export function SettingsPage() {
   const [message, setMessage] = useState("");
 
   async function load(company: string) {
-    const data = await fetch(`/api/settings?companyId=${company}`).then((r) => r.json());
+    const data = await apiFetch(`/api/settings?companyId=${company}`).then((r) => r.json());
     setSettings({ ...defaultCompanySettings, ...data, companyId: company });
   }
 
   useEffect(() => {
     void (async () => {
       setLoading(true);
-      const boot = await fetch("/api/bootstrap").then((r) => r.json());
+      const boot = await apiFetch("/api/bootstrap").then((r) => r.json());
       if (!boot.companyId) {
         setLoading(false);
         return;
@@ -47,7 +48,7 @@ export function SettingsPage() {
     if (!companyId) return;
     setSaving(true);
     setMessage("");
-    const response = await fetch("/api/settings", {
+    const response = await apiFetch("/api/settings", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...settings, companyId }),

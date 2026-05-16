@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { PageHeader, StatusBadge } from "@/components/shared";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { apiFetch } from "@/lib/api";
 
 type BookingRow = {
   id: string;
@@ -21,13 +22,13 @@ export function BookingsPage() {
   const [rows, setRows] = useState<BookingRow[]>([]);
 
   async function load(company: string) {
-    const res = await fetch(`/api/bookings?companyId=${company}`);
+    const res = await apiFetch(`/api/bookings?companyId=${company}`);
     setRows(await res.json());
   }
 
   useEffect(() => {
     void (async () => {
-      const boot = await fetch("/api/bootstrap").then((r) => r.json());
+      const boot = await apiFetch("/api/bootstrap").then((r) => r.json());
       if (!boot.companyId) return;
       setCompanyId(boot.companyId);
       await load(boot.companyId);
@@ -35,7 +36,7 @@ export function BookingsPage() {
   }, []);
 
   async function reverse(id: string) {
-    await fetch(`/api/bookings/${id}/reverse`, { method: "POST" });
+    await apiFetch(`/api/bookings/${id}/reverse`, { method: "POST" });
     if (companyId) await load(companyId);
   }
 

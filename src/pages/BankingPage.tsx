@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { PageHeader, StatusBadge } from "@/components/shared";
 import { Button } from "@/components/ui/button";
+import { apiFetch } from "@/lib/api";
 
 type Tx = {
   id: string;
@@ -28,8 +29,8 @@ export function BankingPage() {
 
   async function load(company: string) {
     const [txRes, invRes] = await Promise.all([
-      fetch(`/api/banking/transactions?companyId=${company}`),
-      fetch(`/api/invoices?companyId=${company}`),
+      apiFetch(`/api/banking/transactions?companyId=${company}`),
+      apiFetch(`/api/invoices?companyId=${company}`),
     ]);
     setRows(await txRes.json());
     setInvoices(await invRes.json());
@@ -37,7 +38,7 @@ export function BankingPage() {
 
   useEffect(() => {
     void (async () => {
-      const boot = await fetch("/api/bootstrap").then((r) => r.json());
+      const boot = await apiFetch("/api/bootstrap").then((r) => r.json());
       if (!boot.companyId) return;
       setCompanyId(boot.companyId);
       await load(boot.companyId);
@@ -53,7 +54,7 @@ export function BankingPage() {
     for (const line of dataLines) {
       const [bookingDate, purpose, amountRaw] = line.split(";");
       const amount = Number((amountRaw ?? "0").replace(",", "."));
-      await fetch("/api/banking/transactions", {
+      await apiFetch("/api/banking/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -78,7 +79,7 @@ export function BankingPage() {
   async function matchInvoice(txId: string) {
     const matchedInvoiceId = selection[txId];
     if (!matchedInvoiceId) return;
-    await fetch(`/api/banking/transactions/${txId}/match`, {
+    await apiFetch(`/api/banking/transactions/${txId}/match`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ matchedInvoiceId, status: "Zugeordnet" }),
