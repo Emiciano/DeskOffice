@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
@@ -11,8 +12,15 @@ import { ReportsPage } from "@/pages/ReportsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
 import { AccountsPage } from "@/features/accounting/pages/AccountsPage";
+import { useUiStore } from "@/store/uiStore";
 
 export default function App() {
+  const { theme } = useUiStore();
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("theme-dark", theme === "dark");
+  }, [theme]);
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="flex w-full gap-6">

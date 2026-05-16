@@ -1,7 +1,9 @@
-import { Bell, Search } from "lucide-react";
+import { Bell, Moon, Search, Sun } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useUiStore } from "@/store/uiStore";
 
 export function Topbar() {
+  const { theme, toggleTheme } = useUiStore();
   return (
     <header className="mb-6 flex items-center justify-between rounded-2xl border border-border bg-white p-4 shadow-soft">
       <div className="relative w-full max-w-md">
@@ -9,6 +11,9 @@ export function Topbar() {
         <Input className="pl-9" placeholder="Suchen nach Rechnungen, Kunden, Transaktionen..." />
       </div>
       <div className="ml-4 flex items-center gap-3">
+        <button className="rounded-xl border border-border bg-white p-2" onClick={toggleTheme} title="Theme wechseln">
+          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
         <button className="rounded-xl border border-border bg-white p-2">
           <Bell size={18} />
         </button>
