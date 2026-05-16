@@ -165,6 +165,8 @@ export function InvoicesPage() {
   const [paymentTermDays, setPaymentTermDays] = useState(14);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
   const [note, setNote] = useState("");
   const [template, setTemplate] = useState<TemplateMode>("clean");
   const [items, setItems] = useState<InvoiceItem[]>([{ description: "", quantity: 1, unitPrice: 0, taxRate: 19 }]);
@@ -244,40 +246,73 @@ export function InvoicesPage() {
   }, [customer, discountPercent, draftNumber, dueDate, items, note, paymentTermDays, serviceDate, totals.gross, totals.net, totals.tax]);
 
   const handlePdfExport = () => {
-    const printWindow = window.open("", "_blank", "noopener,noreferrer,width=1100,height=900");
-    if (!printWindow) return;
-    printWindow.document.open();
-    printWindow.document.write(printableHtml);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    const blob = new Blob([printableHtml], { type: "text/html;charset=utf-8" });
+    const previewUrl = URL.createObjectURL(blob);
+    const printWindow = window.open(previewUrl, "_blank");
+    if (!printWindow) {
+      setFormError("Popup blockiert. Bitte Popups für diese Seite erlauben.");
+      return;
+    }
+    printWindow.addEventListener(
+      "load",
+      () => {
+        printWindow.focus();
+        printWindow.print();
+      },
+      { once: true },
+    );
+    setTimeout(() => URL.revokeObjectURL(previewUrl), 60_000);
   };
 
   const handleCreate = async () => {
-    if (!companyId || !customer.trim() || !items.some((i) => i.description.trim())) return;
-    await fetch("/api/invoices", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        companyId,
-        number: draftNumber,
-        customer: customer.trim(),
-        dueDate,
-        status: "Entwurf",
-        kind: "Rechnung",
-        items: items.filter((i) => i.description.trim()),
-      }),
-    });
-    setCustomer("");
-    setDueDate(new Date().toISOString().slice(0, 10));
-    setServiceDate(new Date().toISOString().slice(0, 10));
-    setPaymentTermDays(14);
-    setDiscountPercent(0);
-    setItems([{ description: "", quantity: 1, unitPrice: 0, taxRate: 19 }]);
-    setNote("");
-    setTemplate("clean");
-    setOpen(false);
-    await load(companyId);
+    setFormError("");
+    if (!companyId) {
+      setFormError("Firma konnte nicht geladen werden. Seite bitte neu laden.");
+      return;
+    }
+    if (!customer.trim()) {
+      setFormError("Bitte Kunde/Firma ausfüllen.");
+      return;
+    }
+    if (!items.some((i) => i.description.trim())) {
+      setFormError("Mindestens eine Position mit Beschreibung ist erforderlich.");
+      return;
+    }
+    try {
+      setSaving(true);
+      const response = await fetch("/api/invoices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyId,
+          number: draftNumber,
+          customer: customer.trim(),
+          dueDate,
+          status: "Entwurf",
+          kind: "Rechnung",
+          items: items.filter((i) => i.description.trim()),
+        }),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Rechnung konnte nicht gespeichert werden.");
+      }
+      setCustomer("");
+      setDueDate(new Date().toISOString().slice(0, 10));
+      setServiceDate(new Date().toISOString().slice(0, 10));
+      setPaymentTermDays(14);
+      setDiscountPercent(0);
+      setItems([{ description: "", quantity: 1, unitPrice: 0, taxRate: 19 }]);
+      setNote("");
+      setTemplate("clean");
+      setOpen(false);
+      await load(companyId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Speichern fehlgeschlagen.";
+      setFormError(message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -300,6 +335,11 @@ export function InvoicesPage() {
                   </div>
 
                   <div className="space-y-3">
+                    {formError ? (
+                      <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+                        {formError}
+                      </div>
+                    ) : null}
                     <div className="rounded-xl border border-border bg-muted/20 px-3 py-2 text-sm">
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Rechnungsnummer</span>
@@ -459,9 +499,11 @@ export function InvoicesPage() {
                   </div>
 
                   <div className="mt-3 flex justify-end gap-2">
-                    <Button variant="outline" onClick={handlePdfExport}>PDF exportieren</Button>
-                    <Button variant="outline" onClick={() => setOpen(false)}>Abbrechen</Button>
-                    <Button onClick={handleCreate}>Rechnung speichern</Button>
+                    <Button type="button" variant="outline" onClick={handlePdfExport}>PDF exportieren</Button>
+                    <Button type="button" variant="outline" onClick={() => setOpen(false)}>Abbrechen</Button>
+                    <Button type="button" onClick={handleCreate} disabled={saving}>
+                      {saving ? "Speichern..." : "Rechnung speichern"}
+                    </Button>
                   </div>
                 </Card>
 
