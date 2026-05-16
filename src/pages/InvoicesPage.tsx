@@ -31,6 +31,9 @@ function InvoicePreview({
   number,
   customer,
   dueDate,
+  serviceDate,
+  paymentTermDays,
+  discountPercent,
   items,
   totals,
   template,
@@ -39,6 +42,9 @@ function InvoicePreview({
   number: string;
   customer: string;
   dueDate: string;
+  serviceDate: string;
+  paymentTermDays: number;
+  discountPercent: number;
   items: InvoiceItem[];
   totals: { net: number; tax: number; gross: number };
   template: TemplateMode;
@@ -56,13 +62,14 @@ function InvoicePreview({
       <div className="mb-4 flex items-start justify-between border-b pb-3">
         <div>
           <p className="text-lg font-semibold">DeskOffice GmbH</p>
-          <p className="text-xs text-slate-500">Musterstrasse 12, 55116 Mainz</p>
+          <p className="text-xs text-slate-500">Musterstraße 12, 55116 Mainz</p>
           <p className="text-xs text-slate-500">USt-ID: DE123456789</p>
         </div>
         <div className="text-right">
           <p className="text-xs text-slate-500">Rechnung</p>
           <p className="font-semibold">{number || "RE-YYYY-0000"}</p>
-          <p className="text-xs text-slate-500">Faellig: {dueDate || "-"}</p>
+          <p className="text-xs text-slate-500">Fällig: {dueDate || "-"}</p>
+          <p className="text-xs text-slate-500">Leistungsdatum: {serviceDate || "-"}</p>
         </div>
       </div>
 
@@ -106,8 +113,12 @@ function InvoicePreview({
       </div>
 
       <div className="mt-4 border-t pt-3 text-xs text-slate-500">
-        <p>Zahlbar ohne Abzug bis {dueDate || "-"}</p>
+        <p>Zahlungsziel: {paymentTermDays} Tage (fällig bis {dueDate || "-"})</p>
+        {discountPercent > 0 ? <p>Skonto: {discountPercent.toFixed(1)}% bei Sofortzahlung</p> : null}
         {note ? <p className="mt-1">{note}</p> : null}
+        <div className="mt-3 border-t pt-2">
+          <p>Bank: Musterbank AG • IBAN: DE12 5001 0517 1234 5678 90 • BIC: INGDDEFFXXX</p>
+        </div>
       </div>
     </div>
   );
@@ -120,6 +131,9 @@ export function InvoicesPage() {
   const [status, setStatus] = useState("Alle");
   const [customer, setCustomer] = useState("");
   const [dueDate, setDueDate] = useState(new Date().toISOString().slice(0, 10));
+  const [serviceDate, setServiceDate] = useState(new Date().toISOString().slice(0, 10));
+  const [paymentTermDays, setPaymentTermDays] = useState(14);
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
   const [template, setTemplate] = useState<TemplateMode>("clean");
@@ -160,6 +174,57 @@ export function InvoicesPage() {
     [invoices.length],
   );
 
+  const invoiceDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  const printableHtml = useMemo(() => {
+    const rows = items
+      .filter((x) => x.description.trim())
+      .map((item) => {
+        const amountNet = item.quantity * item.unitPrice;
+        const amountTax = (amountNet * item.taxRate) / 100;
+        const gross = amountNet + amountTax;
+        return `<tr>
+          <td style="padding:8px 0;border-bottom:1px solid #e2e8f0;">${item.description}</td>
+          <td style="padding:8px 0;text-align:right;border-bottom:1px solid #e2e8f0;">${item.quantity.toFixed(2)}</td>
+          <td style="padding:8px 0;text-align:right;border-bottom:1px solid #e2e8f0;">${item.unitPrice.toFixed(2)} EUR</td>
+          <td style="padding:8px 0;text-align:right;border-bottom:1px solid #e2e8f0;">${item.taxRate.toFixed(0)}%</td>
+          <td style="padding:8px 0;text-align:right;border-bottom:1px solid #e2e8f0;">${gross.toFixed(2)} EUR</td>
+        </tr>`;
+      })
+      .join("");
+
+    return `<!doctype html>
+      <html><head><meta charset="utf-8"/><title>${draftNumber}</title>
+      <style>
+      body{font-family:Inter,Arial,sans-serif;color:#0f172a;padding:24px}
+      .head{display:flex;justify-content:space-between;border-bottom:1px solid #e2e8f0;padding-bottom:12px;margin-bottom:16px}
+      .small{font-size:12px;color:#64748b} table{width:100%;border-collapse:collapse;font-size:14px}
+      .totals{max-width:360px;margin-left:auto;margin-top:12px}
+      .totals div{display:flex;justify-content:space-between;padding:4px 0}
+      </style></head><body>
+      <div class="head"><div><div style="font-size:20px;font-weight:700;">DeskOffice GmbH</div><div class="small">Musterstraße 12, 55116 Mainz</div><div class="small">USt-ID: DE123456789</div></div>
+      <div style="text-align:right"><div class="small">Rechnung</div><div style="font-size:18px;font-weight:700">${draftNumber}</div><div class="small">Fällig: ${dueDate || "-"}</div><div class="small">Leistungsdatum: ${serviceDate || "-"}</div></div></div>
+      <div style="margin-bottom:16px"><div class="small">Rechnung an</div><div style="font-weight:600">${customer || "Kunde / Firma"}</div></div>
+      <table><thead><tr style="text-align:left;font-size:12px;color:#64748b;border-bottom:1px solid #e2e8f0"><th style="padding-bottom:8px">Position</th><th style="padding-bottom:8px;text-align:right">Menge</th><th style="padding-bottom:8px;text-align:right">Preis</th><th style="padding-bottom:8px;text-align:right">USt.</th><th style="padding-bottom:8px;text-align:right">Summe</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="totals"><div><span>Netto</span><b>${totals.net.toFixed(2)} EUR</b></div><div><span>Umsatzsteuer</span><b>${totals.tax.toFixed(2)} EUR</b></div><div style="border-top:1px solid #e2e8f0;padding-top:8px"><span>Brutto</span><b>${totals.gross.toFixed(2)} EUR</b></div></div>
+      <div style="margin-top:20px;border-top:1px solid #e2e8f0;padding-top:10px" class="small">
+      <div>Zahlungsziel: ${paymentTermDays} Tage (fällig bis ${dueDate || "-"})</div>
+      ${discountPercent > 0 ? `<div>Skonto: ${discountPercent.toFixed(1)}% bei Sofortzahlung</div>` : ""}
+      ${note ? `<div>${note}</div>` : ""}
+      <div style="margin-top:8px">Bank: Musterbank AG • IBAN: DE12 5001 0517 1234 5678 90 • BIC: INGDDEFFXXX</div></div>
+      </body></html>`;
+  }, [customer, discountPercent, draftNumber, dueDate, items, note, paymentTermDays, serviceDate, totals.gross, totals.net, totals.tax]);
+
+  const handlePdfExport = () => {
+    const printWindow = window.open("", "_blank", "noopener,noreferrer,width=1100,height=900");
+    if (!printWindow) return;
+    printWindow.document.open();
+    printWindow.document.write(printableHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   const handleCreate = async () => {
     if (!companyId || !customer.trim() || !items.some((i) => i.description.trim())) return;
     await fetch("/api/invoices", {
@@ -177,6 +242,9 @@ export function InvoicesPage() {
     });
     setCustomer("");
     setDueDate(new Date().toISOString().slice(0, 10));
+    setServiceDate(new Date().toISOString().slice(0, 10));
+    setPaymentTermDays(14);
+    setDiscountPercent(0);
     setItems([{ description: "", quantity: 1, unitPrice: 0, taxRate: 19 }]);
     setNote("");
     setTemplate("clean");
@@ -205,7 +273,27 @@ export function InvoicesPage() {
 
                   <div className="space-y-3">
                     <Input placeholder="Kunde / Firma" value={customer} onChange={(e) => setCustomer(e.target.value)} />
+                    <Input type="date" value={invoiceDate} readOnly />
+                    <Input type="date" value={serviceDate} onChange={(e) => setServiceDate(e.target.value)} />
                     <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        step="1"
+                        placeholder="Zahlungsziel (Tage)"
+                        value={paymentTermDays}
+                        onChange={(e) => setPaymentTermDays(Number(e.target.value) || 1)}
+                      />
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.1"
+                        placeholder="Skonto %"
+                        value={discountPercent}
+                        onChange={(e) => setDiscountPercent(Number(e.target.value) || 0)}
+                      />
+                    </div>
                     <textarea
                       className="min-h-16 w-full rounded-xl border border-border px-3 py-2 text-sm"
                       placeholder="Interne Notiz oder Zahlungsinfo"
@@ -293,6 +381,7 @@ export function InvoicesPage() {
                   </div>
 
                   <div className="mt-3 flex justify-end gap-2">
+                    <Button variant="outline" onClick={handlePdfExport}>PDF exportieren</Button>
                     <Button variant="outline" onClick={() => setOpen(false)}>Abbrechen</Button>
                     <Button onClick={handleCreate}>Rechnung speichern</Button>
                   </div>
@@ -308,6 +397,9 @@ export function InvoicesPage() {
                       number={draftNumber}
                       customer={customer}
                       dueDate={dueDate}
+                      serviceDate={serviceDate}
+                      paymentTermDays={paymentTermDays}
+                      discountPercent={discountPercent}
                       items={items}
                       totals={totals}
                       template={template}
