@@ -11,6 +11,7 @@ model Company {
   id        String     @id @default(cuid())
   name      String
   createdAt DateTime   @default(now())
+  users     User[]
   accounts  Account[]
   documents Document[]
   bookings  Booking[]
@@ -22,6 +23,32 @@ model Company {
   contacts Contact[]
   exports DataExport[]
   settings  CompanySettings?
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         String        @default("owner")
+  companyId    String
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sessions     AuthSession[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([companyId, role])
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
 }
 
 model CompanySettings {

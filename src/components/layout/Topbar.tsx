@@ -1,9 +1,11 @@
 import { Bell, Moon, Search, Sun } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useUiStore } from "@/store/uiStore";
+import { useAuthStore } from "@/store/authStore";
 
 export function Topbar() {
   const { theme, toggleTheme } = useUiStore();
+  const { user, logout } = useAuthStore();
   return (
     <header className="mb-6 flex items-center justify-between rounded-2xl border border-border bg-white p-4 shadow-soft">
       <div className="relative w-full max-w-md">
@@ -19,7 +21,10 @@ export function Topbar() {
         </button>
         <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm">
           <div className="h-7 w-7 rounded-full bg-primary/15" />
-          <span>Marie Keller</span>
+          <span>{user?.name ?? "Benutzer"}</span>
+          <button className="ml-2 text-xs text-muted-foreground underline" onClick={() => void logout()} type="button">
+            Logout
+          </button>
         </div>
       </div>
     </header>

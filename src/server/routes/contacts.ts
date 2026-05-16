@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
+import { getCompanyId } from "../auth.js";
 
 export const contactsRouter = Router();
 
 contactsRouter.get("/", async (req, res) => {
-  const companyId = String(req.query.companyId ?? "");
+  const companyId = getCompanyId(req);
   const type = String(req.query.type ?? "all");
   if (!companyId) return res.status(400).json({ error: "companyId required" });
 
@@ -51,13 +52,13 @@ contactsRouter.post("/", async (req, res) => {
     paymentTerms?: number;
     notes?: string;
   };
-  if (!payload.companyId || !payload.name || !payload.type) {
-    return res.status(400).json({ error: "companyId, type and name required" });
+  if (!payload.name || !payload.type) {
+    return res.status(400).json({ error: "type and name required" });
   }
 
   const created = await prisma.contact.create({
     data: {
-      companyId: payload.companyId,
+      companyId: getCompanyId(req),
       type: payload.type,
       name: payload.name,
       email: payload.email ?? null,

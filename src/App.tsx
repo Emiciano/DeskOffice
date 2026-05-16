@@ -16,14 +16,29 @@ import { AICopilotPage } from "@/pages/AICopilotPage";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
 import { AccountsPage } from "@/features/accounting/pages/AccountsPage";
 import { useUiStore } from "@/store/uiStore";
+import { useAuthStore } from "@/store/authStore";
+import { LoginPage } from "@/pages/LoginPage";
 
 export default function App() {
   const { theme } = useUiStore();
+  const { user, loading, init } = useAuthStore();
   const location = useLocation();
 
   useEffect(() => {
     document.documentElement.classList.toggle("theme-dark", theme === "dark");
   }, [theme]);
+
+  useEffect(() => {
+    void init();
+  }, [init]);
+
+  if (loading) {
+    return <div className="min-h-screen bg-background p-6 text-sm text-muted-foreground">Lade Benutzer...</div>;
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">

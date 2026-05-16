@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
+import { getCompanyId } from "../auth.js";
 
 export const settingsRouter = Router();
 
@@ -36,7 +37,7 @@ function sanitize(payload: Record<string, unknown>) {
 }
 
 settingsRouter.get("/", async (req, res) => {
-  const companyId = String(req.query.companyId ?? "");
+  const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
 
   const settings = await prisma.companySettings.upsert({
@@ -51,7 +52,7 @@ settingsRouter.get("/", async (req, res) => {
 });
 
 settingsRouter.put("/", async (req, res) => {
-  const companyId = String(req.body.companyId ?? "");
+  const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const data = sanitize(req.body as Record<string, unknown>);
   const updated = await prisma.companySettings.upsert({

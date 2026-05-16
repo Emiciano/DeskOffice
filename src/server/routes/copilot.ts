@@ -1,12 +1,14 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
+import { getCompanyId } from "../auth.js";
 
 export const copilotRouter = Router();
 
 copilotRouter.post("/ask", async (req, res) => {
-  const { companyId, question } = req.body as { companyId?: string; question?: string };
+  const { question } = req.body as { question?: string };
+  const companyId = getCompanyId(req);
   if (!companyId || !question) {
-    return res.status(400).json({ error: "companyId and question required" });
+    return res.status(400).json({ error: "question required" });
   }
 
   const q = question.toLowerCase();

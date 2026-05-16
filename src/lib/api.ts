@@ -6,5 +6,8 @@ export function apiUrl(path: string): string {
 }
 
 export function apiFetch(path: string, init?: RequestInit): Promise<Response> {
-  return fetch(apiUrl(path), init);
+  const token = localStorage.getItem("auth-token");
+  const headers = new Headers(init?.headers ?? {});
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  return fetch(apiUrl(path), { ...init, headers });
 }

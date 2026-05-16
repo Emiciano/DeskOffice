@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
+import { getCompanyId } from "../auth.js";
 
 export const bankingRouter = Router();
 
 bankingRouter.get("/transactions", async (req, res) => {
-  const companyId = String(req.query.companyId ?? "");
+  const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const items = await prisma.bankTransaction.findMany({
     where: { companyId },
@@ -26,8 +27,11 @@ bankingRouter.post("/transactions", async (req, res) => {
     status?: string;
   };
 
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
+
   const rules = await prisma.rule.findMany({
-    where: { companyId: payload.companyId, active: true },
+    where: { companyId, active: true },
     orderBy: { createdAt: "desc" },
   });
   const purposeLower = payload.purpose.toLowerCase();
@@ -35,7 +39,7 @@ bankingRouter.post("/transactions", async (req, res) => {
 
   const created = await prisma.bankTransaction.create({
     data: {
-      companyId: payload.companyId,
+      companyId,
       bookingDate: new Date(payload.bookingDate),
       valueDate: payload.valueDate ? new Date(payload.valueDate) : null,
       purpose: payload.purpose,

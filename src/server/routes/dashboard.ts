@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
+import { getCompanyId } from "../auth.js";
 
 export const dashboardRouter = Router();
 
 dashboardRouter.get("/summary", async (req, res) => {
-  const companyId = String(req.query.companyId ?? "");
+  const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
 
   const [invoices, bookings, docs] = await Promise.all([

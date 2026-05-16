@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
+import { getCompanyId } from "../auth.js";
 
 export const invoicesRouter = Router();
 
 invoicesRouter.get("/", async (req, res) => {
-  const companyId = String(req.query.companyId ?? "");
+  const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const items = await prisma.invoice.findMany({
     where: { companyId },
@@ -15,7 +16,7 @@ invoicesRouter.get("/", async (req, res) => {
 });
 
 invoicesRouter.get("/open-items", async (req, res) => {
-  const companyId = String(req.query.companyId ?? "");
+  const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
 
   const items = await prisma.invoice.findMany({
@@ -61,7 +62,7 @@ invoicesRouter.post("/", async (req, res) => {
 
   const created = await prisma.invoice.create({
     data: {
-      companyId: raw.companyId,
+      companyId: getCompanyId(req),
       number: raw.number,
       customer: raw.customer,
       status: raw.status,

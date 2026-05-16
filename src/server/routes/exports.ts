@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
+import { getCompanyId } from "../auth.js";
 
 export const exportsRouter = Router();
 
 exportsRouter.get("/", async (req, res) => {
-  const companyId = String(req.query.companyId ?? "");
+  const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const items = await prisma.dataExport.findMany({
     where: { companyId },
@@ -20,13 +21,13 @@ exportsRouter.post("/", async (req, res) => {
     periodLabel: string;
     note?: string;
   };
-  if (!payload.companyId || !payload.exportType || !payload.periodLabel) {
-    return res.status(400).json({ error: "companyId, exportType, periodLabel required" });
+  if (!payload.exportType || !payload.periodLabel) {
+    return res.status(400).json({ error: "exportType, periodLabel required" });
   }
   const stamp = new Date().toISOString().slice(0, 10);
   const created = await prisma.dataExport.create({
     data: {
-      companyId: payload.companyId,
+      companyId: getCompanyId(req),
       exportType: payload.exportType,
       periodLabel: payload.periodLabel,
       status: "Erstellt",
