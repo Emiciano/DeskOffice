@@ -50,16 +50,34 @@ function InvoicePreview({
   template: TemplateMode;
   note: string;
 }) {
-  const frameClass =
-    template === "modern"
-      ? "bg-gradient-to-br from-indigo-50 to-white border-indigo-200"
-      : template === "compact"
-        ? "bg-white border-slate-300"
-        : "bg-white border-slate-200";
-
-  return (
-    <div className={`h-full rounded-xl border p-4 text-slate-900 ${frameClass}`}>
-      <div className={`mb-4 flex items-start justify-between border-b pb-3 ${template === "modern" ? "border-indigo-200" : ""}`}>
+  const headerByTemplate =
+    template === "modern" ? (
+      <div className="mb-4 rounded-xl border border-indigo-200 bg-indigo-50/70 p-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xl font-semibold tracking-tight text-indigo-900">DeskOffice GmbH</p>
+            <p className="text-xs text-indigo-700">Musterstraße 12, 55116 Mainz</p>
+            <p className="text-xs text-indigo-700">USt-ID: DE123456789</p>
+          </div>
+          <div className="rounded-lg bg-white px-3 py-2 text-right shadow-sm">
+            <p className="text-xs text-slate-500">Rechnung</p>
+            <p className="font-semibold">{number || "RE-YYYY-0000"}</p>
+            <p className="text-xs text-slate-500">Fällig: {dueDate || "-"}</p>
+            <p className="text-xs text-slate-500">Leistungsdatum: {serviceDate || "-"}</p>
+          </div>
+        </div>
+      </div>
+    ) : template === "compact" ? (
+      <div className="mb-3 border-b-2 border-slate-300 pb-2">
+        <div className="flex items-center justify-between">
+          <p className="text-base font-bold tracking-wide">DESKOFFICE GMBH</p>
+          <p className="text-sm font-semibold">{number || "RE-YYYY-0000"}</p>
+        </div>
+        <p className="text-[11px] text-slate-500">Musterstraße 12, 55116 Mainz • USt-ID: DE123456789</p>
+        <p className="text-[11px] text-slate-500">Fällig: {dueDate || "-"} • Leistungsdatum: {serviceDate || "-"}</p>
+      </div>
+    ) : (
+      <div className="mb-4 flex items-start justify-between border-b pb-3">
         <div>
           <p className="text-lg font-semibold">DeskOffice GmbH</p>
           <p className="text-xs text-slate-500">Musterstraße 12, 55116 Mainz</p>
@@ -72,6 +90,18 @@ function InvoicePreview({
           <p className="text-xs text-slate-500">Leistungsdatum: {serviceDate || "-"}</p>
         </div>
       </div>
+    );
+
+  const frameClass =
+    template === "modern"
+      ? "bg-gradient-to-br from-indigo-50 to-white border-indigo-200"
+      : template === "compact"
+        ? "bg-white border-slate-300"
+        : "bg-white border-slate-200";
+
+  return (
+    <div className={`h-full rounded-xl border p-4 text-slate-900 ${frameClass}`}>
+      {headerByTemplate}
 
       <div className="mb-4">
         <p className="text-xs text-slate-500">Rechnung an</p>
@@ -356,51 +386,65 @@ export function InvoicesPage() {
 
                       <div className="space-y-2">
                         {items.map((item, idx) => (
-                          <div key={idx} className="grid gap-2 md:grid-cols-12">
-                            <Input
-                              className="md:col-span-5"
-                              placeholder="Beschreibung"
-                              value={item.description}
-                              onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, description: e.target.value } : x)))}
-                            />
-                            <Input
-                              className="md:col-span-2"
-                              type="number"
-                              min={0}
-                              step="0.01"
-                              placeholder="Menge"
-                              value={item.quantity}
-                              onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) || 0 } : x)))}
-                            />
-                            <Input
-                              className="md:col-span-2"
-                              type="number"
-                              min={0}
-                              step="0.01"
-                              placeholder="Preis"
-                              value={item.unitPrice}
-                              onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, unitPrice: Number(e.target.value) || 0 } : x)))}
-                            />
-                            <Input
-                              className="md:col-span-2"
-                              type="number"
-                              min={0}
-                              step="0.01"
-                              placeholder="USt."
-                              value={item.taxRate}
-                              onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, taxRate: Number(e.target.value) || 0 } : x)))}
-                            />
-                            <Button
-                              variant="outline"
-                              className="md:col-span-1"
-                              onClick={() =>
-                                setItems((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== idx)))
-                              }
-                            >
-                              ×
-                            </Button>
-                            <div className="md:col-span-12 text-right text-xs text-muted-foreground">
-                              Positionssumme: {((item.quantity * item.unitPrice) * (1 + item.taxRate / 100)).toFixed(2)} EUR
+                          <div key={idx} className="rounded-lg border border-border/70 p-2">
+                            <div className="grid gap-2 md:grid-cols-12">
+                              <div className="md:col-span-5 space-y-1">
+                                <p className="text-[11px] text-muted-foreground">Beschreibung</p>
+                                <Input
+                                  placeholder="z. B. Webdesign Retainer Mai"
+                                  value={item.description}
+                                  onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, description: e.target.value } : x)))}
+                                />
+                              </div>
+                              <div className="md:col-span-2 space-y-1">
+                                <p className="text-[11px] text-muted-foreground">Menge</p>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step="0.01"
+                                  placeholder="1.00"
+                                  value={item.quantity}
+                                  onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, quantity: Number(e.target.value) || 0 } : x)))}
+                                />
+                              </div>
+                              <div className="md:col-span-2 space-y-1">
+                                <p className="text-[11px] text-muted-foreground">Einzelpreis (EUR)</p>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  value={item.unitPrice}
+                                  onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, unitPrice: Number(e.target.value) || 0 } : x)))}
+                                />
+                              </div>
+                              <div className="md:col-span-2 space-y-1">
+                                <p className="text-[11px] text-muted-foreground">USt. (%)</p>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step="0.01"
+                                  placeholder="19"
+                                  value={item.taxRate}
+                                  onChange={(e) => setItems((prev) => prev.map((x, i) => (i === idx ? { ...x, taxRate: Number(e.target.value) || 0 } : x)))}
+                                />
+                              </div>
+                              <div className="md:col-span-1 space-y-1">
+                                <p className="text-[11px] text-muted-foreground">Löschen</p>
+                                <Button
+                                  variant="outline"
+                                  className="w-full"
+                                  onClick={() =>
+                                    setItems((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== idx)))
+                                  }
+                                >
+                                  ×
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between rounded-md bg-muted/30 px-2 py-1 text-xs">
+                              <span className="text-muted-foreground">Gesamtbetrag Position (inkl. USt.)</span>
+                              <b>{((item.quantity * item.unitPrice) * (1 + item.taxRate / 100)).toFixed(2)} EUR</b>
                             </div>
                           </div>
                         ))}
