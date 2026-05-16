@@ -24,6 +24,15 @@ type Rule = {
   active: boolean;
 };
 
+type ExportItem = {
+  id: string;
+  exportType: string;
+  status: string;
+  fileName: string;
+  periodLabel: string;
+  createdAt: string;
+};
+
 export function ReportsPage() {
   const [companyId, setCompanyId] = useState("");
   const [snapshot, setSnapshot] = useState<TaxSnapshot | null>(null);
@@ -36,6 +45,7 @@ export function ReportsPage() {
   const [ruleCategory, setRuleCategory] = useState("");
   const [ruleAccount, setRuleAccount] = useState("");
   const [ruleActionLoading, setRuleActionLoading] = useState("");
+  const [exportsHistory, setExportsHistory] = useState<ExportItem[]>([]);
 
   const quarterMonths = useMemo(() => {
     const quarter = Math.floor((month - 1) / 3);
@@ -46,6 +56,11 @@ export function ReportsPage() {
   async function loadRules(company: string) {
     const res = await apiFetch(`/api/rules?companyId=${company}`);
     setRules(await res.json());
+  }
+
+  async function loadExports(company: string) {
+    const res = await apiFetch(`/api/exports?companyId=${company}`);
+    setExportsHistory(await res.json());
   }
 
   async function loadTax(company: string, y: number, m: number) {
@@ -76,7 +91,7 @@ export function ReportsPage() {
       const boot = await apiFetch("/api/bootstrap").then((r) => r.json());
       if (!boot.companyId) return;
       setCompanyId(boot.companyId);
-      await Promise.all([refresh(boot.companyId, year, month, mode), loadRules(boot.companyId)]);
+      await Promise.all([refresh(boot.companyId, year, month, mode), loadRules(boot.companyId), loadExports(boot.companyId)]);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -133,6 +148,23 @@ export function ReportsPage() {
     } finally {
       setRuleActionLoading("");
     }
+  }
+
+  async function createExport(exportType: "DATEV" | "CSV") {
+    if (!companyId) return;
+    const periodLabel = mode === "monat"
+      ? `${year}-${String(month).padStart(2, "0")}`
+      : `Q${Math.floor((month - 1) / 3) + 1}-${year}`;
+    await apiFetch("/api/exports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        companyId,
+        exportType,
+        periodLabel,
+      }),
+    });
+    await loadExports(companyId);
   }
 
   return (
@@ -228,6 +260,34 @@ export function ReportsPage() {
                     </Button>
                   </div>
                 </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+
+      <Card className="mt-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-medium">DATEV / Export-Historie</h3>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => void createExport("CSV")}>CSV Export</Button>
+            <Button onClick={() => void createExport("DATEV")}>DATEV Export</Button>
+          </div>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-muted-foreground">
+              <th>Typ</th><th>Zeitraum</th><th>Datei</th><th>Status</th><th>Erstellt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {exportsHistory.map((item) => (
+              <tr key={item.id} className="border-t border-border">
+                <td className="py-3">{item.exportType}</td>
+                <td>{item.periodLabel}</td>
+                <td>{item.fileName}</td>
+                <td>{item.status}</td>
+                <td>{new Date(item.createdAt).toISOString().slice(0, 10)}</td>
               </tr>
             ))}
           </tbody>

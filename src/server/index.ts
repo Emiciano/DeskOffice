@@ -9,6 +9,11 @@ import { bankingRouter } from "./routes/banking.js";
 import { rulesRouter } from "./routes/rules.js";
 import { taxesRouter } from "./routes/taxes.js";
 import { settingsRouter } from "./routes/settings.js";
+import { contactsRouter } from "./routes/contacts.js";
+import { exportsRouter } from "./routes/exports.js";
+import { inboxRouter } from "./routes/inbox.js";
+import { dashboardRouter } from "./routes/dashboard.js";
+import { copilotRouter } from "./routes/copilot.js";
 import { APP_PORT, CORS_ORIGIN, DEFAULT_COMPANY_NAME } from "./config.js";
 import { prisma } from "./db.js";
 import { chartOfAccountsSeed } from "../data/chartOfAccounts.js";
@@ -50,6 +55,32 @@ async function ensureSeedData() {
       country: "Deutschland",
     },
   });
+
+  const contactsCount = await prisma.contact.count({ where: { companyId: company.id } });
+  if (contactsCount === 0) {
+    await prisma.contact.createMany({
+      data: [
+        {
+          companyId: company.id,
+          type: "customer",
+          name: "Nordlicht Media GmbH",
+          email: "office@nordlicht.io",
+          phone: "+49 30 9011450",
+          paymentTerms: 14,
+          country: "Deutschland",
+        },
+        {
+          companyId: company.id,
+          type: "supplier",
+          name: "CloudStack GmbH",
+          email: "finance@cloudstack.de",
+          phone: "+49 40 771234",
+          paymentTerms: 14,
+          country: "Deutschland",
+        },
+      ],
+    });
+  }
 }
 
 async function start() {
@@ -73,6 +104,11 @@ async function start() {
   app.use("/api/rules", rulesRouter);
   app.use("/api/taxes", taxesRouter);
   app.use("/api/settings", settingsRouter);
+  app.use("/api/contacts", contactsRouter);
+  app.use("/api/exports", exportsRouter);
+  app.use("/api/inbox", inboxRouter);
+  app.use("/api/dashboard", dashboardRouter);
+  app.use("/api/copilot", copilotRouter);
 
   app.listen(APP_PORT, () => {
     console.log(`API running on :${APP_PORT}`);

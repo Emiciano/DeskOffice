@@ -19,6 +19,8 @@ model Company {
   bankTransactions BankTransaction[]
   autoRules Rule[]
   taxSnapshots TaxSnapshot[]
+  contacts Contact[]
+  exports DataExport[]
   settings  CompanySettings?
 }
 
@@ -223,4 +225,41 @@ model TaxSnapshot {
 
   @@index([companyId, year, month])
   @@unique([companyId, year, month])
+}
+
+model Contact {
+  id            String   @id @default(cuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  type          String
+  name          String
+  email         String?
+  phone         String?
+  vatId         String?
+  street        String?
+  postalCode    String?
+  city          String?
+  country       String?
+  paymentTerms  Int      @default(14)
+  notes         String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId, type, active])
+}
+
+model DataExport {
+  id           String   @id @default(cuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  exportType   String
+  status       String
+  fileName     String
+  periodLabel  String
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([companyId, exportType, createdAt])
 }
