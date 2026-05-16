@@ -1,0 +1,108 @@
+name: Deploy Next SaaS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "next-saas/**"
+      - ".github/workflows/deploy-next.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-next-saas
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: next-saas/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: next-saas
+
+      - name: Build
+        run: npm run build
+        working-directory: next-saas
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -T 20 -p "${SSH_PORT:-22}" "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Ensure deploy path
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          NEXT_DEPLOY_PATH: ${{ secrets.NEXT_DEPLOY_PATH }}
+        run: |
+          ssh -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "mkdir -p '${NEXT_DEPLOY_PATH}'"
+
+      - name: Sync project files
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          NEXT_DEPLOY_PATH: ${{ secrets.NEXT_DEPLOY_PATH }}
+        run: |
+          rsync -az --delete \
+            --exclude ".git" \
+            --exclude ".next" \
+            --exclude "node_modules" \
+            -e "ssh -p ${SSH_PORT:-22}" \
+            next-saas/ "${SSH_USER}@${SSH_HOST}:${NEXT_DEPLOY_PATH}/"
+
+      - name: Install, migrate, build, restart PM2
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          NEXT_DEPLOY_PATH: ${{ secrets.NEXT_DEPLOY_PATH }}
+          PM2_APP_NAME: deskoffice-next
+        run: |
+          ssh -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "
+            set -e
+            cd '${NEXT_DEPLOY_PATH}'
+            mkdir -p .pm2/logs .pm2/pids
+            touch .pm2/pm2.log .pm2/module_conf.json
+            export PM2_HOME='${NEXT_DEPLOY_PATH}/.pm2'
+            if [ ! -f .env ]; then
+              echo '.env fehlt auf Server in NEXT_DEPLOY_PATH'
+              exit 1
+            fi
+            npm ci
+            npm run db:generate
+            npm run db:push
+            npm run build
+            if pm2 describe '${PM2_APP_NAME}' >/dev/null 2>&1; then
+              pm2 restart '${PM2_APP_NAME}' --update-env
+            else
+              pm2 start npm --name '${PM2_APP_NAME}' -- run start -- -p 3050
+            fi
+            pm2 save
+          "
+
+      - name: Healthcheck
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          ssh -p "${SSH_PORT:-22}" "${SSH_USER}@${SSH_HOST}" "curl -fsS --max-time 15 http://127.0.0.1:3050/api/health"
