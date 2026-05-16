@@ -13,13 +13,26 @@ type Tx = {
   matchedInvoiceId?: string | null;
 };
 
+type Invoice = {
+  id: string;
+  number: string;
+  customer: string;
+  amountGross: number;
+};
+
 export function BankingPage() {
   const [companyId, setCompanyId] = useState("");
   const [rows, setRows] = useState<Tx[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [selection, setSelection] = useState<Record<string, string>>({});
 
   async function load(company: string) {
-    const res = await fetch(`/api/banking/transactions?companyId=${company}`);
-    setRows(await res.json());
+    const [txRes, invRes] = await Promise.all([
+      fetch(`/api/banking/transactions?companyId=${company}`),
+      fetch(`/api/invoices?companyId=${company}`),
+    ]);
+    setRows(await txRes.json());
+    setInvoices(await invRes.json());
   }
 
   useEffect(() => {
@@ -62,6 +75,17 @@ export function BankingPage() {
     return { income, expense };
   }, [rows]);
 
+  async function matchInvoice(txId: string) {
+    const matchedInvoiceId = selection[txId];
+    if (!matchedInvoiceId) return;
+    await fetch(`/api/banking/transactions/${txId}/match`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ matchedInvoiceId, status: "Zugeordnet" }),
+    });
+    if (companyId) await load(companyId);
+  }
+
   return (
     <div>
       <PageHeader
@@ -92,7 +116,7 @@ export function BankingPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-muted-foreground">
-              <th>Datum</th><th>Text</th><th>Betrag</th><th>Typ</th><th>Status</th><th>Zuordnung</th>
+              <th>Datum</th><th>Text</th><th>Betrag</th><th>Typ</th><th>Status</th><th>Zuordnung</th><th></th>
             </tr>
           </thead>
           <tbody>
@@ -103,7 +127,25 @@ export function BankingPage() {
                 <td className={t.amount > 0 ? "text-emerald-600" : "text-rose-600"}>EUR {t.amount.toFixed(2)}</td>
                 <td><StatusBadge status={t.type} /></td>
                 <td><StatusBadge status={t.status} /></td>
-                <td>{t.matchedInvoiceId || "-"}</td>
+                <td>
+                  <select
+                    className="rounded-lg border border-border px-2 py-1 text-xs"
+                    value={selection[t.id] ?? t.matchedInvoiceId ?? ""}
+                    onChange={(e) => setSelection((s) => ({ ...s, [t.id]: e.target.value }))}
+                  >
+                    <option value="">Rechnung wählen</option>
+                    {invoices.map((i) => (
+                      <option key={i.id} value={i.id}>
+                        {i.number} - {i.customer} ({i.amountGross.toFixed(2)} EUR)
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td>
+                  <Button variant="outline" onClick={() => matchInvoice(t.id)}>
+                    Zuordnen
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>

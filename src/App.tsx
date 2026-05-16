@@ -10,6 +10,7 @@ import { BankingPage } from "@/pages/BankingPage";
 import { ProductsPage } from "@/pages/ProductsPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { BookingsPage } from "@/pages/BookingsPage";
 import { DocumentsPage } from "@/features/documents/DocumentsPage";
 import { AccountsPage } from "@/features/accounting/pages/AccountsPage";
 import { useUiStore } from "@/store/uiStore";
@@ -38,6 +39,7 @@ export default function App() {
               <Route path="/banking" element={<BankingPage />} />
               <Route path="/produkte" element={<ProductsPage />} />
               <Route path="/kontenrahmen" element={<AccountsPage />} />
+              <Route path="/buchungen" element={<BookingsPage />} />
               <Route path="/berichte" element={<ReportsPage />} />
               <Route path="/einstellungen" element={<SettingsPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />

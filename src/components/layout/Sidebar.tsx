@@ -1,4 +1,4 @@
-import { BarChart3, Building2, CreditCard, FileText, LayoutDashboard, Package, Receipt, Settings, Users, WalletCards } from "lucide-react";
+import { BarChart3, Building2, CreditCard, FileText, LayoutDashboard, Package, Receipt, Settings, Users, WalletCards, BookOpenText } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ const links = [
   { label: "Banking", to: "/banking", icon: Building2 },
   { label: "Produkte", to: "/produkte", icon: Package },
   { label: "Kontenrahmen", to: "/kontenrahmen", icon: WalletCards },
+  { label: "Buchungen", to: "/buchungen", icon: BookOpenText },
   { label: "Berichte", to: "/berichte", icon: BarChart3 },
   { label: "Einstellungen", to: "/einstellungen", icon: Settings },
 ] as const;
