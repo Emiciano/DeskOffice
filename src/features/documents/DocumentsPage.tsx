@@ -7,7 +7,6 @@ import { DocumentUpload } from "./DocumentUpload";
 import { DocumentList } from "./DocumentList";
 import { DocumentDetail } from "./DocumentDetail";
 import { DocumentInspector } from "./DocumentInspector";
-import { runMockOcr } from "./mockOcr";
 import { useDocumentsStore } from "./documentStore";
 import type { DocumentFilters } from "./types";
 
@@ -18,12 +17,9 @@ export function DocumentsPage() {
     setSelectedId,
     addDocumentFromUpload,
     updateDocumentData,
-    applyOcrResult,
     setDocumentStatus,
     replaceDocumentFile,
     bookDocument,
-    isOcrRunning,
-    setOcrRunning,
   } = useDocumentsStore();
 
   const [filters, setFilters] = useState<DocumentFilters>({
@@ -108,7 +104,7 @@ export function DocumentsPage() {
     <div className="space-y-4">
       <PageHeader
         title="Belege"
-        subtitle="Upload, OCR, Prüfung und Buchung in einem durchgängigen Workflow"
+        subtitle="Upload, Prüfung und Buchung in einem durchgängigen Workflow"
         action={<Button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Beleg hochladen</Button>}
       />
 
@@ -172,7 +168,6 @@ export function DocumentsPage() {
               <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                 <DocumentDetail
                   document={editingDocument}
-                  isOcrRunning={isOcrRunning}
                   onReplaceFile={(file) => {
                     if (file.type === "application/pdf") {
                       replaceDocumentFile(editingDocument.id, file.name, URL.createObjectURL(file), file.size);
@@ -180,12 +175,6 @@ export function DocumentsPage() {
                   }}
                   onChangeData={(patch) => updateDocumentData(editingDocument.id, patch)}
                   onMarkChecked={() => setDocumentStatus(editingDocument.id, "Geprueft")}
-                  onRunOcr={async () => {
-                    setOcrRunning(true);
-                    const res = await runMockOcr(editingDocument);
-                    applyOcrResult(editingDocument.id, res.data, res.confidence);
-                    setOcrRunning(false);
-                  }}
                   onBook={() => bookDocument(editingDocument.id)}
                 />
               </div>
@@ -203,7 +192,7 @@ export function DocumentsPage() {
               </div>
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground">Kein Beleg fuer die Erfassung ausgewaehlt.</div>
+            <div className="text-sm text-muted-foreground">Kein Beleg für die Erfassung ausgewählt.</div>
           )}
         </DialogContent>
       </Dialog>

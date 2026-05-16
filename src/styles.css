@@ -20,11 +20,7 @@ a,
 button,
 input,
 select,
-textarea,
-tr,
-td,
-th,
-div {
+textarea {
   transition:
     background-color 180ms ease,
     border-color 180ms ease,
@@ -51,17 +47,9 @@ div {
   }
 }
 
-.rounded-2xl:hover {
-  transform: none;
-}
-
-tr:hover {
-  transform: none;
-}
-
-button:hover {
-  filter: none;
-}
+.rounded-2xl:hover { transform: none; }
+tr:hover { transform: none; }
+button:hover { filter: none; }
 
 @media (prefers-reduced-motion: reduce) {
   *,
