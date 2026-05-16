@@ -19,6 +19,16 @@ type Invoice = {
   number: string;
   customer: string;
   amountGross: number;
+  status?: string;
+};
+
+type Suggestion = {
+  id: string;
+  number: string;
+  customer: string;
+  amountGross: number;
+  status: string;
+  score: number;
 };
 
 export function BankingPage() {
@@ -26,6 +36,7 @@ export function BankingPage() {
   const [rows, setRows] = useState<Tx[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selection, setSelection] = useState<Record<string, string>>({});
+  const [suggestions, setSuggestions] = useState<Record<string, Suggestion[]>>({});
 
   async function load(company: string) {
     const [txRes, invRes] = await Promise.all([
@@ -87,6 +98,15 @@ export function BankingPage() {
     if (companyId) await load(companyId);
   }
 
+  async function loadSuggestions(txId: string) {
+    const res = await apiFetch(`/api/banking/transactions/${txId}/suggestions`);
+    const items = (await res.json()) as Suggestion[];
+    setSuggestions((prev) => ({ ...prev, [txId]: items }));
+    if (items[0]) {
+      setSelection((prev) => ({ ...prev, [txId]: items[0].id }));
+    }
+  }
+
   return (
     <div>
       <PageHeader
@@ -141,11 +161,21 @@ export function BankingPage() {
                       </option>
                     ))}
                   </select>
+                  {suggestions[t.id]?.length ? (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Vorschlag: {suggestions[t.id][0].number} ({suggestions[t.id][0].amountGross.toFixed(2)} EUR)
+                    </p>
+                  ) : null}
                 </td>
                 <td>
-                  <Button variant="outline" onClick={() => matchInvoice(t.id)}>
-                    Zuordnen
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => void loadSuggestions(t.id)}>
+                      Vorschlag
+                    </Button>
+                    <Button variant="outline" onClick={() => void matchInvoice(t.id)}>
+                      Zuordnen
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}

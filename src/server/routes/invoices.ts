@@ -14,6 +14,21 @@ invoicesRouter.get("/", async (req, res) => {
   res.json(items);
 });
 
+invoicesRouter.get("/open-items", async (req, res) => {
+  const companyId = String(req.query.companyId ?? "");
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
+
+  const items = await prisma.invoice.findMany({
+    where: {
+      companyId,
+      status: { in: ["Offen", "Ueberfaellig"] },
+    },
+    orderBy: { dueDate: "asc" },
+  });
+  const totalGross = Number(items.reduce((sum, item) => sum + item.amountGross, 0).toFixed(2));
+  res.json({ count: items.length, totalGross, items });
+});
+
 invoicesRouter.post("/", async (req, res) => {
   const { items = [], ...raw } = req.body as {
     companyId: string;
@@ -89,6 +104,48 @@ invoicesRouter.post("/:id/reminder", async (req, res) => {
   res.json({
     ok: true,
     invoice: updated,
-    message: `Mahnung für ${invoice.number} vorgemerkt`,
+    message: `Mahnung fuer ${invoice.number} vorgemerkt`,
   });
+});
+
+invoicesRouter.post("/:id/recurring-next", async (req, res) => {
+  const { id } = req.params;
+  const source = await prisma.invoice.findUnique({
+    where: { id },
+    include: { items: true },
+  });
+  if (!source) return res.status(404).json({ error: "Invoice not found" });
+
+  const nextDueDate = new Date(source.dueDate);
+  nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+
+  const invoiceCount = await prisma.invoice.count({ where: { companyId: source.companyId } });
+  const number = `RE-${new Date().getFullYear()}-${String(invoiceCount + 101).padStart(4, "0")}`;
+
+  const created = await prisma.invoice.create({
+    data: {
+      companyId: source.companyId,
+      number,
+      customer: source.customer,
+      status: "Entwurf",
+      kind: "Wiederkehrend",
+      amountNet: source.amountNet,
+      amountTax: source.amountTax,
+      amountGross: source.amountGross,
+      dueDate: nextDueDate,
+      items: {
+        create: source.items.map((item) => ({
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          taxRate: item.taxRate,
+          amountNet: item.amountNet,
+          amountTax: item.amountTax,
+          amountGross: item.amountGross,
+        })),
+      },
+    },
+    include: { items: true },
+  });
+  res.status(201).json(created);
 });

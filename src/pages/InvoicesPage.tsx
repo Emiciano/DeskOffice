@@ -27,6 +27,11 @@ type Invoice = {
   items: InvoiceItem[];
 };
 
+type OpenItemsSummary = {
+  count: number;
+  totalGross: number;
+};
+
 type TemplateMode = "clean" | "modern" | "compact";
 
 function InvoicePreview(props: {
@@ -188,14 +193,18 @@ export function InvoicesPage() {
   const [items, setItems] = useState<InvoiceItem[]>([{ description: "", quantity: 1, unitPrice: 0, taxRate: 19 }]);
   const [companySettings, setCompanySettings] = useState<CompanySettings>(defaultCompanySettings);
   const [rowActionLoading, setRowActionLoading] = useState<string>("");
+  const [openItems, setOpenItems] = useState<OpenItemsSummary>({ count: 0, totalGross: 0 });
 
   async function load(company: string) {
-    const [invoiceRes, settingsRes] = await Promise.all([
+    const [invoiceRes, settingsRes, openItemsRes] = await Promise.all([
       apiFetch(`/api/invoices?companyId=${company}`),
       apiFetch(`/api/settings?companyId=${company}`),
+      apiFetch(`/api/invoices/open-items?companyId=${company}`),
     ]);
     setInvoices(await invoiceRes.json());
     setCompanySettings({ ...defaultCompanySettings, ...(await settingsRes.json()), companyId: company });
+    const openItemsData = (await openItemsRes.json()) as OpenItemsSummary;
+    setOpenItems({ count: openItemsData.count ?? 0, totalGross: openItemsData.totalGross ?? 0 });
   }
 
   useEffect(() => {
@@ -348,6 +357,17 @@ export function InvoicesPage() {
     setRowActionLoading(invoiceId);
     try {
       await apiFetch(`/api/invoices/${invoiceId}/reminder`, { method: "POST" });
+      await load(companyId);
+    } finally {
+      setRowActionLoading("");
+    }
+  };
+
+  const createRecurringNext = async (invoiceId: string) => {
+    if (!companyId) return;
+    setRowActionLoading(invoiceId);
+    try {
+      await apiFetch(`/api/invoices/${invoiceId}/recurring-next`, { method: "POST" });
       await load(companyId);
     } finally {
       setRowActionLoading("");
@@ -507,6 +527,16 @@ export function InvoicesPage() {
           </Dialog>
         }
       />
+      <div className="mb-4 grid gap-3 md:grid-cols-2">
+        <Card>
+          <p className="text-sm text-muted-foreground">Offene Posten</p>
+          <p className="text-2xl font-semibold">{openItems.count}</p>
+        </Card>
+        <Card>
+          <p className="text-sm text-muted-foreground">Offener Gesamtbetrag</p>
+          <p className="text-2xl font-semibold">EUR {openItems.totalGross.toFixed(2)}</p>
+        </Card>
+      </div>
       <Card>
         <div className="mb-4 flex gap-3">
           <Input placeholder="Rechnung oder Kunde suchen..." value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -564,6 +594,14 @@ export function InvoicesPage() {
                       disabled={rowActionLoading === i.id || i.status === "Bezahlt" || i.status === "Storniert"}
                     >
                       Mahnung
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-8 px-2 text-xs"
+                      onClick={() => void createRecurringNext(i.id)}
+                      disabled={rowActionLoading === i.id}
+                    >
+                      Wiederkehrend+
                     </Button>
                   </div>
                 </td>

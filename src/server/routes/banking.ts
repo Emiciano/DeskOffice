@@ -86,3 +86,33 @@ bankingRouter.patch("/transactions/:id/match", async (req, res) => {
   });
   res.json(updated);
 });
+
+bankingRouter.get("/transactions/:id/suggestions", async (req, res) => {
+  const { id } = req.params;
+  const tx = await prisma.bankTransaction.findUnique({ where: { id } });
+  if (!tx) return res.status(404).json({ error: "Transaction not found" });
+
+  const amountAbs = Math.abs(tx.amount);
+  const invoices = await prisma.invoice.findMany({
+    where: {
+      companyId: tx.companyId,
+      status: { in: ["Offen", "Ueberfaellig", "Versendet"] },
+    },
+    orderBy: { dueDate: "asc" },
+    take: 50,
+  });
+
+  const suggestions = invoices
+    .map((inv) => ({
+      id: inv.id,
+      number: inv.number,
+      customer: inv.customer,
+      amountGross: inv.amountGross,
+      status: inv.status,
+      score: Math.abs(inv.amountGross - amountAbs),
+    }))
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 5);
+
+  res.json(suggestions);
+});
