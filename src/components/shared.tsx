@@ -26,15 +26,24 @@ export function StatCard({ label, value, trend }: { label: string; value: string
 }
 
 export function StatusBadge({ status }: { status: string }) {
+  const normalized = status
+    .replace("Geprüft", "Geprueft")
+    .replace("Überfällig", "Ueberfaellig");
+
+  const label = normalized
+    .replace("Geprueft", "Geprüft")
+    .replace("Ueberfaellig", "Überfällig");
+
   const tone =
-    status === "Bezahlt" || status === "Angenommen" || status === "Geprueft" || status === "geprueft"
+    normalized === "Bezahlt" || normalized === "Angenommen" || normalized === "Geprueft" || normalized === "geprueft"
       ? "bg-emerald-100 text-emerald-700"
-      : status === "Ueberfaellig" || status === "Überfällig" || status === "Abgelehnt"
+      : normalized === "Ueberfaellig" || normalized === "Abgelehnt"
         ? "bg-rose-100 text-rose-700"
-        : status === "Gebucht"
+        : normalized === "Gebucht"
           ? "bg-indigo-100 text-indigo-700"
           : "bg-slate-100 text-slate-700";
-  return <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", tone)}>{status}</span>;
+
+  return <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", tone)}>{label}</span>;
 }
 
 export function ChartCard({ data }: { data: Array<{ month: string; einnahmen: number; ausgaben: number }> }) {

@@ -15,6 +15,7 @@ const frame = (name: keyof DocumentData, confidence?: Record<keyof DocumentData,
 
 const supplierHints = ["CloudStack GmbH", "Nordlicht Media GmbH", "Musterlieferant AG"];
 const categories = ["Software", "Werbung", "Büro", "Reisekosten", "Beratung", "Sonstiges"];
+
 export function DocumentForm({ data, confidence, onChange }: Props) {
   return (
     <div className="space-y-4">
@@ -138,7 +139,11 @@ export function DocumentForm({ data, confidence, onChange }: Props) {
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Zahlungsart</label>
             <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("paymentMethod", confidence)}`} value={data.paymentMethod} onChange={(e) => onChange({ paymentMethod: e.target.value as DocumentData["paymentMethod"] })}>
-              {["Ueberweisung", "Lastschrift", "Kreditkarte", "Bar", "Sonstiges"].map((s) => <option key={s}>{s}</option>)}
+              <option value="Ueberweisung">Überweisung</option>
+              <option value="Lastschrift">Lastschrift</option>
+              <option value="Kreditkarte">Kreditkarte</option>
+              <option value="Bar">Bar</option>
+              <option value="Sonstiges">Sonstiges</option>
             </select>
           </div>
         </div>

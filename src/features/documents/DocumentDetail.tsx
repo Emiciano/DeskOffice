@@ -23,11 +23,11 @@ export function DocumentDetail({ document, isOcrRunning, onReplaceFile, onChange
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-5">
-      <div className="xl:col-span-3">
+    <div className="grid min-h-0 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,1fr)]">
+      <div className="min-w-0">
         <PdfPreview document={document} onReplace={onReplaceFile} />
       </div>
-      <div className="space-y-4 xl:col-span-2">
+      <div className="min-w-0 space-y-4">
         <DocumentForm data={document.data} confidence={document.ocrConfidence} onChange={onChangeData} />
         <BookingPanel document={document} onBook={onBook} onRunOcr={onRunOcr} onMarkChecked={onMarkChecked} isOcrRunning={isOcrRunning} />
       </div>

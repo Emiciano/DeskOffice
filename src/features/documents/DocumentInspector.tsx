@@ -7,11 +7,12 @@ type Props = {
   document: DocumentItem | null;
   onStartCapture: () => void;
 };
+
 export function DocumentInspector({ document, onStartCapture }: Props) {
+  if (!document) return null;
+
   return (
     <Card className="h-fit">
-      {document ? (
-        <>
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold">Belegdetails</h3>
         <StatusBadge status={document.status} />
@@ -20,19 +21,15 @@ export function DocumentInspector({ document, onStartCapture }: Props) {
         Beleg erfassen
       </Button>
       <div className="space-y-2 text-sm">
-        <div className="flex justify-between"><span className="text-muted-foreground">Dokument</span><span className="font-medium">{document.fileName}</span></div>
+        <div className="flex justify-between gap-3"><span className="text-muted-foreground">Dokument</span><span className="max-w-[160px] truncate font-medium">{document.fileName}</span></div>
         <div className="flex justify-between"><span className="text-muted-foreground">Erstellt am</span><span className="font-medium">{document.uploadedAt}</span></div>
         <div className="flex justify-between"><span className="text-muted-foreground">Typ</span><span className="font-medium">{document.data.type}</span></div>
         <div className="flex justify-between"><span className="text-muted-foreground">Partner</span><span className="font-medium">{document.supplierOrCustomer || "-"}</span></div>
         <div className="flex justify-between"><span className="text-muted-foreground">Belegdatum</span><span className="font-medium">{document.date || "-"}</span></div>
-        <div className="flex justify-between"><span className="text-muted-foreground">Faelligkeit</span><span className="font-medium">{document.dueDate || "-"}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Fälligkeit</span><span className="font-medium">{document.dueDate || "-"}</span></div>
         <div className="flex justify-between"><span className="text-muted-foreground">Betrag</span><span className="font-medium">EUR {document.amount.toFixed(2)}</span></div>
         <div className="flex justify-between"><span className="text-muted-foreground">Kategorie</span><span className="font-medium">{document.category || "-"}</span></div>
       </div>
-        </>
-      ) : (
-        <p className="text-sm text-muted-foreground">Wähle einen Beleg aus der Liste.</p>
-      )}
     </Card>
   );
 }

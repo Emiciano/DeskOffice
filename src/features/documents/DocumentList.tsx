@@ -14,21 +14,26 @@ type Props = {
 export function DocumentList({ documents, selectedId, onSelect, onEdit, filters, onFiltersChange }: Props) {
   return (
     <Card>
-      <div className="mb-4 grid gap-3 md:grid-cols-5">
+      <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <input
-          className="rounded-xl border border-border px-3 py-2 text-sm"
+          className="rounded-xl border border-border px-3 py-2 text-sm md:col-span-2 xl:col-span-1"
           placeholder="Suche nach Beleg, Partner, Nummer"
           value={filters.query}
           onChange={(e) => onFiltersChange({ query: e.target.value })}
         />
         <select className="rounded-xl border border-border px-3 py-2 text-sm" value={filters.status} onChange={(e) => onFiltersChange({ status: e.target.value as DocumentFilters["status"] })}>
-          {["Alle", "Entwurf", "Geprueft", "Gebucht", "Bezahlt", "Ueberfaellig"].map((s) => <option key={s}>{s}</option>)}
+          <option value="Alle">Alle</option>
+          <option value="Entwurf">Entwurf</option>
+          <option value="Geprueft">Geprüft</option>
+          <option value="Gebucht">Gebucht</option>
+          <option value="Bezahlt">Bezahlt</option>
+          <option value="Ueberfaellig">Überfällig</option>
         </select>
         <input className="rounded-xl border border-border px-3 py-2 text-sm" placeholder="Kategorie" value={filters.category === "Alle" ? "" : filters.category} onChange={(e) => onFiltersChange({ category: e.target.value || "Alle" })} />
         <input className="rounded-xl border border-border px-3 py-2 text-sm" placeholder="Lieferant/Kunde" value={filters.partner} onChange={(e) => onFiltersChange({ partner: e.target.value })} />
         <select className="rounded-xl border border-border px-3 py-2 text-sm" value={filters.sortBy} onChange={(e) => onFiltersChange({ sortBy: e.target.value as DocumentFilters["sortBy"] })}>
           <option value="date_desc">Neueste zuerst</option>
-          <option value="date_asc">Aelteste zuerst</option>
+          <option value="date_asc">Älteste zuerst</option>
           <option value="amount_desc">Betrag absteigend</option>
           <option value="amount_asc">Betrag aufsteigend</option>
           <option value="status">Status</option>
@@ -38,20 +43,26 @@ export function DocumentList({ documents, selectedId, onSelect, onEdit, filters,
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-muted-foreground">
-              <th>Beleg</th><th>Partner</th><th>Kategorie</th><th>Datum</th><th>Betrag</th><th>Status</th><th></th>
+              <th className="py-2">Beleg</th>
+              <th className="py-2">Partner</th>
+              <th className="py-2">Kategorie</th>
+              <th className="py-2">Datum</th>
+              <th className="py-2">Betrag</th>
+              <th className="py-2">Status</th>
+              <th className="py-2"></th>
             </tr>
           </thead>
           <tbody>
             {documents.length === 0 ? (
-              <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Keine Belege fuer die aktuelle Filterung.</td></tr>
+              <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Keine Belege für die aktuelle Filterung.</td></tr>
             ) : documents.map((d) => (
               <tr
                 key={d.id}
                 className={`cursor-pointer border-t border-border align-top transition ${selectedId === d.id ? "bg-primary/5" : "hover:bg-muted/40"}`}
                 onClick={() => onSelect(d.id)}
               >
-                <td className="py-3">
-                  <p className="font-medium">{d.fileName}</p>
+                <td className="py-3 pr-4">
+                  <p className="max-w-[320px] truncate font-medium">{d.fileName}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span>{d.id}</span>
                     <span>•</span>

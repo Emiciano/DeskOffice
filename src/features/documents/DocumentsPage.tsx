@@ -108,7 +108,7 @@ export function DocumentsPage() {
     <div className="space-y-4">
       <PageHeader
         title="Belege"
-        subtitle="Upload, OCR, Pruefung und Buchung in einem durchgaengigen Workflow"
+        subtitle="Upload, OCR, Prüfung und Buchung in einem durchgängigen Workflow"
         action={<Button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Beleg hochladen</Button>}
       />
 
@@ -128,7 +128,7 @@ export function DocumentsPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-5">
-        <div className="xl:col-span-4 space-y-3">
+        <div className={`${selected ? "xl:col-span-4" : "xl:col-span-5"} space-y-3`}>
           <DocumentUpload
             onUploadDone={(payload) => {
               const created = addDocumentFromUpload(payload);
@@ -145,46 +145,50 @@ export function DocumentsPage() {
             onFiltersChange={(patch) => setFilters((f) => ({ ...f, ...patch }))}
           />
         </div>
-        <div className="xl:col-span-1">
-          <div className="sticky top-24">
-            <DocumentInspector
-              document={selected}
-              onStartCapture={() => {
-                if (!selected) return;
-                setEditingId(selected.id);
-                setCaptureOpen(true);
-              }}
-            />
+        {selected ? (
+          <div className="xl:col-span-1">
+            <div className="sticky top-24">
+              <DocumentInspector
+                document={selected}
+                onStartCapture={() => {
+                  if (!selected) return;
+                  setEditingId(selected.id);
+                  setCaptureOpen(true);
+                }}
+              />
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
 
       <Dialog open={captureOpen} onOpenChange={setCaptureOpen}>
-        <DialogContent className="h-[92vh] max-w-[94vw] overflow-y-auto p-4">
+        <DialogContent className="max-h-[92vh] overflow-hidden p-4">
           {editingDocument ? (
-            <div>
+            <div className="flex max-h-[calc(92vh-2rem)] min-h-0 flex-col">
               <div className="mb-3 flex items-center gap-2 text-sm">
                 <span className="font-medium">{editingDocument.fileName}</span>
                 <StatusBadge status={editingDocument.status} />
               </div>
-              <DocumentDetail
-                document={editingDocument}
-                isOcrRunning={isOcrRunning}
-                onReplaceFile={(file) => {
-                  if (file.type === "application/pdf") {
-                    replaceDocumentFile(editingDocument.id, file.name, URL.createObjectURL(file), file.size);
-                  }
-                }}
-                onChangeData={(patch) => updateDocumentData(editingDocument.id, patch)}
-                onMarkChecked={() => setDocumentStatus(editingDocument.id, "Geprueft")}
-                onRunOcr={async () => {
-                  setOcrRunning(true);
-                  const res = await runMockOcr(editingDocument);
-                  applyOcrResult(editingDocument.id, res.data, res.confidence);
-                  setOcrRunning(false);
-                }}
-                onBook={() => bookDocument(editingDocument.id)}
-              />
+              <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                <DocumentDetail
+                  document={editingDocument}
+                  isOcrRunning={isOcrRunning}
+                  onReplaceFile={(file) => {
+                    if (file.type === "application/pdf") {
+                      replaceDocumentFile(editingDocument.id, file.name, URL.createObjectURL(file), file.size);
+                    }
+                  }}
+                  onChangeData={(patch) => updateDocumentData(editingDocument.id, patch)}
+                  onMarkChecked={() => setDocumentStatus(editingDocument.id, "Geprueft")}
+                  onRunOcr={async () => {
+                    setOcrRunning(true);
+                    const res = await runMockOcr(editingDocument);
+                    applyOcrResult(editingDocument.id, res.data, res.confidence);
+                    setOcrRunning(false);
+                  }}
+                  onBook={() => bookDocument(editingDocument.id)}
+                />
+              </div>
               <div className="mt-4 flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setCaptureOpen(false)}>Abbrechen</Button>
                 <Button

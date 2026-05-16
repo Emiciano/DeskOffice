@@ -38,13 +38,13 @@ export function Sidebar() {
             {label}
           </NavLink>
           {showDocumentChildren && to === "/belege" ? (
-            <div className="ml-8 mt-1 space-y-1">
+            <div className="ml-8 mt-1 space-y-1 border-l border-border pl-3">
               <NavLink to="/belege?group=Ausgangsbelege" className="block rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80">Ausgangsbelege</NavLink>
               <NavLink to="/belege?group=Eingangsbelege" className="block rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80">Eingangsbelege</NavLink>
-              <NavLink to="/belege?group=Eingangsbelege&subType=Ausgaben" className="block rounded-lg px-2 py-1 pl-4 text-xs text-muted-foreground hover:bg-muted/80">Ausgaben</NavLink>
-              <NavLink to="/belege?group=Eingangsbelege&subType=Ausgabenminderung" className="block rounded-lg px-2 py-1 pl-4 text-xs text-muted-foreground hover:bg-muted/80">Ausgabenminderung</NavLink>
-              <NavLink to="/belege?group=Eingangsbelege&subType=Einnahmen" className="block rounded-lg px-2 py-1 pl-4 text-xs text-muted-foreground hover:bg-muted/80">Einnahmen</NavLink>
-              <NavLink to="/belege?group=Eingangsbelege&subType=Einnahmenminderung" className="block rounded-lg px-2 py-1 pl-4 text-xs text-muted-foreground hover:bg-muted/80">Einnahmenminderung</NavLink>
+              <NavLink to="/belege?group=Eingangsbelege&subType=Ausgaben" className="block rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80">Ausgaben</NavLink>
+              <NavLink to="/belege?group=Eingangsbelege&subType=Ausgabenminderung" className="block rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80">Ausgabenminderung</NavLink>
+              <NavLink to="/belege?group=Eingangsbelege&subType=Einnahmen" className="block rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80">Einnahmen</NavLink>
+              <NavLink to="/belege?group=Eingangsbelege&subType=Einnahmenminderung" className="block rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80">Einnahmenminderung</NavLink>
             </div>
           ) : null}
           </div>

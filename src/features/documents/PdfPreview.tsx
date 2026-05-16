@@ -14,7 +14,7 @@ export function PdfPreview({ document, onReplace }: Props) {
   const [page, setPage] = useState(1);
 
   return (
-    <Card className="h-full">
+    <Card className="h-full min-w-0">
       <div className="mb-3 flex items-center justify-between gap-2">
         <h3 className="text-sm font-medium">PDF Vorschau</h3>
         <div className="flex items-center gap-2">
@@ -23,8 +23,8 @@ export function PdfPreview({ document, onReplace }: Props) {
           <Button variant="outline" className="h-9 px-2" onClick={() => setZoom((z) => Math.min(200, z + 10))}><ZoomIn size={16} /></Button>
         </div>
       </div>
-      <div className="mb-3 h-[520px] overflow-auto rounded-xl border border-border bg-muted/20 p-2">
-        <iframe title={document.fileName} src={document.pdfUrl} className="w-full border-0" style={{ height: `${zoom * 5}px` }} />
+      <div className="mb-3 h-[min(62vh,620px)] overflow-auto rounded-xl border border-border bg-muted/20 p-2">
+        <iframe title={document.fileName} src={document.pdfUrl} className="min-w-[560px] w-full border-0" style={{ height: `${zoom * 5}px` }} />
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" className="h-9" onClick={() => setPage((p) => Math.max(1, p - 1))}>Seite -</Button>
