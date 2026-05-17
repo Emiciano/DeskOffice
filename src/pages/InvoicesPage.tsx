@@ -289,7 +289,7 @@ export function InvoicesPage() {
     const previewUrl = URL.createObjectURL(blob);
     const printWindow = window.open(previewUrl, "_blank");
     if (!printWindow) {
-      setFormError("Popup blockiert. Bitte Popups fuer diese Seite erlauben.");
+      setFormError("Popup blockiert. Bitte Popups für diese Seite erlauben.");
       return;
     }
     printWindow.addEventListener("load", () => {

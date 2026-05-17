@@ -44,7 +44,7 @@ export default function App() {
   return (
     <div className="min-h-screen w-screen overflow-x-hidden bg-background">
       <Sidebar />
-      <main className="ml-64 min-w-0 p-4 lg:p-5">
+      <main className="ml-64 min-w-0 w-[calc(100vw-16rem)] p-4 lg:p-5">
         <Topbar />
         <div key={location.pathname} className="page-enter">
           <Routes>

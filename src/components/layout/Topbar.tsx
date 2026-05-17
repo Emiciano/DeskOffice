@@ -7,8 +7,8 @@ export function Topbar() {
   const { theme, toggleTheme } = useUiStore();
   const { user, logout } = useAuthStore();
   return (
-    <header className="sticky top-4 z-20 mb-6 flex items-center justify-between rounded-2xl border border-border/80 bg-white/90 p-4 shadow-soft backdrop-blur-sm">
-      <div className="relative w-full max-w-md">
+    <header className="sticky top-4 z-20 mb-6 flex w-full items-center justify-between rounded-2xl border border-border/80 bg-white/90 p-4 shadow-soft backdrop-blur-sm">
+      <div className="relative w-full max-w-xl">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input className="pl-9" placeholder="Suchen nach Rechnungen, Kunden, Transaktionen..." />
       </div>

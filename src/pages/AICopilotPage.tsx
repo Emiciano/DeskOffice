@@ -54,7 +54,7 @@ export function AICopilotPage() {
         body: JSON.stringify({ companyId, question: q }),
       });
       const data = await res.json();
-      setMessages((prev) => [...prev, { role: "assistant", text: String(data.answer ?? "Keine Antwort verfuegbar.") }]);
+      setMessages((prev) => [...prev, { role: "assistant", text: String(data.answer ?? "Keine Antwort verfügbar.") }]);
       setMeta((data.meta ?? null) as CopilotMeta | null);
     } finally {
       setLoading(false);
@@ -122,7 +122,7 @@ export function AICopilotPage() {
       <Card>
         <form className="flex gap-2" onSubmit={ask}>
           <Input
-            placeholder="Frage z. B. Welche Rechnungen sind ueberfaellig?"
+            placeholder="Frage z. B. Welche Rechnungen sind überfällig?"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
           />

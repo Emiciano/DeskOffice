@@ -274,7 +274,7 @@ export function ReportsPage() {
 
   return (
     <div>
-      <PageHeader title="Berichte & Steuer" subtitle="Monat/Quartal, Steueruebersicht, DATEV-Export und Regelengine" />
+      <PageHeader title="Berichte & Steuer" subtitle="Monat/Quartal, Steuerübersicht, DATEV-Export und Regelengine" />
 
       <Card className="mb-4 flex flex-wrap items-end gap-3">
         <div>
@@ -414,7 +414,7 @@ export function ReportsPage() {
                       disabled={ruleActionLoading === r.id}
                       onClick={() => void deleteRule(r.id)}
                     >
-                      Loeschen
+                      Löschen
                     </Button>
                   </div>
                 </td>

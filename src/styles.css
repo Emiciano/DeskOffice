@@ -108,6 +108,16 @@ button:hover { filter: none; }
   color: #d8e1eb !important;
 }
 
+.theme-dark [class*="text-slate-"],
+.theme-dark [class*="text-gray-"] {
+  color: #c8d3df !important;
+}
+
+.theme-dark [class*="bg-slate-"],
+.theme-dark [class*="bg-gray-"] {
+  background-color: #202a35 !important;
+}
+
 .theme-dark .border-border {
   border-color: #2a313b !important;
 }

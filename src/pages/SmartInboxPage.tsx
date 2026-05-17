@@ -58,7 +58,7 @@ export function SmartInboxPage() {
 
   return (
     <div>
-      <PageHeader title="Smart Inbox" subtitle="Unvollstaendige Belege, Prioritaeten und Aufgabenliste" />
+      <PageHeader title="Smart Inbox" subtitle="Unvollständige Belege, Prioritäten und Aufgabenliste" />
       <div className="mb-4 grid gap-4 md:grid-cols-4">
         <Card>
           <p className="text-sm text-muted-foreground">Gesamt</p>
@@ -84,7 +84,7 @@ export function SmartInboxPage() {
               <th>Beleg</th>
               <th>Status</th>
               <th>Fehlt</th>
-              <th>Prioritaet</th>
+              <th>Priorität</th>
               <th>Erstellt</th>
               <th />
             </tr>
@@ -109,7 +109,7 @@ export function SmartInboxPage() {
                       disabled={busyId === task.id}
                       onClick={() => void setTaskStatus(task.id, "Geprueft")}
                     >
-                      Als geprueft
+                      Als geprüft
                     </Button>
                     <Button
                       className="h-8 px-2 text-xs"

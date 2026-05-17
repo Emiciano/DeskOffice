@@ -15,7 +15,7 @@ export function ExpensesPage() {
         <div className="flex flex-col items-center gap-3 rounded-xl bg-muted p-6 text-center">
           <p className="text-sm text-muted-foreground">Dateien per Drag-and-Drop oder Dateiauswahl hochladen</p>
           <Button variant="outline" onClick={() => inputRef.current?.click()}>
-            Datei waehlen
+            Datei wählen
           </Button>
           <input
             ref={inputRef}

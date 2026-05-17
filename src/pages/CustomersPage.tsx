@@ -193,7 +193,7 @@ export function CustomersPage() {
 
         <Card>
           {!detail ? (
-            <p className="text-sm text-muted-foreground">Kontakt aus der Liste waehlen, um Details zu sehen.</p>
+            <p className="text-sm text-muted-foreground">Kontakt aus der Liste wählen, um Details zu sehen.</p>
           ) : (
             <div className="space-y-3 text-sm">
               <div>

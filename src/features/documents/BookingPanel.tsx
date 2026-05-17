@@ -19,7 +19,7 @@ export function BookingPanel({ document, onBook, onMarkChecked, onRunOcr }: Prop
           Daten automatisch auslesen
         </Button>
         <Button variant="outline" className="w-full" onClick={onMarkChecked}>
-          Als geprueft markieren
+          Als geprüft markieren
         </Button>
       </div>
       <div className="mt-4 rounded-xl border border-border p-3 text-xs">
