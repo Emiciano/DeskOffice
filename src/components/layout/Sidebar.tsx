@@ -1,4 +1,4 @@
-import { BarChart3, Building2, CreditCard, FileText, LayoutDashboard, Package, Receipt, Settings, Users, WalletCards, BookOpenText, Inbox, Bot } from "lucide-react";
+import { BarChart3, Building2, CreditCard, FileText, LayoutDashboard, Package, Receipt, Settings, Users, WalletCards, BookOpenText, Inbox, Bot, ShieldCheck } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +16,7 @@ const links = [
   { label: "AI Copilot", to: "/copilot", icon: Bot },
   { label: "Berichte", to: "/berichte", icon: BarChart3 },
   { label: "Einstellungen", to: "/einstellungen", icon: Settings },
+  { label: "Admin", to: "/admin", icon: ShieldCheck },
 ] as const;
 
 export function Sidebar() {

@@ -76,11 +76,13 @@ Stand: 2026-05-17
 ## Phase 16 - Einstellungen
 - [x] Erweiterte Firmen-/Steuer-/Bank-Einstellungen persistent in DB
 - [x] Finanzkonfiguration API fuer Bankkonten und Kostenstellen
+- [x] Admin-Frontend fuer Rollen/Mitglieder/Subscription/Finanzkonfiguration
 
 ## Phase 17 - SaaS & Sicherheit
 - [x] Rollenbasierte Write-Guards auf kritischen Endpunkten
 - [x] Audit-Logging fuer API-Schreiboperationen
 - [x] Company-Isolation uebergreifend im API-Layer
+- [x] Audit-Log UI im Admin-Bereich
 
 ## Phase 18 - Projektstruktur
 - [x] Server-Routen weiter in Features aufgeteilt (`admin`, `finance-config`, `reports`, `advisors`)

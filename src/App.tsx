@@ -10,6 +10,7 @@ import { BankingPage } from "@/pages/BankingPage";
 import { ProductsPage } from "@/pages/ProductsPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { AdminPage } from "@/pages/AdminPage";
 import { BookingsPage } from "@/pages/BookingsPage";
 import { SmartInboxPage } from "@/pages/SmartInboxPage";
 import { AICopilotPage } from "@/pages/AICopilotPage";
@@ -61,6 +62,7 @@ export default function App() {
               <Route path="/copilot" element={<AICopilotPage />} />
               <Route path="/berichte" element={<ReportsPage />} />
               <Route path="/einstellungen" element={<SettingsPage />} />
+              <Route path="/admin" element={<AdminPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
