@@ -26,13 +26,21 @@ export function StatCard({ label, value, trend }: { label: string; value: string
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  const normalized = status.replace("Geprüft", "Geprueft").replace("Überfällig", "Ueberfaellig");
-  const label = normalized.replace("Geprueft", "Geprüft").replace("Ueberfaellig", "Überfällig");
+  const normalized = status
+    .replace("Geprüft", "Geprueft")
+    .replace("geprüft", "geprueft")
+    .replace("Überfällig", "Ueberfaellig")
+    .replace("überfällig", "ueberfaellig");
+  const label = normalized
+    .replace("Geprueft", "Geprüft")
+    .replace("geprueft", "geprüft")
+    .replace("Ueberfaellig", "Überfällig")
+    .replace("ueberfaellig", "überfällig");
 
   const tone =
     normalized === "Bezahlt" || normalized === "Angenommen" || normalized === "Geprueft" || normalized === "geprueft"
       ? "bg-emerald-100 text-emerald-700"
-      : normalized === "Ueberfaellig" || normalized === "Abgelehnt"
+      : normalized === "Ueberfaellig" || normalized === "ueberfaellig" || normalized === "Abgelehnt"
         ? "bg-rose-100 text-rose-700"
         : normalized === "Gebucht"
           ? "bg-indigo-100 text-indigo-700"

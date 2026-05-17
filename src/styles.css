@@ -11,6 +11,8 @@ html,
 body,
 #root {
   width: 100%;
+  min-width: 100%;
+  min-height: 100%;
   max-width: none;
   margin: 0;
   padding: 0;
@@ -22,6 +24,7 @@ body,
 
 body {
   margin: 0;
+  display: block !important;
   background:
     radial-gradient(1200px 500px at 0% -15%, rgba(87, 94, 255, 0.09), transparent 58%),
     radial-gradient(900px 420px at 100% -10%, rgba(36, 174, 255, 0.06), transparent 60%),
@@ -95,6 +98,11 @@ button:hover { filter: none; }
   background: #0f1318 !important;
 }
 
+.theme-dark .bg-card,
+.theme-dark [class*="bg-card"] {
+  background-color: rgba(19, 23, 29, 0.94) !important;
+}
+
 .theme-dark .bg-white,
 .theme-dark .bg-white\/90,
 .theme-dark .bg-white\/95 {
@@ -103,6 +111,10 @@ button:hover { filter: none; }
 
 .theme-dark [class*="bg-white"] {
   background-color: rgba(19, 23, 29, 0.94) !important;
+}
+
+.theme-dark [class*="text-white"] {
+  color: #e7edf5 !important;
 }
 
 .theme-dark .bg-slate-100,
@@ -146,6 +158,11 @@ button:hover { filter: none; }
   color: #b3bfcc !important;
 }
 
+.theme-dark .text-muted-foreground\/80,
+.theme-dark .text-muted-foreground\/90 {
+  color: #a8b5c4 !important;
+}
+
 .theme-dark .bg-muted {
   background: #1a212a !important;
 }
@@ -172,6 +189,10 @@ button:hover { filter: none; }
   background: #141a22 !important;
   color: #e8edf3 !important;
   border-color: #2b323a !important;
+}
+
+.theme-dark button {
+  color: #dfe6ef;
 }
 
 .theme-dark input::placeholder,
