@@ -162,6 +162,38 @@ export function SettingsPage() {
                   </div>
                 </div>
               </Card>
+
+              <Card className="space-y-3 p-5">
+                <h4 className="text-lg font-semibold">Nummernkreise</h4>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <p className="mb-1 text-sm font-medium">Rechnungspräfix</p>
+                    <Input value={settings.invoicePrefix} onChange={(e) => setField("invoicePrefix", e.target.value.toUpperCase())} />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-sm font-medium">Nächste Rechnungsnummer</p>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={settings.invoiceNextNumber}
+                      onChange={(e) => setField("invoiceNextNumber", Math.max(1, Number(e.target.value) || 1))}
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-sm font-medium">Angebotspräfix</p>
+                    <Input value={settings.offerPrefix} onChange={(e) => setField("offerPrefix", e.target.value.toUpperCase())} />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-sm font-medium">Nächste Angebotsnummer</p>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={settings.offerNextNumber}
+                      onChange={(e) => setField("offerNextNumber", Math.max(1, Number(e.target.value) || 1))}
+                    />
+                  </div>
+                </div>
+              </Card>
             </>
           ) : null}
 

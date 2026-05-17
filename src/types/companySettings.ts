@@ -27,6 +27,10 @@ export type CompanySettings = {
   iban: string;
   bic: string;
   logoUrl: string;
+  invoicePrefix: string;
+  invoiceNextNumber: number;
+  offerPrefix: string;
+  offerNextNumber: number;
 };
 
 export const defaultCompanySettings: CompanySettings = {
@@ -58,4 +62,8 @@ export const defaultCompanySettings: CompanySettings = {
   iban: "",
   bic: "",
   logoUrl: "",
+  invoicePrefix: "RE",
+  invoiceNextNumber: 101,
+  offerPrefix: "AN",
+  offerNextNumber: 31,
 };

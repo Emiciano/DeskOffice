@@ -129,6 +129,10 @@ model CompanySettings {
   iban                   String   @default("")
   bic                    String   @default("")
   logoUrl                String   @default("")
+  invoicePrefix          String   @default("RE")
+  invoiceNextNumber      Int      @default(101)
+  offerPrefix            String   @default("AN")
+  offerNextNumber        Int      @default(31)
   updatedAt              DateTime @updatedAt
   createdAt              DateTime @default(now())
 }

@@ -26,6 +26,7 @@ import { APP_PORT, CORS_ORIGIN, DEFAULT_COMPANY_NAME } from "./config.js";
 import { prisma } from "./db.js";
 import { ensureCompanySetup } from "./seed.js";
 import { isWriteMethod, writeAuditLog } from "./audit.js";
+import { createRateLimiter } from "./security.js";
 
 async function ensureSeedData() {
   const company = await prisma.company.upsert({
@@ -67,6 +68,9 @@ async function start() {
   await ensureSeedData();
 
   const app = express();
+  const authLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 60, message: "Zu viele Login/Register Versuche." });
+  const copilotLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 30, message: "Zu viele Copilot-Anfragen." });
+
   app.use(cors({ origin: CORS_ORIGIN }));
   app.use(express.json());
   app.use(attachAuth);
@@ -80,6 +84,7 @@ async function start() {
   });
 
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
+  app.use("/api/auth", authLimiter);
   app.use("/api/auth", authRouter);
   app.get("/api/bootstrap", requireAuth, async (req, res) => {
     res.json({ companyId: req.auth?.companyId ?? null, user: req.auth ?? null });
@@ -100,6 +105,7 @@ async function start() {
   app.use("/api/exports", exportsRouter);
   app.use("/api/inbox", inboxRouter);
   app.use("/api/dashboard", dashboardRouter);
+  app.use("/api/copilot", copilotLimiter);
   app.use("/api/copilot", copilotRouter);
   app.use("/api/advisors", advisorsRouter);
   app.use("/api/reports", reportsRouter);

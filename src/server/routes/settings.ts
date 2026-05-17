@@ -33,6 +33,10 @@ function sanitize(payload: Record<string, unknown>) {
     iban: String(payload.iban ?? ""),
     bic: String(payload.bic ?? ""),
     logoUrl: String(payload.logoUrl ?? ""),
+    invoicePrefix: String(payload.invoicePrefix ?? "RE").slice(0, 12).toUpperCase(),
+    invoiceNextNumber: Math.max(1, Number(payload.invoiceNextNumber ?? 101) || 101),
+    offerPrefix: String(payload.offerPrefix ?? "AN").slice(0, 12).toUpperCase(),
+    offerNextNumber: Math.max(1, Number(payload.offerNextNumber ?? 31) || 31),
   };
 }
 

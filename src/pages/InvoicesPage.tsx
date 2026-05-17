@@ -194,17 +194,21 @@ export function InvoicesPage() {
   const [companySettings, setCompanySettings] = useState<CompanySettings>(defaultCompanySettings);
   const [rowActionLoading, setRowActionLoading] = useState<string>("");
   const [openItems, setOpenItems] = useState<OpenItemsSummary>({ count: 0, totalGross: 0 });
+  const [nextInvoiceNumber, setNextInvoiceNumber] = useState("");
 
   async function load(company: string) {
-    const [invoiceRes, settingsRes, openItemsRes] = await Promise.all([
+    const [invoiceRes, settingsRes, openItemsRes, nextNumberRes] = await Promise.all([
       apiFetch(`/api/invoices?companyId=${company}`),
       apiFetch(`/api/settings?companyId=${company}`),
       apiFetch(`/api/invoices/open-items?companyId=${company}`),
+      apiFetch(`/api/invoices/next-number?companyId=${company}`),
     ]);
     setInvoices(await invoiceRes.json());
     setCompanySettings({ ...defaultCompanySettings, ...(await settingsRes.json()), companyId: company });
     const openItemsData = (await openItemsRes.json()) as OpenItemsSummary;
     setOpenItems({ count: openItemsData.count ?? 0, totalGross: openItemsData.totalGross ?? 0 });
+    const nextData = (await nextNumberRes.json()) as { number?: string };
+    setNextInvoiceNumber(String(nextData.number ?? ""));
   }
 
   useEffect(() => {
@@ -233,10 +237,7 @@ export function InvoicesPage() {
     return { net, tax, gross: net + tax };
   }, [items]);
 
-  const draftNumber = useMemo(
-    () => `RE-${new Date().getFullYear()}-${String(invoices.length + 101).padStart(4, "0")}`,
-    [invoices.length],
-  );
+  const draftNumber = useMemo(() => nextInvoiceNumber || "RE-YYYY-0000", [nextInvoiceNumber]);
 
   const printableHtml = useMemo(() => {
     const rows = items

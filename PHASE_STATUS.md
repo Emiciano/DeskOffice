@@ -27,7 +27,9 @@ Stand: 2026-05-17
 - Copilot-Texte/Umlaute serverseitig bereinigt.
 
 ## Offen / Feinschliff (Phase 16-20)
-- Phase 16: Einstellungen erweitern (vollständige Nummernkreise, Rechnungsdesign-Profile, Banking-Multi-Account UI)
+- Phase 16: Einstellungen erweitern
+  - DONE: Nummernkreise (Rechnung/Angebot) als persistente Settings
+  - OFFEN: Rechnungsdesign-Profile je Mandant, Banking-Multi-Account UI-Feinschliff
 - Phase 17: Security-Härtung (Rate-Limit, strengere RBAC-Middleware je Endpoint, Delete-/Retention-Konzept)
 - Phase 18: Struktur-Feinschliff (weitere Feature-Slices, interne API-Service-Layer vereinheitlichen)
 - Phase 19: Prisma-Feinschliff (Index-Tuning, Soft-Delete-Strategie, optionale Relationserweiterungen)
