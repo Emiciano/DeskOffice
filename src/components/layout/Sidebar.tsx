@@ -24,7 +24,7 @@ export function Sidebar() {
   const showDocumentChildren = location.pathname === "/belege";
 
   return (
-    <aside className="fixed left-0 top-0 z-30 h-screen w-64 rounded-none rounded-r-2xl border-y-0 border-l-0 border-r border-border/80 bg-white/95 p-4 shadow-soft backdrop-blur-sm">
+    <aside className="fixed left-0 top-0 z-30 h-screen w-64 rounded-none rounded-r-2xl border-y-0 border-l-0 border-r border-border/80 bg-card p-4 shadow-soft backdrop-blur-sm">
       <div className="mb-6 px-2">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Emiciano</p>
         <p className="text-lg font-semibold tracking-tight">DeskOffice</p>
