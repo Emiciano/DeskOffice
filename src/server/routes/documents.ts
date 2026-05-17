@@ -4,7 +4,7 @@ import { getCompanyId, requirePermissions } from "../auth.js";
 
 export const documentsRouter = Router();
 
-documentsRouter.get("/", async (req, res) => {
+documentsRouter.get("/", requirePermissions("documents:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const items = await prisma.document.findMany({ where: { companyId }, orderBy: { createdAt: "desc" } });

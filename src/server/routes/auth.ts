@@ -127,3 +127,4 @@ authRouter.post("/logout", requireAuth, async (req, res) => {
   }
   res.json({ ok: true });
 });
+

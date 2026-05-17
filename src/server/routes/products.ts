@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { getCompanyId, requireRoles } from "../auth.js";
+import { getCompanyId, requirePermissions, requireRoles } from "../auth.js";
 import { prisma } from "../db.js";
 
 export const productsRouter = Router();
 
-productsRouter.get("/", async (req, res) => {
+productsRouter.get("/", requirePermissions("products:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const items = await prisma.product.findMany({

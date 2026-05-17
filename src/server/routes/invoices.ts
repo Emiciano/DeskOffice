@@ -4,7 +4,7 @@ import { getCompanyId, requirePermissions } from "../auth.js";
 
 export const invoicesRouter = Router();
 
-invoicesRouter.get("/next-number", async (req, res) => {
+invoicesRouter.get("/next-number", requirePermissions("invoices:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
 
@@ -20,7 +20,7 @@ invoicesRouter.get("/next-number", async (req, res) => {
   res.json({ number, prefix, next });
 });
 
-invoicesRouter.get("/", async (req, res) => {
+invoicesRouter.get("/", requirePermissions("invoices:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const items = await prisma.invoice.findMany({
@@ -31,7 +31,7 @@ invoicesRouter.get("/", async (req, res) => {
   res.json(items);
 });
 
-invoicesRouter.get("/open-items", async (req, res) => {
+invoicesRouter.get("/open-items", requirePermissions("invoices:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
 

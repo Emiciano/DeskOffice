@@ -4,7 +4,7 @@ import { getCompanyId, requirePermissions } from "../auth.js";
 
 export const bankingRouter = Router();
 
-bankingRouter.get("/transactions", async (req, res) => {
+bankingRouter.get("/transactions", requirePermissions("banking:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const items = await prisma.bankTransaction.findMany({
@@ -115,7 +115,7 @@ bankingRouter.patch("/transactions/:id/match", requirePermissions("banking:write
   res.json(updated);
 });
 
-bankingRouter.get("/transactions/:id/suggestions", async (req, res) => {
+bankingRouter.get("/transactions/:id/suggestions", requirePermissions("banking:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;
