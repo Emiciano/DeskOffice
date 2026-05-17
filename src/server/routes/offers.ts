@@ -31,11 +31,19 @@ offersRouter.post("/:id/convert", requirePermissions("offers:write"), async (req
   const offer = await prisma.offer.findFirst({ where: { id, companyId } });
   if (!offer) return res.status(404).json({ error: "Offer not found" });
 
-  const invoiceCount = await prisma.invoice.count({ where: { companyId: offer.companyId } });
   const invoice = await prisma.$transaction(async (tx) => {
+    const settings = await tx.companySettings.upsert({
+      where: { companyId: offer.companyId },
+      update: {},
+      create: { companyId: offer.companyId, companyName: "" },
+    });
+    const next = settings.invoiceNextNumber || 101;
+    const prefix = settings.invoicePrefix || "RE";
+    const number = `${prefix}-${new Date().getFullYear()}-${String(next).padStart(4, "0")}`;
+
     const created = await tx.invoice.create({
       data: {
-        number: `RE-${new Date().getFullYear()}-${(invoiceCount + 101).toString().padStart(4, "0")}`,
+        number,
         customer: offer.customer,
         amountNet: offer.amountNet,
         amountTax: offer.amountTax,
@@ -46,6 +54,10 @@ offersRouter.post("/:id/convert", requirePermissions("offers:write"), async (req
         sourceOfferId: offer.id,
         companyId: offer.companyId,
       },
+    });
+    await tx.companySettings.update({
+      where: { companyId: offer.companyId },
+      data: { invoiceNextNumber: next + 1 },
     });
     await tx.offer.update({ where: { id: offer.id }, data: { status: "Angenommen" } });
     return created;
