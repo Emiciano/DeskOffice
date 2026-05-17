@@ -7,6 +7,15 @@
   color: hsl(227 20% 17%);
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -79,6 +88,10 @@ button:hover { filter: none; }
 .theme-dark .bg-white\/90,
 .theme-dark .bg-white\/95 {
   background: rgba(19, 23, 29, 0.94) !important;
+}
+
+.theme-dark [class*="bg-white"] {
+  background-color: rgba(19, 23, 29, 0.94) !important;
 }
 
 .theme-dark .bg-slate-100,

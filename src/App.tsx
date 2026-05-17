@@ -42,7 +42,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen w-screen overflow-x-hidden bg-background">
       <Sidebar />
       <main className="ml-64 min-w-0 p-4 lg:p-5">
         <Topbar />
