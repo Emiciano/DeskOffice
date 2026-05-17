@@ -57,6 +57,8 @@ bankingRouter.post("/transactions", async (req, res) => {
 });
 
 bankingRouter.patch("/transactions/:id/match", async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;
   const { matchedInvoiceId, matchedDocumentId, status } = req.body as {
     matchedInvoiceId?: string;
@@ -65,6 +67,9 @@ bankingRouter.patch("/transactions/:id/match", async (req, res) => {
   };
 
   const updated = await prisma.$transaction(async (tx) => {
+    const existing = await tx.bankTransaction.findFirst({ where: { id, companyId } });
+    if (!existing) return null;
+
     const row = await tx.bankTransaction.update({
       where: { id },
       data: {
@@ -75,25 +80,28 @@ bankingRouter.patch("/transactions/:id/match", async (req, res) => {
     });
 
     if (matchedInvoiceId) {
-      await tx.invoice.update({
-        where: { id: matchedInvoiceId },
+      await tx.invoice.updateMany({
+        where: { id: matchedInvoiceId, companyId },
         data: { status: "Bezahlt" },
       });
     }
     if (matchedDocumentId) {
-      await tx.document.update({
-        where: { id: matchedDocumentId },
+      await tx.document.updateMany({
+        where: { id: matchedDocumentId, companyId },
         data: { status: "Bezahlt" },
       });
     }
     return row;
   });
+  if (!updated) return res.status(404).json({ error: "Transaction not found" });
   res.json(updated);
 });
 
 bankingRouter.get("/transactions/:id/suggestions", async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;
-  const tx = await prisma.bankTransaction.findUnique({ where: { id } });
+  const tx = await prisma.bankTransaction.findFirst({ where: { id, companyId } });
   if (!tx) return res.status(404).json({ error: "Transaction not found" });
 
   const amountAbs = Math.abs(tx.amount);

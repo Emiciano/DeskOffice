@@ -12,18 +12,26 @@ rulesRouter.get("/", async (req, res) => {
 });
 
 rulesRouter.post("/", requireRoles("owner", "admin"), async (req, res) => {
-  const created = await prisma.rule.create({ data: { ...req.body, companyId: getCompanyId(req) } });
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
+  const created = await prisma.rule.create({ data: { ...req.body, companyId } });
   res.status(201).json(created);
 });
 
 rulesRouter.patch("/:id", requireRoles("owner", "admin"), async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;
-  const updated = await prisma.rule.update({ where: { id }, data: req.body });
-  res.json(updated);
+  const updated = await prisma.rule.updateMany({ where: { id, companyId }, data: req.body });
+  if (updated.count === 0) return res.status(404).json({ error: "Rule not found" });
+  res.json({ ok: true });
 });
 
 rulesRouter.delete("/:id", requireRoles("owner", "admin"), async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;
-  await prisma.rule.delete({ where: { id } });
+  const removed = await prisma.rule.deleteMany({ where: { id, companyId } });
+  if (removed.count === 0) return res.status(404).json({ error: "Rule not found" });
   res.status(204).send();
 });

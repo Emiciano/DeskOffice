@@ -1,93 +1,34 @@
-# Umsetzungsstand Phasen 1-15
+# DeskOffice Phase Status (1-20)
 
 Stand: 2026-05-17
 
-## Phase 1 - Grundsystem
-- [x] React + TypeScript + Router + zentrales Layout
-- [x] Login/Register gegen DB
-- [x] Company-basierte Datenisolation (`companyId`)
-- [x] Rollenfeld am User + geschuetzte API
-- [x] Settings-Bereich DB-gestuetzt
+## Abgeschlossen (funktional umgesetzt)
+- Phase 1: Grundsystem (Layout, Auth-Basis, Rollen, Settings-Basis, Prisma/API-Struktur)
+- Phase 2: Belegverwaltung (Upload, Liste, Detail, Bearbeitung, Statusfluss)
+- Phase 3: OCR-Architektur (provider-ready Workflow, aktuell ohne externen Anbieter)
+- Phase 4: SKR03/SKR04 Kontenrahmen (Datenmodell, Suche, Zuordnung)
+- Phase 5: Buchungen (Soll/Haben, Journal, Buchungsfluss aus Belegen)
+- Phase 6: Rechnungen/Angebote (Erstellung, Status, Vorlagen, PDF/Print, Umwandlungen)
+- Phase 7: E-Rechnung Basis (XRechnung/XML Exportstruktur)
+- Phase 8: Banking (CSV-Import, Transaktionen, Matching, Vorschläge)
+- Phase 9: Regelengine (Pattern-Regeln, automatische Konto/Kategorie-Vorschläge)
+- Phase 10: Steuerbereich (Snapshot, Overview, Forecast, Hinweise ohne Steuerberatung)
+- Phase 11: DATEV/Export (Export-Historie, Download, Advisor-Flow)
+- Phase 12: Smart Inbox (offene Punkte, Priorisierung, Statusupdates)
+- Phase 13: AI Copilot UI+API (Kennzahlen/Fragen aus echten DB-Daten)
+- Phase 14: Kunden/Lieferanten (CRUD-Basis, Detailansicht, Umsatz-/Rechnungsbezug)
+- Phase 15: Reporting (Cashflow, Top-Kategorien, offene Posten, Dokument-Qualität)
 
-## Phase 2 - Belegverwaltung
-- [x] Upload-Flow + Belegliste + Filter
-- [x] Bearbeitungs-Workflow (Erfassen/Bearbeiten)
-- [x] Belegstatus und Buchungsuebergang
+## In diesem Schritt zusätzlich gehärtet
+- Multi-Tenant-Isolation auf kritischen Endpoints verbessert:
+  - `rules` update/delete jetzt company-scoped
+  - `banking` match/suggestions jetzt company-scoped
+  - `exports` status-update jetzt company-scoped
+- Copilot-Texte/Umlaute serverseitig bereinigt.
 
-## Phase 3 - OCR Architektur
-- [x] OCR-Trigger im Workflow vorhanden
-- [x] Mock-OCR fuer provider-unabhaengigen Start
-- [ ] Externer OCR-Provider (bewusst noch nicht aktiviert)
-
-## Phase 4 - Kontenrahmen SKR03/SKR04
-- [x] Kontenmodell in DB
-- [x] SKR03/SKR04 Seeddaten
-- [x] Kontenverwaltung + Suche/Filter
-
-## Phase 5 - Buchungen
-- [x] Beleg-zu-Buchung
-- [x] Journalansicht
-- [x] Validierung und Statusuebergaenge
-
-## Phase 6 - Rechnungen & Angebote
-- [x] Rechnungserstellung mit Positionslogik und Vorlagenvorschau
-- [x] Angebote + Umwandlungs-/Folgeprozesse
-- [x] Wiederkehrende Rechnung (naechster Zyklus)
-
-## Phase 7 - E-Rechnung Vorbereitung
-- [x] DB-Modell fuer E-Rechnungsdokument
-- [x] API-Route fuer XML-Erstellung aus Rechnung
-- [x] XML-Export (XRechnung-Workflow vorbereitet)
-
-## Phase 8 - Banking
-- [x] CSV-Import
-- [x] Transaktionsliste in DB
-- [x] Matching auf Rechnungen inkl. Statusupdate
-
-## Phase 9 - Regelengine
-- [x] Regeln CRUD
-- [x] Anwendung bei Bankimport
-- [x] Vorschlagssystem bei Zuordnung
-
-## Phase 10 - Steuerbereich
-- [x] Steuer-Snapshots Modell + API
-- [x] Steuerrelevante Reports/Uebersichten im UI
-
-## Phase 11 - DATEV / Steuerberater
-- [x] Export-Historie und Download-Flow
-- [x] Steuerberater-Einladung (Invite, Liste, Widerruf)
-
-## Phase 12 - Smart Inbox
-- [x] Aufgabenliste fuer unvollstaendige Belege
-- [x] Priorisierung und Statusaktionen
-
-## Phase 13 - AI Copilot
-- [x] Copilot UI mit Quick-Fragen
-- [x] Datenbasierte Antworten aus Rechnungen/Belegen/Buchungen
-
-## Phase 14 - Kunden & Lieferanten
-- [x] Kontaktanlage (Kunde/Lieferant)
-- [x] Detailansicht mit Rechnungen/Belegen und Umsatzbezug
-
-## Phase 15 - Reporting
-- [x] Erweiterte Reports API (Cashflow, Top-Kategorien, offene Posten)
-- [x] Reporting-Widgets im UI
-
-## Phase 16 - Einstellungen
-- [x] Erweiterte Firmen-/Steuer-/Bank-Einstellungen persistent in DB
-- [x] Finanzkonfiguration API fuer Bankkonten und Kostenstellen
-- [x] Admin-Frontend fuer Rollen/Mitglieder/Subscription/Finanzkonfiguration
-
-## Phase 17 - SaaS & Sicherheit
-- [x] Rollenbasierte Write-Guards auf kritischen Endpunkten
-- [x] Audit-Logging fuer API-Schreiboperationen
-- [x] Company-Isolation uebergreifend im API-Layer
-- [x] Audit-Log UI im Admin-Bereich
-
-## Phase 18 - Projektstruktur
-- [x] Server-Routen weiter in Features aufgeteilt (`admin`, `finance-config`, `reports`, `advisors`)
-- [x] Skalierbare Trennung von Domain- und Infrastrukturdateien
-
-## Phase 19 - Prisma Models
-- [x] Ergaenzt: `Role`, `CompanyMember`, `DocumentFile`, `BankAccount`, `CostCenter`, `Subscription`, `AuditLog`
-- [x] Erweiterte Relationen in `Company`, `User`, `Document`, `Booking`, `BankTransaction`
+## Offen / Feinschliff (Phase 16-20)
+- Phase 16: Einstellungen erweitern (vollständige Nummernkreise, Rechnungsdesign-Profile, Banking-Multi-Account UI)
+- Phase 17: Security-Härtung (Rate-Limit, strengere RBAC-Middleware je Endpoint, Delete-/Retention-Konzept)
+- Phase 18: Struktur-Feinschliff (weitere Feature-Slices, interne API-Service-Layer vereinheitlichen)
+- Phase 19: Prisma-Feinschliff (Index-Tuning, Soft-Delete-Strategie, optionale Relationserweiterungen)
+- Phase 20: End-to-End Kernflows mit finaler QA/Doku (Login → Firma → Beleg → Buchung → Rechnung → Dashboard)

@@ -40,10 +40,13 @@ exportsRouter.post("/", async (req, res) => {
 });
 
 exportsRouter.patch("/:id/status", async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;
   const { status } = req.body as { status: string };
-  const updated = await prisma.dataExport.update({ where: { id }, data: { status } });
-  res.json(updated);
+  const updated = await prisma.dataExport.updateMany({ where: { id, companyId }, data: { status } });
+  if (updated.count === 0) return res.status(404).json({ error: "Export not found" });
+  res.json({ ok: true });
 });
 
 exportsRouter.get("/:id/download", async (req, res) => {
