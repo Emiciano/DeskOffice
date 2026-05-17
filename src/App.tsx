@@ -42,8 +42,8 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="flex w-full gap-6">
+    <div className="min-h-screen bg-background p-5 lg:p-6">
+      <div className="mx-auto flex w-full max-w-[1720px] gap-5 lg:gap-6">
         <Sidebar />
         <main className="min-w-0 flex-1">
           <Topbar />

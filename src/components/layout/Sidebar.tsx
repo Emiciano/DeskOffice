@@ -24,8 +24,11 @@ export function Sidebar() {
   const showDocumentChildren = location.pathname === "/belege";
 
   return (
-    <aside className="sticky top-6 h-[calc(100vh-3rem)] w-64 rounded-2xl border border-border bg-white p-4 shadow-soft">
-      <div className="mb-6 px-2 text-lg font-semibold">Buchhaltung CMS</div>
+    <aside className="sticky top-6 h-[calc(100vh-3rem)] w-64 rounded-2xl border border-border/80 bg-white/95 p-4 shadow-soft backdrop-blur-sm">
+      <div className="mb-6 px-2">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Emiciano</p>
+        <p className="text-lg font-semibold tracking-tight">DeskOffice</p>
+      </div>
       <nav className="space-y-1">
         {links.map(({ label, to, icon: Icon }) => (
           <div key={to}>
@@ -34,7 +37,7 @@ export function Sidebar() {
             className={({ isActive }) =>
               cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-muted-foreground transition",
-                isActive ? "bg-muted text-foreground" : "hover:bg-muted/80",
+                isActive ? "bg-muted text-foreground shadow-sm" : "hover:bg-muted/70 hover:text-foreground",
               )
             }
           >

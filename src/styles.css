@@ -13,7 +13,12 @@
 
 body {
   margin: 0;
-  background: hsl(240 18% 98%);
+  background:
+    radial-gradient(1200px 500px at 0% -15%, rgba(87, 94, 255, 0.09), transparent 58%),
+    radial-gradient(900px 420px at 100% -10%, rgba(36, 174, 255, 0.06), transparent 60%),
+    hsl(240 20% 98%);
+  color: hsl(227 20% 17%);
+  overflow-x: hidden;
 }
 
 a,
@@ -59,8 +64,11 @@ button:hover { filter: none; }
 }
 
 .theme-dark body {
-  background: #101214;
-  color: #e5e7eb;
+  background:
+    radial-gradient(1200px 500px at 0% -15%, rgba(98, 116, 255, 0.2), transparent 55%),
+    radial-gradient(900px 420px at 100% -10%, rgba(45, 150, 255, 0.14), transparent 60%),
+    #0f1114;
+  color: #e8edf3;
 }
 
 .theme-dark .bg-background {
@@ -68,11 +76,11 @@ button:hover { filter: none; }
 }
 
 .theme-dark .bg-white {
-  background: #171a1d !important;
+  background: rgba(22, 25, 30, 0.92) !important;
 }
 
 .theme-dark .border-border {
-  border-color: #2a2f35 !important;
+  border-color: #2d3440 !important;
 }
 
 .theme-dark .text-foreground {
@@ -84,11 +92,11 @@ button:hover { filter: none; }
 }
 
 .theme-dark .bg-muted {
-  background: #22272d !important;
+  background: #1e242c !important;
 }
 
 .theme-dark .bg-primary {
-  background: #3a4048 !important;
+  background: #5862f7 !important;
 }
 
 .theme-dark .text-primary {
@@ -96,7 +104,7 @@ button:hover { filter: none; }
 }
 
 .theme-dark .shadow-soft {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.35) !important;
 }
 
 .theme-dark input,
