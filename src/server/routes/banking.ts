@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { getCompanyId } from "../auth.js";
+import { getCompanyId, requirePermissions } from "../auth.js";
 
 export const bankingRouter = Router();
 
@@ -14,7 +14,7 @@ bankingRouter.get("/transactions", async (req, res) => {
   res.json(items);
 });
 
-bankingRouter.post("/transactions", async (req, res) => {
+bankingRouter.post("/transactions", requirePermissions("banking:write"), async (req, res) => {
   const payload = req.body as {
     companyId: string;
     bookingDate: string;
@@ -56,7 +56,7 @@ bankingRouter.post("/transactions", async (req, res) => {
   res.status(201).json(created);
 });
 
-bankingRouter.patch("/transactions/:id/match", async (req, res) => {
+bankingRouter.patch("/transactions/:id/match", requirePermissions("banking:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;

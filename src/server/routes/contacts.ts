@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { getCompanyId } from "../auth.js";
+import { getCompanyId, requirePermissions } from "../auth.js";
 
 export const contactsRouter = Router();
 
@@ -69,7 +69,7 @@ contactsRouter.get("/:id/detail", async (req, res) => {
   });
 });
 
-contactsRouter.post("/", async (req, res) => {
+contactsRouter.post("/", requirePermissions("contacts:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const payload = req.body as {
@@ -107,7 +107,7 @@ contactsRouter.post("/", async (req, res) => {
   res.status(201).json(created);
 });
 
-contactsRouter.patch("/:id", async (req, res) => {
+contactsRouter.patch("/:id", requirePermissions("contacts:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;

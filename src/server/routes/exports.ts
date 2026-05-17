@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { getCompanyId } from "../auth.js";
+import { getCompanyId, requirePermissions } from "../auth.js";
 
 export const exportsRouter = Router();
 
@@ -14,7 +14,7 @@ exportsRouter.get("/", async (req, res) => {
   res.json(items);
 });
 
-exportsRouter.post("/", async (req, res) => {
+exportsRouter.post("/", requirePermissions("exports:write"), async (req, res) => {
   const payload = req.body as {
     exportType: string;
     periodLabel: string;
@@ -39,7 +39,7 @@ exportsRouter.post("/", async (req, res) => {
   res.status(201).json(created);
 });
 
-exportsRouter.patch("/:id/status", async (req, res) => {
+exportsRouter.patch("/:id/status", requirePermissions("exports:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;

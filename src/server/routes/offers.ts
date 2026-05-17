@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { getCompanyId } from "../auth.js";
+import { getCompanyId, requirePermissions } from "../auth.js";
 
 export const offersRouter = Router();
 
@@ -11,7 +11,7 @@ offersRouter.get("/", async (req, res) => {
   res.json(items);
 });
 
-offersRouter.post("/", async (req, res) => {
+offersRouter.post("/", requirePermissions("offers:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const created = await prisma.offer.create({
@@ -24,7 +24,7 @@ offersRouter.post("/", async (req, res) => {
   res.status(201).json(created);
 });
 
-offersRouter.post("/:id/convert", async (req, res) => {
+offersRouter.post("/:id/convert", requirePermissions("offers:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;
@@ -54,7 +54,7 @@ offersRouter.post("/:id/convert", async (req, res) => {
   res.status(201).json(invoice);
 });
 
-offersRouter.delete("/:id", async (req, res) => {
+offersRouter.delete("/:id", requirePermissions("offers:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const removed = await prisma.offer.deleteMany({ where: { id: req.params.id, companyId } });

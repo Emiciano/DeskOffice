@@ -70,10 +70,22 @@ async function start() {
   const app = express();
   const authLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 60, message: "Zu viele Login/Register Versuche." });
   const copilotLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 30, message: "Zu viele Copilot-Anfragen." });
+  const writeLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 120, message: "Zu viele schreibende API-Anfragen." });
 
   app.use(cors({ origin: CORS_ORIGIN }));
+  app.disable("x-powered-by");
   app.use(express.json());
+  app.use((req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("X-Frame-Options", "DENY");
+    next();
+  });
   app.use(attachAuth);
+  app.use("/api", (req, res, next) => {
+    if (isWriteMethod(req.method)) return writeLimiter(req, res, next);
+    return next();
+  });
   app.use((req, res, next) => {
     if (isWriteMethod(req.method) && req.path.startsWith("/api/")) {
       res.on("finish", () => {

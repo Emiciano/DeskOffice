@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { getCompanyId } from "../auth.js";
+import { getCompanyId, requirePermissions } from "../auth.js";
 
 export const invoicesRouter = Router();
 
@@ -46,7 +46,7 @@ invoicesRouter.get("/open-items", async (req, res) => {
   res.json({ count: items.length, totalGross, items });
 });
 
-invoicesRouter.post("/", async (req, res) => {
+invoicesRouter.post("/", requirePermissions("invoices:write"), async (req, res) => {
   const { items = [], ...raw } = req.body as {
     companyId: string;
     number?: string;
@@ -119,7 +119,7 @@ invoicesRouter.post("/", async (req, res) => {
   res.status(201).json(created);
 });
 
-invoicesRouter.patch("/:id/status", async (req, res) => {
+invoicesRouter.patch("/:id/status", requirePermissions("invoices:write"), async (req, res) => {
   const { id } = req.params;
   const { status } = req.body as { status: string };
   const allowed = new Set(["Entwurf", "Offen", "Bezahlt", "Ueberfaellig", "Storniert", "Versendet"]);
@@ -133,7 +133,7 @@ invoicesRouter.patch("/:id/status", async (req, res) => {
   res.json({ ok: true });
 });
 
-invoicesRouter.post("/:id/reminder", async (req, res) => {
+invoicesRouter.post("/:id/reminder", requirePermissions("invoices:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;
@@ -152,7 +152,7 @@ invoicesRouter.post("/:id/reminder", async (req, res) => {
   });
 });
 
-invoicesRouter.post("/:id/recurring-next", async (req, res) => {
+invoicesRouter.post("/:id/recurring-next", requirePermissions("invoices:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;

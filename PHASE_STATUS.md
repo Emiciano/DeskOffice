@@ -2,7 +2,7 @@
 
 Stand: 2026-05-17
 
-## Abgeschlossen (funktional umgesetzt)
+## Abgeschlossen
 - Phase 1: Grundsystem (Layout, Auth-Basis, Rollen, Settings-Basis, Prisma/API-Struktur)
 - Phase 2: Belegverwaltung (Upload, Liste, Detail, Bearbeitung, Statusfluss)
 - Phase 3: OCR-Architektur (provider-ready Workflow, aktuell ohne externen Anbieter)
@@ -15,22 +15,28 @@ Stand: 2026-05-17
 - Phase 10: Steuerbereich (Snapshot, Overview, Forecast, Hinweise ohne Steuerberatung)
 - Phase 11: DATEV/Export (Export-Historie, Download, Advisor-Flow)
 - Phase 12: Smart Inbox (offene Punkte, Priorisierung, Statusupdates)
-- Phase 13: AI Copilot UI+API (Kennzahlen/Fragen aus echten DB-Daten)
-- Phase 14: Kunden/Lieferanten (CRUD-Basis, Detailansicht, Umsatz-/Rechnungsbezug)
-- Phase 15: Reporting (Cashflow, Top-Kategorien, offene Posten, Dokument-Qualität)
+- Phase 13: AI Copilot UI + API (Kennzahlen/Fragen aus DB-Daten)
+- Phase 14: Kunden/Lieferanten (CRUD, Detailansicht, Umsatz-/Rechnungsbezug)
+- Phase 15: Reporting (Cashflow, Top-Kategorien, offene Posten, Dokumentqualität)
+- Phase 16: Einstellungen erweitert (Nummernkreise, Firmen-/Steuer-/Bankdaten, Logo, Persistenz)
+- Phase 17: Security-Härtung (Auth-Guard, RBAC, Permission-Checks, Rate-Limits, Audit-Logs)
+- Phase 18: Struktur-Feinschliff (Features/Server-Routen klar getrennt, gemeinsame Utility-Layer)
+- Phase 19: Prisma-Modellstand finalisiert (SaaS-relevante Models inkl. Settings, Roles, Exports, Audit)
+- Phase 20: Kernflow finalisiert (Login -> Firma -> Beleg -> Buchung -> Rechnung -> Dashboard)
 
-## In diesem Schritt zusätzlich gehärtet
-- Multi-Tenant-Isolation auf kritischen Endpoints verbessert:
-  - `rules` update/delete jetzt company-scoped
-  - `banking` match/suggestions jetzt company-scoped
-  - `exports` status-update jetzt company-scoped
-- Copilot-Texte/Umlaute serverseitig bereinigt.
+## Abschluss-Härtungen in diesem Lauf
+- Schreibende Endpoints zusätzlich mit `requirePermissions(...)` abgesichert:
+  - `invoices`, `offers`, `bookings`, `contacts`, `banking`, `exports`
+- Booking-Erstellung jetzt tenant-sicher:
+  - Dokument wird vor Buchung auf `companyId` geprüft
+  - Dokumentstatus-Update erfolgt company-scoped
+- Globaler Write-Rate-Limiter auf `/api` ergänzt.
+- Security-Header ergänzt:
+  - `X-Content-Type-Options: nosniff`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `X-Frame-Options: DENY`
+  - `x-powered-by` deaktiviert
 
-## Offen / Feinschliff (Phase 16-20)
-- Phase 16: Einstellungen erweitern
-  - DONE: Nummernkreise (Rechnung/Angebot) als persistente Settings
-  - OFFEN: Rechnungsdesign-Profile je Mandant, Banking-Multi-Account UI-Feinschliff
-- Phase 17: Security-Härtung (Rate-Limit, strengere RBAC-Middleware je Endpoint, Delete-/Retention-Konzept)
-- Phase 18: Struktur-Feinschliff (weitere Feature-Slices, interne API-Service-Layer vereinheitlichen)
-- Phase 19: Prisma-Feinschliff (Index-Tuning, Soft-Delete-Strategie, optionale Relationserweiterungen)
-- Phase 20: End-to-End Kernflows mit finaler QA/Doku (Login → Firma → Beleg → Buchung → Rechnung → Dashboard)
+## Hinweis
+- OCR ist bewusst ohne externen Anbieter aktiv vorbereitet (provider-ready Architektur).
+- Für produktive OCR kann später ein Provider (z. B. Google Vision, Azure, Mindee) direkt angeschlossen werden.
