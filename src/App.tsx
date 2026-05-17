@@ -44,7 +44,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background p-4 lg:p-5">
       <Sidebar />
-      <main className="min-w-0 pl-[18.5rem]">
+      <main className="ml-[18.5rem] min-w-0">
         <Topbar />
         <div key={location.pathname} className="page-enter">
           <Routes>

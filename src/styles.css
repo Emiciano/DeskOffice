@@ -75,7 +75,9 @@ button:hover { filter: none; }
   background: #0f1318 !important;
 }
 
-.theme-dark .bg-white {
+.theme-dark .bg-white,
+.theme-dark .bg-white\/90,
+.theme-dark .bg-white\/95 {
   background: rgba(19, 23, 29, 0.94) !important;
 }
 
@@ -88,7 +90,7 @@ button:hover { filter: none; }
 }
 
 .theme-dark .text-muted-foreground {
-  color: #a3adb8 !important;
+  color: #b3bfcc !important;
 }
 
 .theme-dark .bg-muted {
@@ -96,7 +98,7 @@ button:hover { filter: none; }
 }
 
 .theme-dark .bg-primary {
-  background: #667085 !important;
+  background: #5f6b7d !important;
 }
 
 .theme-dark .text-primary {
@@ -110,7 +112,7 @@ button:hover { filter: none; }
 .theme-dark input,
 .theme-dark select,
 .theme-dark textarea {
-  background: #14181c !important;
+  background: #141a22 !important;
   color: #e8edf3 !important;
   border-color: #2b323a !important;
 }
@@ -122,7 +124,7 @@ button:hover { filter: none; }
 
 .theme-dark th,
 .theme-dark td {
-  color: #dbe3ec;
+  color: #dbe3ec !important;
 }
 
 .theme-dark tr:hover td {
