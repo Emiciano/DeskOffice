@@ -10,7 +10,7 @@ export function ExpensesPage() {
 
   return (
     <div>
-      <PageHeader title="Ausgaben & Belege" subtitle="Belege erfassen, kategorisieren und pruefen" />
+      <PageHeader title="Ausgaben & Belege" subtitle="Belege erfassen, kategorisieren und prüfen" />
       <Card className="mb-4 border-dashed">
         <div className="flex flex-col items-center gap-3 rounded-xl bg-muted p-6 text-center">
           <p className="text-sm text-muted-foreground">Dateien per Drag-and-Drop oder Dateiauswahl hochladen</p>

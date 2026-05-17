@@ -16,7 +16,7 @@ export function DocumentDetail({ document, onReplaceFile, onChangeData, onMarkCh
   if (!document) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-white p-12 text-center text-sm text-muted-foreground">
-        Kein Beleg ausgewaehlt. Lade einen Beleg hoch oder waehle einen Eintrag aus der Liste.
+        Kein Beleg ausgewählt. Lade einen Beleg hoch oder wähle einen Eintrag aus der Liste.
       </div>
     );
   }

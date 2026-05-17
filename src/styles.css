@@ -30,6 +30,17 @@ body {
   overflow-x: hidden;
 }
 
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th,
+td {
+  padding: 0.7rem 0.75rem;
+  vertical-align: middle;
+}
+
 a,
 button,
 input,
@@ -118,6 +129,11 @@ button:hover { filter: none; }
   background-color: #202a35 !important;
 }
 
+.theme-dark [class*="text-zinc-"],
+.theme-dark [class*="text-neutral-"] {
+  color: #ccd6e2 !important;
+}
+
 .theme-dark .border-border {
   border-color: #2a313b !important;
 }
@@ -160,7 +176,7 @@ button:hover { filter: none; }
 
 .theme-dark input::placeholder,
 .theme-dark textarea::placeholder {
-  color: #95a1af !important;
+  color: #9aa7b6 !important;
 }
 
 .theme-dark th,

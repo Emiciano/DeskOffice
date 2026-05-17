@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle: string; action?: ReactNode }) {
   return (
-    <div className="mb-5 flex items-end justify-between">
+    <div className="mb-5 flex items-end justify-between gap-4">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         <p className="text-sm text-muted-foreground">{subtitle}</p>
@@ -26,13 +26,8 @@ export function StatCard({ label, value, trend }: { label: string; value: string
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  const normalized = status
-    .replace("Geprüft", "Geprueft")
-    .replace("Überfällig", "Ueberfaellig");
-
-  const label = normalized
-    .replace("Geprueft", "Geprüft")
-    .replace("Ueberfaellig", "Überfällig");
+  const normalized = status.replace("Geprüft", "Geprueft").replace("Überfällig", "Ueberfaellig");
+  const label = normalized.replace("Geprueft", "Geprüft").replace("Ueberfaellig", "Überfällig");
 
   const tone =
     normalized === "Bezahlt" || normalized === "Angenommen" || normalized === "Geprueft" || normalized === "geprueft"
@@ -43,7 +38,7 @@ export function StatusBadge({ status }: { status: string }) {
           ? "bg-indigo-100 text-indigo-700"
           : "bg-slate-100 text-slate-700";
 
-  return <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", tone)}>{label}</span>;
+  return <span className={cn("inline-flex rounded-full px-2.5 py-1 text-xs font-medium", tone)}>{label}</span>;
 }
 
 export function ChartCard({ data }: { data: Array<{ month: string; einnahmen: number; ausgaben: number }> }) {

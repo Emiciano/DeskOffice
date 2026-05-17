@@ -7,10 +7,10 @@ export const copilotRouter = Router();
 copilotRouter.get("/hints", (_req, res) => {
   res.json([
     "Wie hoch waren meine Ausgaben diesen Monat?",
-    "Welche Rechnungen sind ueberfaellig?",
+    "Welche Rechnungen sind überfällig?",
     "Wie viele offene Posten habe ich?",
-    "Welche Belege fehlen noch fuer die Buchung?",
-    "Wie ist mein vorlaeufiger Gewinn diesen Monat?",
+    "Welche Belege fehlen noch für die Buchung?",
+    "Wie ist mein vorläufiger Gewinn diesen Monat?",
   ]);
 });
 
@@ -59,13 +59,13 @@ copilotRouter.post("/ask", async (req, res) => {
   } else if (q.includes("umsatz") || q.includes("einnahmen") || q.includes("revenue")) {
     answer = `Dein Umsatz im aktuellen Monat liegt bei EUR ${monthRevenue.toFixed(2)} aus ${monthInvoices.length} Rechnungen.`;
   } else if (q.includes("ueberfaellig") || q.includes("überfällig")) {
-    answer = `Du hast aktuell ${overdue.length} ueberfaellige Rechnung(en).`;
+    answer = `Du hast aktuell ${overdue.length} überfällige Rechnung(en).`;
   } else if (q.includes("offen")) {
     answer = `Es sind ${open.length} offene Rechnung(en) mit zusammen EUR ${openAmount.toFixed(2)}.`;
   } else if (q.includes("beleg") || q.includes("fehlt") || q.includes("inbox")) {
-    answer = `In der Belegverwaltung sind ${draftDocs.length} Entwurf und ${checkedDocs.length} gepruefte Belege, die noch nicht final verbucht sind.`;
+    answer = `In der Belegverwaltung sind ${draftDocs.length} Entwurf und ${checkedDocs.length} geprüfte Belege, die noch nicht final verbucht sind.`;
   } else if (q.includes("gewinn")) {
-    answer = `Vorlaeufiger Monatsgewinn: EUR ${profit.toFixed(2)} (Umsatz EUR ${monthRevenue.toFixed(2)} minus Ausgaben EUR ${monthExpense.toFixed(2)}).`;
+    answer = `Vorläufiger Monatsgewinn: EUR ${profit.toFixed(2)} (Umsatz EUR ${monthRevenue.toFixed(2)} minus Ausgaben EUR ${monthExpense.toFixed(2)}).`;
   }
 
   res.json({
