@@ -4,12 +4,20 @@ import { getCompanyId } from "../auth.js";
 
 export const copilotRouter = Router();
 
+copilotRouter.get("/hints", (_req, res) => {
+  res.json([
+    "Wie hoch waren meine Ausgaben diesen Monat?",
+    "Welche Rechnungen sind ueberfaellig?",
+    "Wie viele offene Posten habe ich?",
+    "Welche Belege fehlen noch fuer die Buchung?",
+    "Wie ist mein vorlaeufiger Gewinn diesen Monat?",
+  ]);
+});
+
 copilotRouter.post("/ask", async (req, res) => {
   const { question } = req.body as { question?: string };
   const companyId = getCompanyId(req);
-  if (!companyId || !question) {
-    return res.status(400).json({ error: "question required" });
-  }
+  if (!companyId || !question) return res.status(400).json({ error: "question required" });
 
   const q = question.toLowerCase();
   const [invoices, documents, bookings] = await Promise.all([
@@ -40,7 +48,11 @@ copilotRouter.post("/ask", async (req, res) => {
     .filter((b) => b.debitAccount.startsWith("3") || b.debitAccount.startsWith("4"))
     .reduce((sum, b) => sum + b.amount + b.taxAmount, 0);
 
-  let answer = "Dazu habe ich aktuell noch keine passende Auswertung. Frag mich gerne zu Umsatz, Ausgaben, offenen Rechnungen oder fehlenden Belegen.";
+  const openAmount = open.reduce((sum, i) => sum + i.amountGross, 0);
+  const profit = monthRevenue - monthExpense;
+
+  let answer =
+    "Dazu habe ich aktuell noch keine passende Auswertung. Frag mich gerne zu Umsatz, Ausgaben, offenen Rechnungen, Belegen oder Gewinn.";
 
   if (q.includes("ausgaben") || q.includes("expense")) {
     answer = `Deine Ausgaben im aktuellen Monat liegen bei EUR ${monthExpense.toFixed(2)}.`;
@@ -49,12 +61,10 @@ copilotRouter.post("/ask", async (req, res) => {
   } else if (q.includes("ueberfaellig") || q.includes("überfällig")) {
     answer = `Du hast aktuell ${overdue.length} ueberfaellige Rechnung(en).`;
   } else if (q.includes("offen")) {
-    const amount = open.reduce((sum, i) => sum + i.amountGross, 0);
-    answer = `Es sind ${open.length} offene Rechnung(en) mit zusammen EUR ${amount.toFixed(2)}.`;
+    answer = `Es sind ${open.length} offene Rechnung(en) mit zusammen EUR ${openAmount.toFixed(2)}.`;
   } else if (q.includes("beleg") || q.includes("fehlt") || q.includes("inbox")) {
     answer = `In der Belegverwaltung sind ${draftDocs.length} Entwurf und ${checkedDocs.length} gepruefte Belege, die noch nicht final verbucht sind.`;
   } else if (q.includes("gewinn")) {
-    const profit = monthRevenue - monthExpense;
     answer = `Vorlaeufiger Monatsgewinn: EUR ${profit.toFixed(2)} (Umsatz EUR ${monthRevenue.toFixed(2)} minus Ausgaben EUR ${monthExpense.toFixed(2)}).`;
   }
 
@@ -63,9 +73,12 @@ copilotRouter.post("/ask", async (req, res) => {
     meta: {
       monthRevenue: Number(monthRevenue.toFixed(2)),
       monthExpense: Number(monthExpense.toFixed(2)),
+      monthProfit: Number(profit.toFixed(2)),
       overdueCount: overdue.length,
       openCount: open.length,
+      openAmount: Number(openAmount.toFixed(2)),
       draftDocuments: draftDocs.length,
+      checkedDocuments: checkedDocs.length,
     },
   });
 });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { PageHeader, StatusBadge } from "@/components/shared";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
 
 type InboxTask = {
@@ -24,6 +25,7 @@ type InboxResponse = {
 export function SmartInboxPage() {
   const [companyId, setCompanyId] = useState("");
   const [data, setData] = useState<InboxResponse>({ total: 0, high: 0, medium: 0, low: 0, tasks: [] });
+  const [busyId, setBusyId] = useState("");
 
   async function load(company: string) {
     const res = await apiFetch(`/api/inbox/tasks?companyId=${company}`);
@@ -38,6 +40,21 @@ export function SmartInboxPage() {
       await load(boot.companyId);
     })();
   }, []);
+
+  async function setTaskStatus(id: string, status: "Geprueft" | "Gebucht") {
+    if (!companyId) return;
+    setBusyId(id);
+    try {
+      await apiFetch(`/api/inbox/tasks/${id}/status?companyId=${companyId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      await load(companyId);
+    } finally {
+      setBusyId("");
+    }
+  }
 
   return (
     <div>
@@ -69,6 +86,7 @@ export function SmartInboxPage() {
               <th>Fehlt</th>
               <th>Prioritaet</th>
               <th>Erstellt</th>
+              <th />
             </tr>
           </thead>
           <tbody>
@@ -83,6 +101,25 @@ export function SmartInboxPage() {
                   <StatusBadge status={task.priority} />
                 </td>
                 <td>{new Date(task.createdAt).toISOString().slice(0, 10)}</td>
+                <td className="py-2">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="h-8 px-2 text-xs"
+                      disabled={busyId === task.id}
+                      onClick={() => void setTaskStatus(task.id, "Geprueft")}
+                    >
+                      Als geprueft
+                    </Button>
+                    <Button
+                      className="h-8 px-2 text-xs"
+                      disabled={busyId === task.id}
+                      onClick={() => void setTaskStatus(task.id, "Gebucht")}
+                    >
+                      Als gebucht
+                    </Button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>

@@ -33,9 +33,39 @@ type ExportItem = {
   createdAt: string;
 };
 
+type TaxOverview = {
+  year: number;
+  totals: {
+    vatLiability: number;
+    euerRevenue: number;
+    euerExpense: number;
+    euerProfit: number;
+  };
+  months: Array<{
+    month: number;
+    periodLabel: string;
+    vatLiability: number;
+    euerRevenue: number;
+    euerExpense: number;
+  }>;
+};
+
+type TaxForecast = {
+  year: number;
+  basedOnMonths: number;
+  forecast: {
+    vatLiability: number;
+    euerRevenue: number;
+    euerExpense: number;
+    euerProfit: number;
+  };
+};
+
 export function ReportsPage() {
   const [companyId, setCompanyId] = useState("");
   const [snapshot, setSnapshot] = useState<TaxSnapshot | null>(null);
+  const [overview, setOverview] = useState<TaxOverview | null>(null);
+  const [forecast, setForecast] = useState<TaxForecast | null>(null);
   const [mode, setMode] = useState<"monat" | "quartal">("monat");
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -68,6 +98,15 @@ export function ReportsPage() {
     return (await res.json()) as TaxSnapshot;
   }
 
+  async function loadTaxSummary(company: string, y: number) {
+    const [overviewRes, forecastRes] = await Promise.all([
+      apiFetch(`/api/taxes/overview?companyId=${company}&year=${y}`),
+      apiFetch(`/api/taxes/forecast?companyId=${company}&year=${y}`),
+    ]);
+    setOverview((await overviewRes.json()) as TaxOverview);
+    setForecast((await forecastRes.json()) as TaxForecast);
+  }
+
   async function refresh(company: string, y: number, m: number, currentMode: "monat" | "quartal") {
     if (currentMode === "monat") {
       setSnapshot(await loadTax(company, y, m));
@@ -91,14 +130,19 @@ export function ReportsPage() {
       const boot = await apiFetch("/api/bootstrap").then((r) => r.json());
       if (!boot.companyId) return;
       setCompanyId(boot.companyId);
-      await Promise.all([refresh(boot.companyId, year, month, mode), loadRules(boot.companyId), loadExports(boot.companyId)]);
+      await Promise.all([
+        refresh(boot.companyId, year, month, mode),
+        loadTaxSummary(boot.companyId, year),
+        loadRules(boot.companyId),
+        loadExports(boot.companyId),
+      ]);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!companyId) return;
-    void refresh(companyId, year, month, mode);
+    void Promise.all([refresh(companyId, year, month, mode), loadTaxSummary(companyId, year)]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId, year, month, mode]);
 
@@ -152,9 +196,8 @@ export function ReportsPage() {
 
   async function createExport(exportType: "DATEV" | "CSV") {
     if (!companyId) return;
-    const periodLabel = mode === "monat"
-      ? `${year}-${String(month).padStart(2, "0")}`
-      : `Q${Math.floor((month - 1) / 3) + 1}-${year}`;
+    const periodLabel =
+      mode === "monat" ? `${year}-${String(month).padStart(2, "0")}` : `Q${Math.floor((month - 1) / 3) + 1}-${year}`;
     await apiFetch("/api/exports", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -167,16 +210,34 @@ export function ReportsPage() {
     await loadExports(companyId);
   }
 
+  async function downloadExport(id: string, fileName: string) {
+    const res = await apiFetch(`/api/exports/${id}/download?companyId=${companyId}`);
+    if (!res.ok) return;
+    const text = await res.text();
+    const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName || "export.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    await loadExports(companyId);
+  }
+
   return (
     <div>
-      <PageHeader title="Berichte & Steuer" subtitle="Monats-/Quartalsansicht, EÜR-Basis und Buchungsregeln" />
+      <PageHeader title="Berichte & Steuer" subtitle="Monat/Quartal, Steueruebersicht, DATEV-Export und Regelengine" />
 
       <Card className="mb-4 flex flex-wrap items-end gap-3">
         <div>
           <label className="mb-1 block text-xs text-muted-foreground">Zeitraum</label>
           <div className="flex gap-2">
-            <Button variant={mode === "monat" ? "default" : "outline"} onClick={() => setMode("monat")}>Monat</Button>
-            <Button variant={mode === "quartal" ? "default" : "outline"} onClick={() => setMode("quartal")}>Quartal</Button>
+            <Button variant={mode === "monat" ? "default" : "outline"} onClick={() => setMode("monat")}>
+              Monat
+            </Button>
+            <Button variant={mode === "quartal" ? "default" : "outline"} onClick={() => setMode("quartal")}>
+              Quartal
+            </Button>
           </div>
         </div>
         <div>
@@ -185,39 +246,82 @@ export function ReportsPage() {
         </div>
         <div>
           <label className="mb-1 block text-xs text-muted-foreground">Monat</label>
-          <select className="h-10 rounded-xl border border-border px-3 text-sm" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => <option key={m} value={m}>{m}</option>)}
+          <select
+            className="h-10 rounded-xl border border-border px-3 text-sm"
+            value={month}
+            onChange={(e) => setMonth(Number(e.target.value))}
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
           </select>
         </div>
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-3">
-        <Card className="xl:col-span-1">
-          <h3 className="font-medium">Steuerübersicht ({snapshot?.periodLabel ?? "-"})</h3>
+      <div className="grid gap-4 xl:grid-cols-4">
+        <Card>
+          <h3 className="font-medium">Steuer ({snapshot?.periodLabel ?? "-"})</h3>
           <div className="mt-3 space-y-2 text-sm">
-            <div className="flex justify-between"><span>USt. 19%</span><b>EUR {snapshot?.vatOutput19.toFixed(2) ?? "0.00"}</b></div>
-            <div className="flex justify-between"><span>Vorsteuer</span><b>EUR {snapshot?.vatInput.toFixed(2) ?? "0.00"}</b></div>
-            <div className="flex justify-between"><span>Zahllast</span><b>EUR {snapshot?.vatLiability.toFixed(2) ?? "0.00"}</b></div>
+            <div className="flex justify-between">
+              <span>USt. 19%</span>
+              <b>EUR {snapshot?.vatOutput19.toFixed(2) ?? "0.00"}</b>
+            </div>
+            <div className="flex justify-between">
+              <span>Vorsteuer</span>
+              <b>EUR {snapshot?.vatInput.toFixed(2) ?? "0.00"}</b>
+            </div>
+            <div className="flex justify-between">
+              <span>Zahllast</span>
+              <b>EUR {snapshot?.vatLiability.toFixed(2) ?? "0.00"}</b>
+            </div>
           </div>
         </Card>
-        <Card className="xl:col-span-1">
-          <h3 className="font-medium">EÜR-Vorbereitung</h3>
+        <Card>
+          <h3 className="font-medium">EUER ({overview?.year ?? year})</h3>
           <div className="mt-3 space-y-2 text-sm">
-            <div className="flex justify-between"><span>Einnahmen</span><b>EUR {snapshot?.euerRevenue.toFixed(2) ?? "0.00"}</b></div>
-            <div className="flex justify-between"><span>Ausgaben</span><b>EUR {snapshot?.euerExpense.toFixed(2) ?? "0.00"}</b></div>
-            <div className="flex justify-between"><span>Gewinn</span><b>EUR {((snapshot?.euerRevenue ?? 0) - (snapshot?.euerExpense ?? 0)).toFixed(2)}</b></div>
+            <div className="flex justify-between">
+              <span>Einnahmen</span>
+              <b>EUR {overview?.totals.euerRevenue.toFixed(2) ?? "0.00"}</b>
+            </div>
+            <div className="flex justify-between">
+              <span>Ausgaben</span>
+              <b>EUR {overview?.totals.euerExpense.toFixed(2) ?? "0.00"}</b>
+            </div>
+            <div className="flex justify-between">
+              <span>Gewinn</span>
+              <b>EUR {overview?.totals.euerProfit.toFixed(2) ?? "0.00"}</b>
+            </div>
           </div>
         </Card>
-        <Card className="xl:col-span-1">
+        <Card>
+          <h3 className="font-medium">Steuerprognose</h3>
+          <div className="mt-3 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span>Basis Monate</span>
+              <b>{forecast?.basedOnMonths ?? 0}</b>
+            </div>
+            <div className="flex justify-between">
+              <span>Jahr Zahllast</span>
+              <b>EUR {forecast?.forecast.vatLiability.toFixed(2) ?? "0.00"}</b>
+            </div>
+            <div className="flex justify-between">
+              <span>Jahr Gewinn</span>
+              <b>EUR {forecast?.forecast.euerProfit.toFixed(2) ?? "0.00"}</b>
+            </div>
+          </div>
+        </Card>
+        <Card>
           <h3 className="font-medium">Hinweis</h3>
           <p className="mt-3 text-sm text-muted-foreground">
-            Diese Werte sind technische Auswertungen aus Buchungen und ersetzen keine rechtlich verbindliche Steuerberatung.
+            Technische Auswertung aus Buchungen, keine rechtlich verbindliche Steuerberatung.
           </p>
         </Card>
       </div>
 
       <Card className="mt-4">
-        <h3 className="mb-3 font-medium">Automatische Buchungsvorschläge (Regeln)</h3>
+        <h3 className="mb-3 font-medium">Automatische Buchungsvorschlaege (Regeln)</h3>
         <div className="mb-4 grid gap-2 md:grid-cols-5">
           <Input placeholder="Regelname" value={ruleName} onChange={(e) => setRuleName(e.target.value)} />
           <Input placeholder="Pattern (z. B. Telekom)" value={rulePattern} onChange={(e) => setRulePattern(e.target.value)} />
@@ -228,7 +332,13 @@ export function ReportsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-muted-foreground">
-              <th>Name</th><th>Pattern</th><th>Kategorie</th><th>Konto</th><th>Confidence</th><th>Aktiv</th><th>Aktion</th>
+              <th>Name</th>
+              <th>Pattern</th>
+              <th>Kategorie</th>
+              <th>Konto</th>
+              <th>Confidence</th>
+              <th>Aktiv</th>
+              <th>Aktion</th>
             </tr>
           </thead>
           <tbody>
@@ -256,7 +366,7 @@ export function ReportsPage() {
                       disabled={ruleActionLoading === r.id}
                       onClick={() => void deleteRule(r.id)}
                     >
-                      Löschen
+                      Loeschen
                     </Button>
                   </div>
                 </td>
@@ -270,14 +380,21 @@ export function ReportsPage() {
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-medium">DATEV / Export-Historie</h3>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => void createExport("CSV")}>CSV Export</Button>
+            <Button variant="outline" onClick={() => void createExport("CSV")}>
+              CSV Export
+            </Button>
             <Button onClick={() => void createExport("DATEV")}>DATEV Export</Button>
           </div>
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-muted-foreground">
-              <th>Typ</th><th>Zeitraum</th><th>Datei</th><th>Status</th><th>Erstellt</th>
+              <th>Typ</th>
+              <th>Zeitraum</th>
+              <th>Datei</th>
+              <th>Status</th>
+              <th>Erstellt</th>
+              <th />
             </tr>
           </thead>
           <tbody>
@@ -288,6 +405,15 @@ export function ReportsPage() {
                 <td>{item.fileName}</td>
                 <td>{item.status}</td>
                 <td>{new Date(item.createdAt).toISOString().slice(0, 10)}</td>
+                <td>
+                  <Button
+                    variant="outline"
+                    className="h-8 px-2 text-xs"
+                    onClick={() => void downloadExport(item.id, item.fileName)}
+                  >
+                    Download
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>

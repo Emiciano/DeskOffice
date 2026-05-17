@@ -37,9 +37,42 @@ contactsRouter.get("/", async (req, res) => {
   res.json(rows);
 });
 
+contactsRouter.get("/:id/detail", async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
+
+  const { id } = req.params;
+  const contact = await prisma.contact.findFirst({ where: { id, companyId } });
+  if (!contact) return res.status(404).json({ error: "Contact not found" });
+
+  const invoices = await prisma.invoice.findMany({
+    where: { companyId, customer: contact.name },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
+  const documents = await prisma.document.findMany({
+    where: { companyId, partner: contact.name },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
+
+  res.json({
+    contact,
+    invoices,
+    documents,
+    totals: {
+      invoiceCount: invoices.length,
+      invoiceGross: Number(invoices.reduce((sum, i) => sum + i.amountGross, 0).toFixed(2)),
+      openInvoices: invoices.filter((i) => i.status === "Offen" || i.status === "Ueberfaellig").length,
+      documentCount: documents.length,
+    },
+  });
+});
+
 contactsRouter.post("/", async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
   const payload = req.body as {
-    companyId: string;
     type: string;
     name: string;
     email?: string;
@@ -52,13 +85,11 @@ contactsRouter.post("/", async (req, res) => {
     paymentTerms?: number;
     notes?: string;
   };
-  if (!payload.name || !payload.type) {
-    return res.status(400).json({ error: "type and name required" });
-  }
+  if (!payload.name || !payload.type) return res.status(400).json({ error: "type and name required" });
 
   const created = await prisma.contact.create({
     data: {
-      companyId: getCompanyId(req),
+      companyId,
       type: payload.type,
       name: payload.name,
       email: payload.email ?? null,
@@ -77,7 +108,10 @@ contactsRouter.post("/", async (req, res) => {
 });
 
 contactsRouter.patch("/:id", async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;
-  const updated = await prisma.contact.update({ where: { id }, data: req.body });
-  res.json(updated);
+  const updated = await prisma.contact.updateMany({ where: { id, companyId }, data: req.body });
+  if (updated.count === 0) return res.status(404).json({ error: "Contact not found" });
+  res.json({ ok: true });
 });
