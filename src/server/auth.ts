@@ -57,3 +57,12 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 export function getCompanyId(req: Request): string {
   return req.auth?.companyId ?? String(req.query.companyId ?? req.body?.companyId ?? "");
 }
+
+export function requireRoles(...roles: string[]) {
+  const allowed = new Set(roles.map((role) => role.toLowerCase()));
+  return (req: Request, res: Response, next: NextFunction) => {
+    const role = String(req.auth?.role ?? "").toLowerCase();
+    if (!allowed.has(role)) return res.status(403).json({ error: "insufficient permissions" });
+    next();
+  };
+}

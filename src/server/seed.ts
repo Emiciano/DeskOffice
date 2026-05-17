@@ -38,4 +38,36 @@ export async function ensureCompanySetup(companyId: string, companyName: string)
       country: "Deutschland",
     },
   });
+
+  const productCount = await prisma.product.count({ where: { companyId } });
+  if (productCount === 0) {
+    await prisma.product.createMany({
+      data: [
+        {
+          companyId,
+          name: "SEO Audit",
+          type: "Leistung",
+          unitPrice: 590,
+          taxRate: 19,
+          description: "Initiale Analyse und Maßnahmenplan",
+        },
+        {
+          companyId,
+          name: "Support Retainer",
+          type: "Leistung",
+          unitPrice: 1200,
+          taxRate: 19,
+          description: "Monatliche Betreuung",
+        },
+        {
+          companyId,
+          name: "Laptop Dock",
+          type: "Produkt",
+          unitPrice: 189,
+          taxRate: 19,
+          description: "Hardware für Homeoffice",
+        },
+      ],
+    });
+  }
 }

@@ -16,6 +16,8 @@ import { inboxRouter } from "./routes/inbox.js";
 import { dashboardRouter } from "./routes/dashboard.js";
 import { copilotRouter } from "./routes/copilot.js";
 import { authRouter } from "./routes/auth.js";
+import { productsRouter } from "./routes/products.js";
+import { eInvoicesRouter } from "./routes/einvoices.js";
 import { APP_PORT, CORS_ORIGIN, DEFAULT_COMPANY_NAME } from "./config.js";
 import { prisma } from "./db.js";
 import { ensureCompanySetup } from "./seed.js";
@@ -80,6 +82,8 @@ async function start() {
   app.use("/api/taxes", taxesRouter);
   app.use("/api/settings", settingsRouter);
   app.use("/api/contacts", contactsRouter);
+  app.use("/api/products", productsRouter);
+  app.use("/api/einvoices", eInvoicesRouter);
   app.use("/api/exports", exportsRouter);
   app.use("/api/inbox", inboxRouter);
   app.use("/api/dashboard", dashboardRouter);

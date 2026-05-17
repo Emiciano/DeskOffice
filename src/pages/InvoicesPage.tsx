@@ -374,6 +374,31 @@ export function InvoicesPage() {
     }
   };
 
+  const exportEInvoiceXml = async (invoiceId: string) => {
+    if (!companyId) return;
+    setRowActionLoading(invoiceId);
+    try {
+      const createRes = await apiFetch(`/api/einvoices/from-invoice/${invoiceId}?companyId=${companyId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ format: "XRECHNUNG" }),
+      });
+      if (!createRes.ok) throw new Error("E-Rechnung konnte nicht erstellt werden.");
+      const payload = await createRes.json() as { xmlPayload: string };
+      const blob = new Blob([payload.xmlPayload], { type: "application/xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `e-rechnung-${invoiceId}.xml`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "E-Rechnung Export fehlgeschlagen.");
+    } finally {
+      setRowActionLoading("");
+    }
+  };
+
   return (
     <div>
       <PageHeader
@@ -602,6 +627,14 @@ export function InvoicesPage() {
                       disabled={rowActionLoading === i.id}
                     >
                       Wiederkehrend+
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-8 px-2 text-xs"
+                      onClick={() => void exportEInvoiceXml(i.id)}
+                      disabled={rowActionLoading === i.id}
+                    >
+                      XRechnung XML
                     </Button>
                   </div>
                 </td>

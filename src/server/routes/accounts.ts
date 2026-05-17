@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { getCompanyId } from "../auth.js";
+import { getCompanyId, requireRoles } from "../auth.js";
 
 export const accountsRouter = Router();
 
@@ -11,13 +11,13 @@ accountsRouter.get("/", async (req, res) => {
   res.json(items);
 });
 
-accountsRouter.post("/", async (req, res) => {
+accountsRouter.post("/", requireRoles("owner", "admin"), async (req, res) => {
   const payload = { ...req.body, companyId: getCompanyId(req) };
   const created = await prisma.account.create({ data: payload });
   res.status(201).json(created);
 });
 
-accountsRouter.patch("/:id", async (req, res) => {
+accountsRouter.patch("/:id", requireRoles("owner", "admin"), async (req, res) => {
   const updated = await prisma.account.update({
     where: { id: req.params.id },
     data: req.body,

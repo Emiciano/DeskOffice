@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { getCompanyId } from "../auth.js";
+import { getCompanyId, requireRoles } from "../auth.js";
 
 export const settingsRouter = Router();
 
@@ -51,7 +51,7 @@ settingsRouter.get("/", async (req, res) => {
   res.json(settings);
 });
 
-settingsRouter.put("/", async (req, res) => {
+settingsRouter.put("/", requireRoles("owner", "admin"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const data = sanitize(req.body as Record<string, unknown>);

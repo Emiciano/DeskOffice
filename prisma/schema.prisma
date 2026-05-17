@@ -23,6 +23,8 @@ model Company {
   contacts Contact[]
   exports DataExport[]
   settings  CompanySettings?
+  products Product[]
+  eInvoices EInvoiceDocument[]
 }
 
 model User {
@@ -158,9 +160,42 @@ model Invoice {
   items       InvoiceItem[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  eInvoice    EInvoiceDocument?
 
   @@index([companyId, status])
   @@unique([companyId, number])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  type        String
+  unitPrice   Float
+  taxRate     Float
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId, active])
+}
+
+model EInvoiceDocument {
+  id           String   @id @default(cuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoiceId    String   @unique
+  invoice      Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  format       String
+  status       String
+  xmlPayload   String   @db.LongText
+  validatedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([companyId, format, status])
 }
 
 model InvoiceItem {
