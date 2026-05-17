@@ -29,6 +29,11 @@ bankingRouter.post("/transactions", requirePermissions("banking:write"), async (
 
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
+  if (!payload.bookingDate || !payload.purpose || !payload.type) {
+    return res.status(400).json({ error: "bookingDate, purpose and type required" });
+  }
+  const amount = Number(payload.amount);
+  if (Number.isNaN(amount)) return res.status(400).json({ error: "amount must be a number" });
 
   const rules = await prisma.rule.findMany({
     where: { companyId, active: true },
@@ -44,7 +49,7 @@ bankingRouter.post("/transactions", requirePermissions("banking:write"), async (
       valueDate: payload.valueDate ? new Date(payload.valueDate) : null,
       purpose: payload.purpose,
       counterparty: payload.counterparty ?? null,
-      amount: payload.amount,
+      amount,
       currency: payload.currency ?? "EUR",
       type: payload.type,
       status: matchedRule ? "Vorgeschlagen" : payload.status ?? "Offen",
@@ -65,34 +70,47 @@ bankingRouter.patch("/transactions/:id/match", requirePermissions("banking:write
     matchedDocumentId?: string;
     status?: string;
   };
+  if (matchedInvoiceId && matchedDocumentId) {
+    return res.status(400).json({ error: "match either invoice or document, not both" });
+  }
 
-  const updated = await prisma.$transaction(async (tx) => {
-    const existing = await tx.bankTransaction.findFirst({ where: { id, companyId } });
-    if (!existing) return null;
+  const updated = await prisma
+    .$transaction(async (tx) => {
+      const existing = await tx.bankTransaction.findFirst({ where: { id, companyId } });
+      if (!existing) return null;
 
-    const row = await tx.bankTransaction.update({
-      where: { id },
-      data: {
-        matchedInvoiceId: matchedInvoiceId ?? null,
-        matchedDocumentId: matchedDocumentId ?? null,
-        status: status ?? "Zugeordnet",
-      },
+      const row = await tx.bankTransaction.update({
+        where: { id },
+        data: {
+          matchedInvoiceId: matchedInvoiceId ?? null,
+          matchedDocumentId: matchedDocumentId ?? null,
+          status: status ?? "Zugeordnet",
+        },
+      });
+
+      if (matchedInvoiceId) {
+        const invoiceUpdate = await tx.invoice.updateMany({
+          where: { id: matchedInvoiceId, companyId },
+          data: { status: "Bezahlt" },
+        });
+        if (invoiceUpdate.count === 0) throw new Error("invoice not found");
+      }
+      if (matchedDocumentId) {
+        const documentUpdate = await tx.document.updateMany({
+          where: { id: matchedDocumentId, companyId },
+          data: { status: "Bezahlt" },
+        });
+        if (documentUpdate.count === 0) throw new Error("document not found");
+      }
+      return row;
+    })
+    .catch((error: Error) => {
+      if (error.message === "invoice not found") return "invoice-not-found" as const;
+      if (error.message === "document not found") return "document-not-found" as const;
+      throw error;
     });
-
-    if (matchedInvoiceId) {
-      await tx.invoice.updateMany({
-        where: { id: matchedInvoiceId, companyId },
-        data: { status: "Bezahlt" },
-      });
-    }
-    if (matchedDocumentId) {
-      await tx.document.updateMany({
-        where: { id: matchedDocumentId, companyId },
-        data: { status: "Bezahlt" },
-      });
-    }
-    return row;
-  });
+  if (updated === "invoice-not-found") return res.status(404).json({ error: "Invoice not found" });
+  if (updated === "document-not-found") return res.status(404).json({ error: "Document not found" });
   if (!updated) return res.status(404).json({ error: "Transaction not found" });
   res.json(updated);
 });

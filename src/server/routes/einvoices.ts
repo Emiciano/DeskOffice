@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getCompanyId } from "../auth.js";
+import { getCompanyId, requirePermissions } from "../auth.js";
 import { prisma } from "../db.js";
 
 export const eInvoicesRouter = Router();
@@ -14,15 +14,22 @@ function buildSimpleXRechnungXml(payload: {
   currency: string;
   supplierName: string;
 }) {
+  const escapeXml = (value: string) =>
+    value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rsm:CrossIndustryInvoice xmlns:rsm="urn:ferd:CrossIndustryDocument:invoice:1p0" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
   <rsm:ExchangedDocument>
-    <ram:ID>${payload.invoiceNumber}</ram:ID>
+    <ram:ID>${escapeXml(payload.invoiceNumber)}</ram:ID>
   </rsm:ExchangedDocument>
   <rsm:SupplyChainTradeTransaction>
     <ram:ApplicableHeaderTradeAgreement>
-      <ram:SellerTradeParty><ram:Name>${payload.supplierName}</ram:Name></ram:SellerTradeParty>
-      <ram:BuyerTradeParty><ram:Name>${payload.customer}</ram:Name></ram:BuyerTradeParty>
+      <ram:SellerTradeParty><ram:Name>${escapeXml(payload.supplierName)}</ram:Name></ram:SellerTradeParty>
+      <ram:BuyerTradeParty><ram:Name>${escapeXml(payload.customer)}</ram:Name></ram:BuyerTradeParty>
     </ram:ApplicableHeaderTradeAgreement>
     <ram:ApplicableHeaderTradeSettlement>
       <ram:InvoiceCurrencyCode>${payload.currency}</ram:InvoiceCurrencyCode>
@@ -41,11 +48,14 @@ function buildSimpleXRechnungXml(payload: {
 </rsm:CrossIndustryInvoice>`;
 }
 
-eInvoicesRouter.post("/from-invoice/:invoiceId", async (req, res) => {
+eInvoicesRouter.post("/from-invoice/:invoiceId", requirePermissions("einvoices:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { invoiceId } = req.params;
-  const format = String((req.body as { format?: string }).format ?? "XRECHNUNG");
+  const format = String((req.body as { format?: string }).format ?? "XRECHNUNG").toUpperCase();
+  if (!["XRECHNUNG", "ZUGFERD"].includes(format)) {
+    return res.status(400).json({ error: "unsupported format" });
+  }
 
   const [invoice, settings] = await Promise.all([
     prisma.invoice.findFirst({ where: { id: invoiceId, companyId } }),
@@ -81,7 +91,7 @@ eInvoicesRouter.post("/from-invoice/:invoiceId", async (req, res) => {
   res.status(201).json(created);
 });
 
-eInvoicesRouter.get("/:invoiceId", async (req, res) => {
+eInvoicesRouter.get("/:invoiceId", requirePermissions("einvoices:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { invoiceId } = req.params;

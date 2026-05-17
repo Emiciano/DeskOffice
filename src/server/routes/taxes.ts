@@ -4,6 +4,14 @@ import { getCompanyId } from "../auth.js";
 
 export const taxesRouter = Router();
 
+function parseYearMonth(query: Record<string, unknown>) {
+  const year = Number(query.year ?? new Date().getFullYear());
+  const month = Number(query.month ?? new Date().getMonth() + 1);
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) return { error: "invalid year" as const };
+  if (!Number.isInteger(month) || month < 1 || month > 12) return { error: "invalid month" as const };
+  return { year, month };
+}
+
 async function loadOrCreateSnapshot(companyId: string, year: number, month: number) {
   const existing = await prisma.taxSnapshot.findUnique({
     where: { companyId_year_month: { companyId, year, month } },
@@ -50,9 +58,9 @@ async function loadOrCreateSnapshot(companyId: string, year: number, month: numb
 taxesRouter.get("/snapshot", async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
-
-  const year = Number(req.query.year ?? new Date().getFullYear());
-  const month = Number(req.query.month ?? new Date().getMonth() + 1);
+  const parsed = parseYearMonth(req.query as Record<string, unknown>);
+  if ("error" in parsed) return res.status(400).json({ error: parsed.error });
+  const { year, month } = parsed;
   const snapshot = await loadOrCreateSnapshot(companyId, year, month);
   res.json(snapshot);
 });
@@ -62,6 +70,7 @@ taxesRouter.get("/overview", async (req, res) => {
   if (!companyId) return res.status(400).json({ error: "companyId required" });
 
   const year = Number(req.query.year ?? new Date().getFullYear());
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) return res.status(400).json({ error: "invalid year" });
   const snapshots = await Promise.all(
     Array.from({ length: 12 }, (_, i) => i + 1).map((month) => loadOrCreateSnapshot(companyId, year, month)),
   );
@@ -101,6 +110,7 @@ taxesRouter.get("/forecast", async (req, res) => {
   if (!companyId) return res.status(400).json({ error: "companyId required" });
 
   const year = Number(req.query.year ?? new Date().getFullYear());
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) return res.status(400).json({ error: "invalid year" });
   const currentMonth = new Date().getMonth() + 1;
   const doneMonths = Math.max(1, Math.min(12, currentMonth));
 
