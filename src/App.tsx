@@ -27,7 +27,9 @@ export default function App() {
   const location = useLocation();
 
   useEffect(() => {
-    document.documentElement.classList.toggle("theme-dark", theme === "dark");
+    const isDark = theme === "dark";
+    document.documentElement.classList.toggle("theme-dark", isDark);
+    document.body.classList.toggle("theme-dark", isDark);
   }, [theme]);
 
   useEffect(() => {
@@ -47,9 +49,9 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-background">
+    <div className="min-h-screen w-screen overflow-x-hidden bg-background">
       <Sidebar />
-      <main className="ml-64 min-h-screen w-[calc(100vw-16rem)] min-w-0 max-w-none p-4 lg:p-5">
+      <main className="ml-64 min-h-screen min-w-0 p-4 lg:p-5">
         <Topbar />
         <div key={location.pathname} className="page-enter">
           <Suspense fallback={<div className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">Seite wird geladen...</div>}>

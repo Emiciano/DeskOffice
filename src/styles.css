@@ -108,6 +108,11 @@ button:hover { filter: none; }
   background-color: rgba(19, 23, 29, 0.98) !important;
 }
 
+.theme-dark .bg-muted,
+.theme-dark [class*="bg-muted"] {
+  background-color: #1a212a !important;
+}
+
 .theme-dark .bg-white,
 .theme-dark .bg-white\/90,
 .theme-dark .bg-white\/95 {
@@ -174,10 +179,6 @@ button:hover { filter: none; }
   color: #a8b5c4 !important;
 }
 
-.theme-dark .bg-muted {
-  background: #1a212a !important;
-}
-
 .theme-dark .bg-primary {
   background: #5f6b7d !important;
 }
@@ -214,6 +215,16 @@ button:hover { filter: none; }
 .theme-dark th,
 .theme-dark td {
   color: #dbe3ec !important;
+}
+
+.theme-dark .text-muted-foreground,
+.theme-dark [class*="text-muted-foreground"] {
+  color: #aebccc !important;
+}
+
+.theme-dark .bg-background,
+.theme-dark [class*="bg-background"] {
+  background-color: #0f1318 !important;
 }
 
 .theme-dark tr:hover td {
