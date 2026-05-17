@@ -6,6 +6,10 @@ import { requireAuth } from "../auth.js";
 
 export const authRouter = Router();
 
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 authRouter.post("/register", async (req, res) => {
   const body = req.body as { name?: string; email?: string; password?: string; companyName?: string };
   const name = String(body.name ?? "").trim();
@@ -14,12 +18,13 @@ authRouter.post("/register", async (req, res) => {
   const companyName = String(body.companyName ?? "").trim();
 
   if (!name || !email || !password || !companyName) {
-    return res.status(400).json({ error: "name, email, password, companyName required" });
+    return res.status(400).json({ error: "Bitte Name, E-Mail, Passwort und Firmenname ausfüllen." });
   }
-  if (password.length < 8) return res.status(400).json({ error: "password too short" });
+  if (!isValidEmail(email)) return res.status(400).json({ error: "Bitte eine gültige E-Mail eingeben." });
+  if (password.length < 8) return res.status(400).json({ error: "Passwort muss mindestens 8 Zeichen haben." });
 
   const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) return res.status(409).json({ error: "email already exists" });
+  if (existing) return res.status(409).json({ error: "E-Mail ist bereits registriert." });
 
   const company = await prisma.company.create({ data: { name: companyName } });
   await ensureCompanySetup(company.id, companyName);
@@ -56,6 +61,12 @@ authRouter.post("/register", async (req, res) => {
   await prisma.authSession.create({
     data: { token, userId: user.id, expiresAt },
   });
+  await prisma.authSession.deleteMany({
+    where: {
+      userId: user.id,
+      expiresAt: { lt: new Date() },
+    },
+  });
 
   res.status(201).json({
     token,
@@ -73,16 +84,23 @@ authRouter.post("/login", async (req, res) => {
   const body = req.body as { email?: string; password?: string };
   const email = String(body.email ?? "").trim().toLowerCase();
   const password = String(body.password ?? "");
-  if (!email || !password) return res.status(400).json({ error: "email and password required" });
+  if (!email || !password) return res.status(400).json({ error: "Bitte E-Mail und Passwort eingeben." });
+  if (!isValidEmail(email)) return res.status(400).json({ error: "Bitte eine gültige E-Mail eingeben." });
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return res.status(401).json({ error: "invalid credentials" });
-  if (!verifyPassword(password, user.passwordHash)) return res.status(401).json({ error: "invalid credentials" });
+  if (!user) return res.status(401).json({ error: "Ungültige Zugangsdaten." });
+  if (!verifyPassword(password, user.passwordHash)) return res.status(401).json({ error: "Ungültige Zugangsdaten." });
 
   const token = createSessionToken();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
   await prisma.authSession.create({
     data: { token, userId: user.id, expiresAt },
+  });
+  await prisma.authSession.deleteMany({
+    where: {
+      userId: user.id,
+      expiresAt: { lt: new Date() },
+    },
   });
 
   res.json({

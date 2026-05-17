@@ -9,5 +9,9 @@ export function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const token = localStorage.getItem("auth-token");
   const headers = new Headers(init?.headers ?? {});
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  return fetch(apiUrl(path), { ...init, headers });
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 20_000);
+  return fetch(apiUrl(path), { ...init, headers, signal: init?.signal ?? controller.signal }).finally(() => {
+    window.clearTimeout(timeout);
+  });
 }

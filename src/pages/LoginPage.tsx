@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,15 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const canSubmit =
+    !loading &&
+    email.trim().length > 0 &&
+    password.length >= 8 &&
+    (mode === "login" || (name.trim().length > 0 && companyName.trim().length > 0));
 
-  async function submit() {
+  async function submit(e?: FormEvent) {
+    e?.preventDefault();
+    if (!canSubmit) return;
     setError("");
     setLoading(true);
     try {
@@ -40,18 +47,20 @@ export function LoginPage() {
             {mode === "login" ? "Einloggen" : "Neues Konto und Firma erstellen"}
           </p>
         </div>
-        {mode === "register" ? (
-          <>
-            <Input placeholder="Dein Name" value={name} onChange={(e) => setName(e.target.value)} />
-            <Input placeholder="Firmenname" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
-          </>
-        ) : null}
-        <Input placeholder="E-Mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <Input placeholder="Passwort" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        {error ? <p className="text-sm text-red-500">{error}</p> : null}
-        <Button className="w-full" onClick={submit} disabled={loading}>
-          {loading ? "Bitte warten..." : mode === "login" ? "Einloggen" : "Registrieren"}
-        </Button>
+        <form className="space-y-3" onSubmit={submit}>
+          {mode === "register" ? (
+            <>
+              <Input placeholder="Dein Name" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input placeholder="Firmenname" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+            </>
+          ) : null}
+          <Input placeholder="E-Mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Input placeholder="Passwort (mind. 8 Zeichen)" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          {error ? <p className="text-sm text-red-500">{error}</p> : null}
+          <Button className="w-full" type="submit" disabled={!canSubmit}>
+            {loading ? "Bitte warten..." : mode === "login" ? "Einloggen" : "Registrieren"}
+          </Button>
+        </form>
         <button
           className="text-sm text-muted-foreground underline"
           onClick={() => setMode((m) => (m === "login" ? "register" : "login"))}

@@ -14,7 +14,35 @@ documentsRouter.get("/", async (req, res) => {
 documentsRouter.post("/", requirePermissions("documents:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
-  const created = await prisma.document.create({ data: { ...req.body, companyId } });
+  const fileName = String(req.body.fileName ?? "").trim();
+  const status = String(req.body.status ?? "Entwurf").trim();
+  const partner = req.body.partner ? String(req.body.partner).trim() : null;
+  const category = req.body.category ? String(req.body.category).trim() : null;
+  const accountNumber = req.body.accountNumber ? String(req.body.accountNumber).trim() : null;
+  const grossAmount = Number(req.body.grossAmount ?? 0);
+  const taxAmount = Number(req.body.taxAmount ?? 0);
+  const netAmount = Number(req.body.netAmount ?? 0);
+
+  if (!fileName) return res.status(400).json({ error: "fileName required" });
+  if (Number.isNaN(grossAmount) || Number.isNaN(taxAmount) || Number.isNaN(netAmount)) {
+    return res.status(400).json({ error: "amount fields must be numbers" });
+  }
+
+  const created = await prisma.document.create({
+    data: {
+      companyId,
+      fileName,
+      status,
+      partner,
+      category,
+      accountNumber,
+      grossAmount,
+      taxAmount,
+      netAmount,
+      documentDate: req.body.documentDate ? new Date(String(req.body.documentDate)) : null,
+      dueDate: req.body.dueDate ? new Date(String(req.body.dueDate)) : null,
+    },
+  });
   res.status(201).json(created);
 });
 

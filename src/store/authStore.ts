@@ -42,6 +42,10 @@ function toAuthUser(input: unknown): AuthUser | null {
   return { userId, companyId, role, name, email };
 }
 
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 async function getErrorText(res: Response): Promise<string> {
   try {
     const data = await res.json();
@@ -71,26 +75,40 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   login: async (email, password) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!isValidEmail(normalizedEmail)) throw new Error("Bitte eine gültige E-Mail eingeben.");
+    if (!password || password.length < 8) throw new Error("Passwort muss mindestens 8 Zeichen haben.");
     const res = await apiFetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: normalizedEmail, password }),
     });
     if (!res.ok) throw new Error(await getErrorText(res));
     const data = await res.json();
-    storeToken(String(data.token ?? ""));
-    set({ user: toAuthUser(data.user) });
+    const token = String(data.token ?? "");
+    const user = toAuthUser(data.user);
+    if (!token || !user) throw new Error("Ungültige Login-Antwort vom Server.");
+    storeToken(token);
+    set({ user });
   },
   register: async (payload) => {
+    const normalizedEmail = payload.email.trim().toLowerCase();
+    if (!payload.name.trim()) throw new Error("Bitte einen Namen eingeben.");
+    if (!payload.companyName.trim()) throw new Error("Bitte einen Firmennamen eingeben.");
+    if (!isValidEmail(normalizedEmail)) throw new Error("Bitte eine gültige E-Mail eingeben.");
+    if (!payload.password || payload.password.length < 8) throw new Error("Passwort muss mindestens 8 Zeichen haben.");
     const res = await apiFetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, email: normalizedEmail }),
     });
     if (!res.ok) throw new Error(await getErrorText(res));
     const data = await res.json();
-    storeToken(String(data.token ?? ""));
-    set({ user: toAuthUser(data.user) });
+    const token = String(data.token ?? "");
+    const user = toAuthUser(data.user);
+    if (!token || !user) throw new Error("Ungültige Registrierungs-Antwort vom Server.");
+    storeToken(token);
+    set({ user });
   },
   logout: async () => {
     await apiFetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
