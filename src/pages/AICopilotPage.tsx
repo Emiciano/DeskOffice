@@ -127,10 +127,11 @@ export function AICopilotPage() {
             onChange={(e) => setQuestion(e.target.value)}
           />
           <Button type="submit" disabled={!companyId || loading}>
-            {loading ? "Laedt..." : "Fragen"}
+            {loading ? "Lädt..." : "Fragen"}
           </Button>
         </form>
       </Card>
     </div>
   );
 }
+

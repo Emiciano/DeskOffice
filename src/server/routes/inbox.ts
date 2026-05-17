@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { getCompanyId } from "../auth.js";
+import { getCompanyId, requirePermissions } from "../auth.js";
 
 export const inboxRouter = Router();
 
@@ -45,7 +45,7 @@ inboxRouter.get("/tasks", async (req, res) => {
   });
 });
 
-inboxRouter.patch("/tasks/:id/status", async (req, res) => {
+inboxRouter.patch("/tasks/:id/status", requirePermissions("documents:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;

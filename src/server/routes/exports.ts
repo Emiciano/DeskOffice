@@ -4,7 +4,7 @@ import { getCompanyId, requirePermissions } from "../auth.js";
 
 export const exportsRouter = Router();
 
-exportsRouter.get("/", async (req, res) => {
+exportsRouter.get("/", requirePermissions("exports:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const items = await prisma.dataExport.findMany({
@@ -49,7 +49,7 @@ exportsRouter.patch("/:id/status", requirePermissions("exports:write"), async (r
   res.json({ ok: true });
 });
 
-exportsRouter.get("/:id/download", async (req, res) => {
+exportsRouter.get("/:id/download", requirePermissions("exports:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;

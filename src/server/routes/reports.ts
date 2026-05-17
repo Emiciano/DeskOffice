@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { getCompanyId } from "../auth.js";
+import { getCompanyId, requirePermissions } from "../auth.js";
 import { prisma } from "../db.js";
 
 export const reportsRouter = Router();
 
-reportsRouter.get("/advanced", async (req, res) => {
+reportsRouter.get("/advanced", requirePermissions("reports:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
 
