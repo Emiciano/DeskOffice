@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { getCompanyId } from "../auth.js";
+import { getCompanyId, requirePermissions } from "../auth.js";
 
 export const documentsRouter = Router();
 
@@ -11,12 +11,25 @@ documentsRouter.get("/", async (req, res) => {
   res.json(items);
 });
 
-documentsRouter.post("/", async (req, res) => {
-  const created = await prisma.document.create({ data: { ...req.body, companyId: getCompanyId(req) } });
+documentsRouter.post("/", requirePermissions("documents:write"), async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
+  const created = await prisma.document.create({ data: { ...req.body, companyId } });
   res.status(201).json(created);
 });
 
-documentsRouter.patch("/:id", async (req, res) => {
-  const updated = await prisma.document.update({ where: { id: req.params.id }, data: req.body });
-  res.json(updated);
+documentsRouter.patch("/:id", requirePermissions("documents:write"), async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
+  const updated = await prisma.document.updateMany({ where: { id: req.params.id, companyId }, data: req.body });
+  if (updated.count === 0) return res.status(404).json({ error: "Document not found" });
+  res.json({ ok: true });
+});
+
+documentsRouter.delete("/:id", requirePermissions("documents:write"), async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
+  const removed = await prisma.document.deleteMany({ where: { id: req.params.id, companyId } });
+  if (removed.count === 0) return res.status(404).json({ error: "Document not found" });
+  res.status(204).send();
 });

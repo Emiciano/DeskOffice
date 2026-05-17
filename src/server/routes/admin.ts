@@ -94,3 +94,17 @@ adminRouter.get("/audit-logs", async (req, res) => {
   });
   res.json(rows);
 });
+
+adminRouter.delete("/audit-logs/retention", requireRoles("owner"), async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
+  const days = Math.max(1, Number(req.query.days ?? req.body?.days ?? 365));
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const removed = await prisma.auditLog.deleteMany({
+    where: {
+      companyId,
+      createdAt: { lt: cutoff },
+    },
+  });
+  res.json({ ok: true, removed: removed.count, cutoff: cutoff.toISOString() });
+});

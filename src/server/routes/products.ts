@@ -41,6 +41,8 @@ productsRouter.post("/", requireRoles("owner", "admin"), async (req, res) => {
 });
 
 productsRouter.patch("/:id", requireRoles("owner", "admin"), async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;
   const body = req.body as {
     name?: string;
@@ -50,8 +52,8 @@ productsRouter.patch("/:id", requireRoles("owner", "admin"), async (req, res) =>
     description?: string;
     active?: boolean;
   };
-  const updated = await prisma.product.update({
-    where: { id },
+  const updated = await prisma.product.updateMany({
+    where: { id, companyId },
     data: {
       name: body.name === undefined ? undefined : String(body.name).trim(),
       type: body.type === undefined ? undefined : String(body.type),
@@ -61,5 +63,18 @@ productsRouter.patch("/:id", requireRoles("owner", "admin"), async (req, res) =>
       active: body.active,
     },
   });
-  res.json(updated);
+  if (updated.count === 0) return res.status(404).json({ error: "Product not found" });
+  res.json({ ok: true });
+});
+
+productsRouter.delete("/:id", requireRoles("owner", "admin"), async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
+  const { id } = req.params;
+  const updated = await prisma.product.updateMany({
+    where: { id, companyId },
+    data: { active: false },
+  });
+  if (updated.count === 0) return res.status(404).json({ error: "Product not found" });
+  res.status(204).send();
 });

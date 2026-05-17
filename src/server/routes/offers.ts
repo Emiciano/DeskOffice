@@ -12,10 +12,12 @@ offersRouter.get("/", async (req, res) => {
 });
 
 offersRouter.post("/", async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
   const created = await prisma.offer.create({
     data: {
       ...req.body,
-      companyId: getCompanyId(req),
+      companyId,
       validUntil: new Date(req.body.validUntil),
     },
   });
@@ -23,8 +25,10 @@ offersRouter.post("/", async (req, res) => {
 });
 
 offersRouter.post("/:id/convert", async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
   const { id } = req.params;
-  const offer = await prisma.offer.findUnique({ where: { id } });
+  const offer = await prisma.offer.findFirst({ where: { id, companyId } });
   if (!offer) return res.status(404).json({ error: "Offer not found" });
 
   const invoiceCount = await prisma.invoice.count({ where: { companyId: offer.companyId } });
@@ -48,4 +52,12 @@ offersRouter.post("/:id/convert", async (req, res) => {
   });
 
   res.status(201).json(invoice);
+});
+
+offersRouter.delete("/:id", async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
+  const removed = await prisma.offer.deleteMany({ where: { id: req.params.id, companyId } });
+  if (removed.count === 0) return res.status(404).json({ error: "Offer not found" });
+  res.status(204).send();
 });
