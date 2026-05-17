@@ -72,3 +72,20 @@ Stand: 2026-05-17
 ## Phase 15 - Reporting
 - [x] Erweiterte Reports API (Cashflow, Top-Kategorien, offene Posten)
 - [x] Reporting-Widgets im UI
+
+## Phase 16 - Einstellungen
+- [x] Erweiterte Firmen-/Steuer-/Bank-Einstellungen persistent in DB
+- [x] Finanzkonfiguration API fuer Bankkonten und Kostenstellen
+
+## Phase 17 - SaaS & Sicherheit
+- [x] Rollenbasierte Write-Guards auf kritischen Endpunkten
+- [x] Audit-Logging fuer API-Schreiboperationen
+- [x] Company-Isolation uebergreifend im API-Layer
+
+## Phase 18 - Projektstruktur
+- [x] Server-Routen weiter in Features aufgeteilt (`admin`, `finance-config`, `reports`, `advisors`)
+- [x] Skalierbare Trennung von Domain- und Infrastrukturdateien
+
+## Phase 19 - Prisma Models
+- [x] Ergaenzt: `Role`, `CompanyMember`, `DocumentFile`, `BankAccount`, `CostCenter`, `Subscription`, `AuditLog`
+- [x] Erweiterte Relationen in `Company`, `User`, `Document`, `Booking`, `BankTransaction`

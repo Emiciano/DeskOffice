@@ -20,9 +20,12 @@ import { productsRouter } from "./routes/products.js";
 import { eInvoicesRouter } from "./routes/einvoices.js";
 import { advisorsRouter } from "./routes/advisors.js";
 import { reportsRouter } from "./routes/reports.js";
+import { adminRouter } from "./routes/admin.js";
+import { financeConfigRouter } from "./routes/finance-config.js";
 import { APP_PORT, CORS_ORIGIN, DEFAULT_COMPANY_NAME } from "./config.js";
 import { prisma } from "./db.js";
 import { ensureCompanySetup } from "./seed.js";
+import { isWriteMethod, writeAuditLog } from "./audit.js";
 
 async function ensureSeedData() {
   const company = await prisma.company.upsert({
@@ -67,6 +70,14 @@ async function start() {
   app.use(cors({ origin: CORS_ORIGIN }));
   app.use(express.json());
   app.use(attachAuth);
+  app.use((req, res, next) => {
+    if (isWriteMethod(req.method) && req.path.startsWith("/api/")) {
+      res.on("finish", () => {
+        void writeAuditLog(req, res.statusCode).catch(() => undefined);
+      });
+    }
+    next();
+  });
 
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
   app.use("/api/auth", authRouter);
@@ -92,6 +103,8 @@ async function start() {
   app.use("/api/copilot", copilotRouter);
   app.use("/api/advisors", advisorsRouter);
   app.use("/api/reports", reportsRouter);
+  app.use("/api/admin", adminRouter);
+  app.use("/api/finance-config", financeConfigRouter);
 
   app.listen(APP_PORT, () => {
     console.log(`API running on :${APP_PORT}`);

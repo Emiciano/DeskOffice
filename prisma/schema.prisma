@@ -26,6 +26,13 @@ model Company {
   products Product[]
   eInvoices EInvoiceDocument[]
   advisorInvites AdvisorInvite[]
+  documentFiles DocumentFile[]
+  members CompanyMember[]
+  bankAccounts BankAccount[]
+  costCenters CostCenter[]
+  subscriptions Subscription[]
+  auditLogs AuditLog[]
+  roles Role[]
 }
 
 model User {
@@ -37,10 +44,47 @@ model User {
   companyId    String
   company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   sessions     AuthSession[]
+  memberships  CompanyMember[]
+  auditLogs    AuditLog[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   @@index([companyId, role])
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code        String
+  label       String
+  permissions String   @db.LongText
+  system      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  members     CompanyMember[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+model CompanyMember {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId      String?
+  role        Role?    @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  status      String   @default("active")
+  invitedBy   String?
+  invitedAt   DateTime?
+  joinedAt    DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, userId])
+  @@index([companyId, status])
 }
 
 model AuthSession {
@@ -122,10 +166,27 @@ model Document {
   companyId     String
   company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   booking       Booking?
+  files         DocumentFile[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   @@index([companyId, status])
+}
+
+model DocumentFile {
+  id           String   @id @default(cuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  documentId   String
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  storageKey   String
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  source       String   @default("upload")
+  createdAt    DateTime @default(now())
+
+  @@index([companyId, documentId])
 }
 
 model Booking {
@@ -139,6 +200,8 @@ model Booking {
   bookingText    String
   bookingDate    DateTime
   category       String
+  costCenterId   String?
+  costCenter     CostCenter? @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
   status         String
   companyId      String
   company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -247,12 +310,31 @@ model BankTransaction {
   matchedRuleId String?
   matchedInvoiceId String?
   matchedDocumentId String?
+  bankAccountId String?
+  bankAccount   BankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   companyId   String
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([companyId, bookingDate])
+}
+
+model BankAccount {
+  id            String   @id @default(cuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name          String
+  iban          String
+  bic           String?
+  bankName      String?
+  currency      String   @default("EUR")
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  transactions  BankTransaction[]
+
+  @@index([companyId, active])
 }
 
 model Rule {
@@ -268,6 +350,21 @@ model Rule {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([companyId, active])
+}
+
+model CostCenter {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  code        String
+  name        String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  bookings    Booking[]
+
+  @@unique([companyId, code])
   @@index([companyId, active])
 }
 
@@ -325,6 +422,39 @@ model DataExport {
   updatedAt    DateTime @updatedAt
 
   @@index([companyId, exportType, createdAt])
+}
+
+model Subscription {
+  id                 String   @id @default(cuid())
+  companyId          String
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  planCode           String
+  status             String
+  seats              Int      @default(1)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([companyId, status])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String?
+  metadata   String?  @db.LongText
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([companyId, entityType, createdAt])
 }
 
 model AdvisorInvite {

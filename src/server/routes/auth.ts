@@ -34,6 +34,23 @@ authRouter.post("/register", async (req, res) => {
     },
   });
 
+  const ownerRole = await prisma.role.findFirst({
+    where: { companyId: company.id, code: "owner" },
+    select: { id: true },
+  });
+  await prisma.companyMember.upsert({
+    where: { companyId_userId: { companyId: company.id, userId: user.id } },
+    update: { roleId: ownerRole?.id ?? null, status: "active" },
+    create: {
+      companyId: company.id,
+      userId: user.id,
+      roleId: ownerRole?.id ?? null,
+      status: "active",
+      invitedBy: user.name,
+      invitedAt: new Date(),
+    },
+  });
+
   const token = createSessionToken();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
   await prisma.authSession.create({

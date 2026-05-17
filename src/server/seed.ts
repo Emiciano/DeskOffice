@@ -70,4 +70,60 @@ export async function ensureCompanySetup(companyId: string, companyName: string)
       ],
     });
   }
+
+  const existingRoles = await prisma.role.count({ where: { companyId } });
+  if (existingRoles === 0) {
+    await prisma.role.createMany({
+      data: [
+        {
+          companyId,
+          code: "owner",
+          label: "Owner",
+          permissions: JSON.stringify(["*"]),
+          system: true,
+        },
+        {
+          companyId,
+          code: "admin",
+          label: "Admin",
+          permissions: JSON.stringify([
+            "settings:write",
+            "documents:write",
+            "bookings:write",
+            "contacts:write",
+            "reports:read",
+          ]),
+          system: true,
+        },
+        {
+          companyId,
+          code: "employee",
+          label: "Mitarbeiter",
+          permissions: JSON.stringify(["documents:write", "contacts:read", "reports:read"]),
+          system: true,
+        },
+        {
+          companyId,
+          code: "tax_advisor",
+          label: "Steuerberater",
+          permissions: JSON.stringify(["reports:read", "exports:read", "bookings:read"]),
+          system: true,
+        },
+      ],
+    });
+  }
+
+  const subCount = await prisma.subscription.count({ where: { companyId } });
+  if (subCount === 0) {
+    await prisma.subscription.create({
+      data: {
+        companyId,
+        planCode: "starter",
+        status: "active",
+        seats: 3,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
+      },
+    });
+  }
 }
