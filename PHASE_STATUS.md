@@ -1,59 +1,74 @@
-# Umsetzungsstand Phasen 1-10
+# Umsetzungsstand Phasen 1-15
 
 Stand: 2026-05-17
 
-## Phase 1 – Grundsystem
+## Phase 1 - Grundsystem
 - [x] React + TypeScript + Router + zentrales Layout
 - [x] Login/Register gegen DB
 - [x] Company-basierte Datenisolation (`companyId`)
-- [x] Rollenfeld am User + geschützte API
-- [x] Settings-Bereich DB-gestützt
+- [x] Rollenfeld am User + geschuetzte API
+- [x] Settings-Bereich DB-gestuetzt
 
-## Phase 2 – Belegverwaltung
+## Phase 2 - Belegverwaltung
 - [x] Upload-Flow + Belegliste + Filter
 - [x] Bearbeitungs-Workflow (Erfassen/Bearbeiten)
-- [x] Belegstatus und Buchungsübergang
+- [x] Belegstatus und Buchungsuebergang
 
-## Phase 3 – OCR Architektur
+## Phase 3 - OCR Architektur
 - [x] OCR-Trigger im Workflow vorhanden
-- [x] Aktuell Mock-OCR (provider-unabhängig vorbereitet)
+- [x] Mock-OCR fuer provider-unabhaengigen Start
 - [ ] Externer OCR-Provider (bewusst noch nicht aktiviert)
 
-## Phase 4 – Kontenrahmen SKR03/SKR04
+## Phase 4 - Kontenrahmen SKR03/SKR04
 - [x] Kontenmodell in DB
 - [x] SKR03/SKR04 Seeddaten
 - [x] Kontenverwaltung + Suche/Filter
 
-## Phase 5 – Buchungen
+## Phase 5 - Buchungen
 - [x] Beleg-zu-Buchung
 - [x] Journalansicht
-- [x] Validierung und Statusübergänge
+- [x] Validierung und Statusuebergaenge
 
-## Phase 6 – Rechnungen & Angebote
+## Phase 6 - Rechnungen & Angebote
 - [x] Rechnungserstellung mit Positionslogik und Vorlagenvorschau
 - [x] Angebote + Umwandlungs-/Folgeprozesse
-- [x] Wiederkehrende Rechnung (nächster Zyklus)
+- [x] Wiederkehrende Rechnung (naechster Zyklus)
 
-## Phase 7 – E-Rechnung Vorbereitung
-- [x] DB-Modell für E-Rechnungsdokument
-- [x] API-Route für XML-Erstellung aus Rechnung
+## Phase 7 - E-Rechnung Vorbereitung
+- [x] DB-Modell fuer E-Rechnungsdokument
+- [x] API-Route fuer XML-Erstellung aus Rechnung
 - [x] XML-Export (XRechnung-Workflow vorbereitet)
 
-## Phase 8 – Banking
+## Phase 8 - Banking
 - [x] CSV-Import
 - [x] Transaktionsliste in DB
 - [x] Matching auf Rechnungen inkl. Statusupdate
 
-## Phase 9 – Regelengine
+## Phase 9 - Regelengine
 - [x] Regeln CRUD
 - [x] Anwendung bei Bankimport
 - [x] Vorschlagssystem bei Zuordnung
 
-## Phase 10 – Steuerbereich
+## Phase 10 - Steuerbereich
 - [x] Steuer-Snapshots Modell + API
-- [x] Steuerrelevante Reports/Übersichten im UI
+- [x] Steuerrelevante Reports/Uebersichten im UI
 
-## Heute neu abgeschlossen
-1. Produkte & Leistungen vollständig DB-basiert (CRUD, Suche, Aktiv/Inaktiv).
-2. E-Rechnungsstruktur (Model + API + XML-Export aus Rechnungen).
-3. Rollenrechte für kritische Write-Endpoints (Owner/Admin).
+## Phase 11 - DATEV / Steuerberater
+- [x] Export-Historie und Download-Flow
+- [x] Steuerberater-Einladung (Invite, Liste, Widerruf)
+
+## Phase 12 - Smart Inbox
+- [x] Aufgabenliste fuer unvollstaendige Belege
+- [x] Priorisierung und Statusaktionen
+
+## Phase 13 - AI Copilot
+- [x] Copilot UI mit Quick-Fragen
+- [x] Datenbasierte Antworten aus Rechnungen/Belegen/Buchungen
+
+## Phase 14 - Kunden & Lieferanten
+- [x] Kontaktanlage (Kunde/Lieferant)
+- [x] Detailansicht mit Rechnungen/Belegen und Umsatzbezug
+
+## Phase 15 - Reporting
+- [x] Erweiterte Reports API (Cashflow, Top-Kategorien, offene Posten)
+- [x] Reporting-Widgets im UI

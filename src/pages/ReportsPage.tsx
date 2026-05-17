@@ -61,6 +61,22 @@ type TaxForecast = {
   };
 };
 
+type AdvisorInvite = {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  invitedBy: string;
+  invitedAt: string;
+};
+
+type AdvancedReport = {
+  cashflow: Array<{ month: string; income: number; expense: number; net: number }>;
+  topCategories: Array<{ category: string; total: number }>;
+  openItemsSummary: { count: number; amount: number };
+  documentCompleteness: { total: number; missing: number; complete: number };
+};
+
 export function ReportsPage() {
   const [companyId, setCompanyId] = useState("");
   const [snapshot, setSnapshot] = useState<TaxSnapshot | null>(null);
@@ -76,6 +92,9 @@ export function ReportsPage() {
   const [ruleAccount, setRuleAccount] = useState("");
   const [ruleActionLoading, setRuleActionLoading] = useState("");
   const [exportsHistory, setExportsHistory] = useState<ExportItem[]>([]);
+  const [advisorEmail, setAdvisorEmail] = useState("");
+  const [advisorInvites, setAdvisorInvites] = useState<AdvisorInvite[]>([]);
+  const [advanced, setAdvanced] = useState<AdvancedReport | null>(null);
 
   const quarterMonths = useMemo(() => {
     const quarter = Math.floor((month - 1) / 3);
@@ -91,6 +110,16 @@ export function ReportsPage() {
   async function loadExports(company: string) {
     const res = await apiFetch(`/api/exports?companyId=${company}`);
     setExportsHistory(await res.json());
+  }
+
+  async function loadAdvisors(company: string) {
+    const res = await apiFetch(`/api/advisors/invites?companyId=${company}`);
+    setAdvisorInvites(await res.json());
+  }
+
+  async function loadAdvanced(company: string) {
+    const res = await apiFetch(`/api/reports/advanced?companyId=${company}`);
+    setAdvanced((await res.json()) as AdvancedReport);
   }
 
   async function loadTax(company: string, y: number, m: number) {
@@ -135,6 +164,8 @@ export function ReportsPage() {
         loadTaxSummary(boot.companyId, year),
         loadRules(boot.companyId),
         loadExports(boot.companyId),
+        loadAdvisors(boot.companyId),
+        loadAdvanced(boot.companyId),
       ]);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -208,6 +239,23 @@ export function ReportsPage() {
       }),
     });
     await loadExports(companyId);
+  }
+
+  async function inviteAdvisor() {
+    if (!companyId || !advisorEmail.trim()) return;
+    await apiFetch(`/api/advisors/invites?companyId=${companyId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ companyId, email: advisorEmail.trim() }),
+    });
+    setAdvisorEmail("");
+    await loadAdvisors(companyId);
+  }
+
+  async function revokeInvite(id: string) {
+    if (!companyId) return;
+    await apiFetch(`/api/advisors/invites/${id}/revoke?companyId=${companyId}`, { method: "PATCH" });
+    await loadAdvisors(companyId);
   }
 
   async function downloadExport(id: string, fileName: string) {
@@ -418,6 +466,104 @@ export function ReportsPage() {
             ))}
           </tbody>
         </table>
+      </Card>
+
+      <Card className="mt-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-medium">Steuerberater-Zugang</h3>
+        </div>
+        <div className="mb-3 grid gap-2 md:grid-cols-[1fr_auto]">
+          <Input
+            placeholder="E-Mail Steuerberater"
+            value={advisorEmail}
+            onChange={(e) => setAdvisorEmail(e.target.value)}
+          />
+          <Button onClick={() => void inviteAdvisor()}>Einladen</Button>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-muted-foreground">
+              <th>E-Mail</th>
+              <th>Rolle</th>
+              <th>Status</th>
+              <th>Eingeladen von</th>
+              <th>Datum</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {advisorInvites.map((item) => (
+              <tr key={item.id} className="border-t border-border">
+                <td className="py-3">{item.email}</td>
+                <td>{item.role}</td>
+                <td>{item.status}</td>
+                <td>{item.invitedBy}</td>
+                <td>{new Date(item.invitedAt).toISOString().slice(0, 10)}</td>
+                <td>
+                  {item.status === "pending" ? (
+                    <Button
+                      variant="outline"
+                      className="h-8 px-2 text-xs"
+                      onClick={() => void revokeInvite(item.id)}
+                    >
+                      Widerrufen
+                    </Button>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+
+      <Card className="mt-4">
+        <h3 className="mb-3 font-medium">Erweiterte Auswertungen</h3>
+        <div className="mb-4 grid gap-4 md:grid-cols-3">
+          <div className="rounded-xl border border-border p-3">
+            <p className="text-xs text-muted-foreground">Offene Posten</p>
+            <p className="text-lg font-semibold">{advanced?.openItemsSummary.count ?? 0}</p>
+            <p className="text-xs text-muted-foreground">
+              EUR {advanced?.openItemsSummary.amount.toFixed(2) ?? "0.00"}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border p-3">
+            <p className="text-xs text-muted-foreground">Belege vollständig</p>
+            <p className="text-lg font-semibold">{advanced?.documentCompleteness.complete ?? 0}</p>
+            <p className="text-xs text-muted-foreground">
+              von {advanced?.documentCompleteness.total ?? 0}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border p-3">
+            <p className="text-xs text-muted-foreground">Fehlende Belegdaten</p>
+            <p className="text-lg font-semibold">{advanced?.documentCompleteness.missing ?? 0}</p>
+          </div>
+        </div>
+        <div className="grid gap-4 xl:grid-cols-2">
+          <div>
+            <p className="mb-2 text-sm font-medium">Top Kategorien</p>
+            <div className="space-y-1">
+              {(advanced?.topCategories ?? []).map((c) => (
+                <div key={c.category} className="flex items-center justify-between rounded-lg bg-muted px-2 py-1 text-sm">
+                  <span>{c.category}</span>
+                  <b>EUR {c.total.toFixed(2)}</b>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="mb-2 text-sm font-medium">Cashflow (12 Monate)</p>
+            <div className="space-y-1">
+              {(advanced?.cashflow ?? []).map((m) => (
+                <div key={m.month} className="grid grid-cols-4 gap-2 rounded-lg bg-muted px-2 py-1 text-xs">
+                  <span>{m.month}</span>
+                  <span>+{m.income.toFixed(0)}</span>
+                  <span>-{m.expense.toFixed(0)}</span>
+                  <b>{m.net.toFixed(0)}</b>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </Card>
     </div>
   );

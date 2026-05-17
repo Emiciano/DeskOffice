@@ -25,6 +25,7 @@ model Company {
   settings  CompanySettings?
   products Product[]
   eInvoices EInvoiceDocument[]
+  advisorInvites AdvisorInvite[]
 }
 
 model User {
@@ -324,4 +325,20 @@ model DataExport {
   updatedAt    DateTime @updatedAt
 
   @@index([companyId, exportType, createdAt])
+}
+
+model AdvisorInvite {
+  id           String   @id @default(cuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  email        String
+  role         String   @default("tax_advisor")
+  status       String   @default("pending")
+  invitedBy    String
+  invitedAt    DateTime @default(now())
+  acceptedAt   DateTime?
+  revokedAt    DateTime?
+
+  @@index([companyId, status])
+  @@unique([companyId, email, status])
 }

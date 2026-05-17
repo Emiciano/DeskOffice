@@ -18,6 +18,8 @@ import { copilotRouter } from "./routes/copilot.js";
 import { authRouter } from "./routes/auth.js";
 import { productsRouter } from "./routes/products.js";
 import { eInvoicesRouter } from "./routes/einvoices.js";
+import { advisorsRouter } from "./routes/advisors.js";
+import { reportsRouter } from "./routes/reports.js";
 import { APP_PORT, CORS_ORIGIN, DEFAULT_COMPANY_NAME } from "./config.js";
 import { prisma } from "./db.js";
 import { ensureCompanySetup } from "./seed.js";
@@ -88,6 +90,8 @@ async function start() {
   app.use("/api/inbox", inboxRouter);
   app.use("/api/dashboard", dashboardRouter);
   app.use("/api/copilot", copilotRouter);
+  app.use("/api/advisors", advisorsRouter);
+  app.use("/api/reports", reportsRouter);
 
   app.listen(APP_PORT, () => {
     console.log(`API running on :${APP_PORT}`);
