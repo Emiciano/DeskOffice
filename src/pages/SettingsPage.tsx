@@ -60,7 +60,7 @@ export function SettingsPage() {
     }
     const updated = await response.json();
     setSettings({ ...defaultCompanySettings, ...updated, companyId });
-    setMessage("Einstellungen gespeichert. Rechnungen nutzen die Daten sofort.");
+    setMessage("Einstellungen gespeichert. Neue Rechnungen übernehmen die Werte sofort.");
     setSaving(false);
   }
 
@@ -78,9 +78,7 @@ export function SettingsPage() {
     setField("logoUrl", dataUrl);
   }
 
-  if (loading) {
-    return <div className="text-sm text-muted-foreground">Einstellungen werden geladen...</div>;
-  }
+  if (loading) return <div className="text-sm text-muted-foreground">Einstellungen werden geladen...</div>;
 
   return (
     <div>
@@ -102,16 +100,14 @@ export function SettingsPage() {
         </Card>
 
         <div className="space-y-4">
-          {message ? (
-            <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm">{message}</div>
-          ) : null}
+          {message ? <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm">{message}</div> : null}
 
           {active === "general" ? (
             <>
               <Card className="space-y-4 p-5">
                 <h3 className="text-2xl font-semibold">Allgemein</h3>
                 <div className="rounded-lg bg-indigo-100 px-3 py-2 text-sm text-indigo-900 dark:bg-indigo-900/30 dark:text-indigo-100">
-                  Vollständige Stammdaten werden automatisch in Rechnungskopf und Fußzeile übernommen.
+                  Vollständige Stammdaten werden automatisch im Rechnungskopf und in der Fußzeile verwendet.
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   <div>
@@ -198,75 +194,87 @@ export function SettingsPage() {
           ) : null}
 
           {active === "tax" ? (
-            <>
-              <Card className="space-y-4 p-5">
-                <h3 className="text-2xl font-semibold">Buchhaltung & Steuer</h3>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div>
-                    <p className="mb-1 flex items-center gap-1 text-sm font-medium">Umsatzsteuer-ID <Info size={14} /></p>
-                    <Input value={settings.vatId} onChange={(e) => setField("vatId", e.target.value)} placeholder="z. B. DE123456789" />
-                  </div>
-                  <div>
-                    <p className="mb-1 flex items-center gap-1 text-sm font-medium">Steuernummer <Info size={14} /></p>
-                    <Input value={settings.taxNumber} onChange={(e) => setField("taxNumber", e.target.value)} />
-                  </div>
-                  <div>
-                    <p className="mb-1 text-sm font-medium">Amtsgericht</p>
-                    <Input value={settings.districtCourt} onChange={(e) => setField("districtCourt", e.target.value)} />
-                  </div>
-                  <div>
-                    <p className="mb-1 text-sm font-medium">Handelsregister-Nr.</p>
-                    <Input value={settings.commercialRegisterNo} onChange={(e) => setField("commercialRegisterNo", e.target.value)} />
-                  </div>
-                </div>
-
+            <Card className="space-y-4 p-5">
+              <h3 className="text-2xl font-semibold">Buchhaltung & Steuer</h3>
+              <div className="grid gap-3 md:grid-cols-2">
                 <div>
-                  <p className="mb-2 text-sm font-medium">Umsatzsteuer</p>
-                  <div className="grid gap-2 md:grid-cols-2">
-                    <button type="button" onClick={() => setField("vatMode", "standard")} className={`rounded-xl border p-3 text-left ${settings.vatMode === "standard" ? "border-primary ring-1 ring-primary" : "border-border"}`}>
-                      <p className="font-medium">Standard</p>
-                      <p className="text-sm text-muted-foreground">{settings.defaultTaxRate}%</p>
-                    </button>
-                    <button type="button" onClick={() => setField("vatMode", "small-business")} className={`rounded-xl border p-3 text-left ${settings.vatMode === "small-business" ? "border-primary ring-1 ring-primary" : "border-border"}`}>
-                      <p className="font-medium">Kleinunternehmer</p>
-                      <p className="text-sm text-muted-foreground">Keine Umsatzsteuer</p>
-                    </button>
-                  </div>
+                  <p className="mb-1 flex items-center gap-1 text-sm font-medium">Umsatzsteuer-ID <Info size={14} /></p>
+                  <Input value={settings.vatId} onChange={(e) => setField("vatId", e.target.value)} placeholder="z. B. DE123456789" />
                 </div>
-
                 <div>
-                  <p className="mb-2 text-sm font-medium">Kontenrahmen</p>
-                  <div className="grid gap-2 md:grid-cols-2">
-                    <button type="button" onClick={() => setField("accountFrame", "SKR04")} className={`rounded-xl border p-3 text-left ${settings.accountFrame === "SKR04" ? "border-primary ring-1 ring-primary" : "border-border"}`}>
-                      <p className="font-medium">SKR04</p>
-                      <p className="text-sm text-muted-foreground">angelehnt an Jahresabschluss</p>
-                    </button>
-                    <button type="button" onClick={() => setField("accountFrame", "SKR03")} className={`rounded-xl border p-3 text-left ${settings.accountFrame === "SKR03" ? "border-primary ring-1 ring-primary" : "border-border"}`}>
-                      <p className="font-medium">SKR03</p>
-                      <p className="text-sm text-muted-foreground">angelehnt an Unternehmensabläufe</p>
-                    </button>
-                  </div>
+                  <p className="mb-1 flex items-center gap-1 text-sm font-medium">Steuernummer <Info size={14} /></p>
+                  <Input value={settings.taxNumber} onChange={(e) => setField("taxNumber", e.target.value)} />
                 </div>
+                <div>
+                  <p className="mb-1 text-sm font-medium">Amtsgericht</p>
+                  <Input value={settings.districtCourt} onChange={(e) => setField("districtCourt", e.target.value)} />
+                </div>
+                <div>
+                  <p className="mb-1 text-sm font-medium">Handelsregister-Nr.</p>
+                  <Input value={settings.commercialRegisterNo} onChange={(e) => setField("commercialRegisterNo", e.target.value)} />
+                </div>
+              </div>
 
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div>
-                    <p className="mb-1 text-sm font-medium">Standard-USt.-Satz</p>
-                    <Input type="number" value={settings.defaultTaxRate} onChange={(e) => setField("defaultTaxRate", Number(e.target.value) || 0)} />
-                  </div>
-                  <div>
-                    <p className="mb-1 text-sm font-medium">Preisangabe</p>
-                    <select
-                      className="h-10 w-full rounded-xl border border-border px-3 text-sm"
-                      value={settings.priceInputMode}
-                      onChange={(e) => setField("priceInputMode", e.target.value as "netto" | "brutto")}
-                    >
-                      <option value="brutto">Brutto inkl. USt</option>
-                      <option value="netto">Netto zzgl. USt</option>
-                    </select>
-                  </div>
+              <div>
+                <p className="mb-2 text-sm font-medium">Umsatzsteuer</p>
+                <div className="grid gap-2 md:grid-cols-2">
+                  <button type="button" onClick={() => setField("vatMode", "standard")} className={`rounded-xl border p-3 text-left ${settings.vatMode === "standard" ? "border-primary ring-1 ring-primary" : "border-border"}`}>
+                    <p className="font-medium">Standard</p>
+                    <p className="text-sm text-muted-foreground">{settings.defaultTaxRate}%</p>
+                  </button>
+                  <button type="button" onClick={() => setField("vatMode", "small-business")} className={`rounded-xl border p-3 text-left ${settings.vatMode === "small-business" ? "border-primary ring-1 ring-primary" : "border-border"}`}>
+                    <p className="font-medium">Kleinunternehmer</p>
+                    <p className="text-sm text-muted-foreground">Keine Umsatzsteuer</p>
+                  </button>
                 </div>
-              </Card>
-            </>
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-medium">Gewinnermittlung</p>
+                <div className="grid gap-2 md:grid-cols-2">
+                  <button type="button" onClick={() => setField("profitMethod", "euer")} className={`rounded-xl border p-3 text-left ${settings.profitMethod === "euer" ? "border-primary ring-1 ring-primary" : "border-border"}`}>
+                    <p className="font-medium">EÜR</p>
+                    <p className="text-sm text-muted-foreground">Standard für Einzelunternehmen/Freiberufler</p>
+                  </button>
+                  <button type="button" onClick={() => setField("profitMethod", "guv")} className={`rounded-xl border p-3 text-left ${settings.profitMethod === "guv" ? "border-primary ring-1 ring-primary" : "border-border"}`}>
+                    <p className="font-medium">GuV</p>
+                    <p className="text-sm text-muted-foreground">Kapitalgesellschaften & Spezialfälle</p>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-medium">Kontenrahmen</p>
+                <div className="grid gap-2 md:grid-cols-2">
+                  <button type="button" onClick={() => setField("accountFrame", "SKR04")} className={`rounded-xl border p-3 text-left ${settings.accountFrame === "SKR04" ? "border-primary ring-1 ring-primary" : "border-border"}`}>
+                    <p className="font-medium">SKR04</p>
+                    <p className="text-sm text-muted-foreground">Angelehnt an Jahresabschluss</p>
+                  </button>
+                  <button type="button" onClick={() => setField("accountFrame", "SKR03")} className={`rounded-xl border p-3 text-left ${settings.accountFrame === "SKR03" ? "border-primary ring-1 ring-primary" : "border-border"}`}>
+                    <p className="font-medium">SKR03</p>
+                    <p className="text-sm text-muted-foreground">Angelehnt an Unternehmensabläufe</p>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <p className="mb-1 text-sm font-medium">Standard-USt.-Satz</p>
+                  <Input type="number" value={settings.defaultTaxRate} onChange={(e) => setField("defaultTaxRate", Number(e.target.value) || 0)} />
+                </div>
+                <div>
+                  <p className="mb-1 text-sm font-medium">Preisangabe</p>
+                  <select
+                    className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                    value={settings.priceInputMode}
+                    onChange={(e) => setField("priceInputMode", e.target.value as "netto" | "brutto")}
+                  >
+                    <option value="brutto">Brutto inkl. USt</option>
+                    <option value="netto">Netto zzgl. USt</option>
+                  </select>
+                </div>
+              </div>
+            </Card>
           ) : null}
 
           {active === "bank" ? (
@@ -318,7 +326,7 @@ export function SettingsPage() {
                     }}
                   />
                 </label>
-                <p className="mt-2 text-xs text-muted-foreground">PNG/JPG/WEBP • wird automatisch auf Rechnungen angezeigt</p>
+                <p className="mt-2 text-xs text-muted-foreground">PNG/JPG/WEBP • wird automatisch auf Rechnungen verwendet</p>
               </div>
             </Card>
           ) : null}
@@ -331,3 +339,4 @@ export function SettingsPage() {
     </div>
   );
 }
+

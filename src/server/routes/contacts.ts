@@ -36,7 +36,7 @@ function normalizeContactPayload(payload: {
   return { type, name, email, phone, vatId, street, postalCode, city, country, paymentTerms, notes, active };
 }
 
-contactsRouter.get("/", async (req, res) => {
+contactsRouter.get("/", requirePermissions("contacts:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   const type = String(req.query.type ?? "all");
   if (!companyId) return res.status(400).json({ error: "companyId required" });
@@ -69,7 +69,7 @@ contactsRouter.get("/", async (req, res) => {
   res.json(rows);
 });
 
-contactsRouter.get("/:id/detail", async (req, res) => {
+contactsRouter.get("/:id/detail", requirePermissions("contacts:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
 

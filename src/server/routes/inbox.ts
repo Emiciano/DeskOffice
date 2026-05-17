@@ -4,7 +4,7 @@ import { getCompanyId, requirePermissions } from "../auth.js";
 
 export const inboxRouter = Router();
 
-inboxRouter.get("/tasks", async (req, res) => {
+inboxRouter.get("/tasks", requirePermissions("documents:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
 
