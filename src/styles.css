@@ -81,6 +81,20 @@ button:hover { filter: none; }
   background: rgba(19, 23, 29, 0.94) !important;
 }
 
+.theme-dark .bg-slate-100,
+.theme-dark .bg-emerald-100,
+.theme-dark .bg-indigo-100,
+.theme-dark .bg-rose-100 {
+  background: #24303d !important;
+}
+
+.theme-dark .text-slate-700,
+.theme-dark .text-emerald-700,
+.theme-dark .text-indigo-700,
+.theme-dark .text-rose-700 {
+  color: #d8e1eb !important;
+}
+
 .theme-dark .border-border {
   border-color: #2a313b !important;
 }
@@ -99,6 +113,10 @@ button:hover { filter: none; }
 
 .theme-dark .bg-primary {
   background: #5f6b7d !important;
+}
+
+.theme-dark .bg-primary\/15 {
+  background: rgba(118, 132, 151, 0.26) !important;
 }
 
 .theme-dark .text-primary {
