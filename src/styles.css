@@ -65,22 +65,22 @@ button:hover { filter: none; }
 
 .theme-dark body {
   background:
-    radial-gradient(1200px 500px at 0% -15%, rgba(98, 116, 255, 0.2), transparent 55%),
-    radial-gradient(900px 420px at 100% -10%, rgba(45, 150, 255, 0.14), transparent 60%),
-    #0f1114;
+    radial-gradient(1200px 500px at 0% -15%, rgba(134, 143, 160, 0.12), transparent 55%),
+    radial-gradient(900px 420px at 100% -10%, rgba(112, 120, 136, 0.1), transparent 60%),
+    #0d1014;
   color: #e8edf3;
 }
 
 .theme-dark .bg-background {
-  background: #101214 !important;
+  background: #0f1318 !important;
 }
 
 .theme-dark .bg-white {
-  background: rgba(22, 25, 30, 0.92) !important;
+  background: rgba(19, 23, 29, 0.94) !important;
 }
 
 .theme-dark .border-border {
-  border-color: #2d3440 !important;
+  border-color: #2a313b !important;
 }
 
 .theme-dark .text-foreground {
@@ -92,15 +92,15 @@ button:hover { filter: none; }
 }
 
 .theme-dark .bg-muted {
-  background: #1e242c !important;
+  background: #1a212a !important;
 }
 
 .theme-dark .bg-primary {
-  background: #5862f7 !important;
+  background: #667085 !important;
 }
 
 .theme-dark .text-primary {
-  color: #cbd5e1 !important;
+  color: #d0d6df !important;
 }
 
 .theme-dark .shadow-soft {
@@ -126,7 +126,15 @@ button:hover { filter: none; }
 }
 
 .theme-dark tr:hover td {
-  background: #1a2026 !important;
+  background: #182029 !important;
+}
+
+.theme-dark .hover\:bg-muted\/70:hover {
+  background: rgba(39, 48, 60, 0.72) !important;
+}
+
+.theme-dark .hover\:bg-muted\/80:hover {
+  background: rgba(39, 48, 60, 0.82) !important;
 }
 
 .no-scrollbar::-webkit-scrollbar {

@@ -42,32 +42,30 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-5 lg:p-6">
-      <div className="mx-auto flex w-full max-w-[1720px] gap-5 lg:gap-6">
-        <Sidebar />
-        <main className="min-w-0 flex-1">
-          <Topbar />
-          <div key={location.pathname} className="page-enter">
-            <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/rechnungen" element={<InvoicesPage />} />
-              <Route path="/angebote" element={<OffersPage />} />
-              <Route path="/kunden" element={<CustomersPage />} />
-              <Route path="/belege" element={<DocumentsPage />} />
-              <Route path="/banking" element={<BankingPage />} />
-              <Route path="/produkte" element={<ProductsPage />} />
-              <Route path="/kontenrahmen" element={<AccountsPage />} />
-              <Route path="/buchungen" element={<BookingsPage />} />
-              <Route path="/inbox" element={<SmartInboxPage />} />
-              <Route path="/copilot" element={<AICopilotPage />} />
-              <Route path="/berichte" element={<ReportsPage />} />
-              <Route path="/einstellungen" element={<SettingsPage />} />
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </div>
-        </main>
-      </div>
+    <div className="min-h-screen bg-background p-4 lg:p-5">
+      <Sidebar />
+      <main className="min-w-0 pl-[18.5rem]">
+        <Topbar />
+        <div key={location.pathname} className="page-enter">
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/rechnungen" element={<InvoicesPage />} />
+            <Route path="/angebote" element={<OffersPage />} />
+            <Route path="/kunden" element={<CustomersPage />} />
+            <Route path="/belege" element={<DocumentsPage />} />
+            <Route path="/banking" element={<BankingPage />} />
+            <Route path="/produkte" element={<ProductsPage />} />
+            <Route path="/kontenrahmen" element={<AccountsPage />} />
+            <Route path="/buchungen" element={<BookingsPage />} />
+            <Route path="/inbox" element={<SmartInboxPage />} />
+            <Route path="/copilot" element={<AICopilotPage />} />
+            <Route path="/berichte" element={<ReportsPage />} />
+            <Route path="/einstellungen" element={<SettingsPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </main>
     </div>
   );
 }
