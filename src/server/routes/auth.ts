@@ -10,6 +10,25 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+async function ensureMember(companyId: string, userId: string, userName: string, roleCode: string) {
+  const role = await prisma.role.findFirst({
+    where: { companyId, code: roleCode.toLowerCase() },
+    select: { id: true },
+  });
+  await prisma.companyMember.upsert({
+    where: { companyId_userId: { companyId, userId } },
+    update: { status: "active", roleId: role?.id ?? null },
+    create: {
+      companyId,
+      userId,
+      roleId: role?.id ?? null,
+      status: "active",
+      invitedBy: userName,
+      invitedAt: new Date(),
+    },
+  });
+}
+
 authRouter.post("/register", async (req, res) => {
   const body = req.body as { name?: string; email?: string; password?: string; companyName?: string };
   const name = String(body.name ?? "").trim();
@@ -26,52 +45,35 @@ authRouter.post("/register", async (req, res) => {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return res.status(409).json({ error: "E-Mail ist bereits registriert." });
 
-  const company = await prisma.company.create({ data: { name: companyName } });
+  const { company, user } = await prisma.$transaction(async (tx) => {
+    const createdCompany = await tx.company.create({ data: { name: companyName } });
+    const createdUser = await tx.user.create({
+      data: {
+        name,
+        email,
+        passwordHash: hashPassword(password),
+        role: "owner",
+        companyId: createdCompany.id,
+      },
+    });
+    return { company: createdCompany, user: createdUser };
+  });
+
   await ensureCompanySetup(company.id, companyName);
-
-  const user = await prisma.user.create({
-    data: {
-      name,
-      email,
-      passwordHash: hashPassword(password),
-      role: "owner",
-      companyId: company.id,
-    },
-  });
-
-  const ownerRole = await prisma.role.findFirst({
-    where: { companyId: company.id, code: "owner" },
-    select: { id: true },
-  });
-  await prisma.companyMember.upsert({
-    where: { companyId_userId: { companyId: company.id, userId: user.id } },
-    update: { roleId: ownerRole?.id ?? null, status: "active" },
-    create: {
-      companyId: company.id,
-      userId: user.id,
-      roleId: ownerRole?.id ?? null,
-      status: "active",
-      invitedBy: user.name,
-      invitedAt: new Date(),
-    },
-  });
+  await ensureMember(company.id, user.id, user.name, user.role);
 
   const token = createSessionToken();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-  await prisma.authSession.create({
-    data: { token, userId: user.id, expiresAt },
-  });
+  await prisma.authSession.create({ data: { token, userId: user.id, expiresAt } });
   await prisma.authSession.deleteMany({
-    where: {
-      userId: user.id,
-      expiresAt: { lt: new Date() },
-    },
+    where: { userId: user.id, expiresAt: { lt: new Date() } },
   });
 
   res.status(201).json({
     token,
     user: {
       id: user.id,
+      userId: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
@@ -91,22 +93,20 @@ authRouter.post("/login", async (req, res) => {
   if (!user) return res.status(401).json({ error: "Ungültige Zugangsdaten." });
   if (!verifyPassword(password, user.passwordHash)) return res.status(401).json({ error: "Ungültige Zugangsdaten." });
 
+  await ensureMember(user.companyId, user.id, user.name, user.role);
+
   const token = createSessionToken();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-  await prisma.authSession.create({
-    data: { token, userId: user.id, expiresAt },
-  });
+  await prisma.authSession.create({ data: { token, userId: user.id, expiresAt } });
   await prisma.authSession.deleteMany({
-    where: {
-      userId: user.id,
-      expiresAt: { lt: new Date() },
-    },
+    where: { userId: user.id, expiresAt: { lt: new Date() } },
   });
 
   res.json({
     token,
     user: {
       id: user.id,
+      userId: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
@@ -127,4 +127,3 @@ authRouter.post("/logout", requireAuth, async (req, res) => {
   }
   res.json({ ok: true });
 });
-
