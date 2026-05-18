@@ -25,6 +25,7 @@ export function DocumentsPage() {
     bookDocument,
   } = useDocumentsStore();
   const [companyId, setCompanyId] = useState("");
+  const [companyLoading, setCompanyLoading] = useState(true);
   const [saveError, setSaveError] = useState("");
 
   const [filters, setFilters] = useState<DocumentFilters>({
@@ -49,13 +50,16 @@ export function DocumentsPage() {
 
   useEffect(() => {
     void (async () => {
-      const boot = await apiFetch("/api/bootstrap").then((r) => r.json());
-      if (!boot.companyId) return;
-      const id = String(boot.companyId);
-      setCompanyId(id);
-      const res = await apiFetch(`/api/documents?companyId=${id}`);
-      if (!res.ok) return;
-      const rows = (await res.json()) as Array<{
+      try {
+        const bootRes = await apiFetch("/api/bootstrap");
+        if (!bootRes.ok) return;
+        const boot = await bootRes.json();
+        if (!boot.companyId) return;
+        const id = String(boot.companyId);
+        setCompanyId(id);
+        const res = await apiFetch(`/api/documents?companyId=${id}`);
+        if (!res.ok) return;
+        const rows = (await res.json()) as Array<{
         id: string;
         fileName: string;
         status: string;
@@ -70,7 +74,7 @@ export function DocumentsPage() {
         netAmount: number;
         pdfUrl?: string;
       }>;
-      const mapped: DocumentItem[] = rows.map((d) => ({
+        const mapped: DocumentItem[] = rows.map((d) => ({
         id: d.id,
         fileName: d.fileName,
         supplierOrCustomer: d.partner ?? "",
@@ -100,7 +104,10 @@ export function DocumentsPage() {
           notes: "",
         },
       }));
-      setDocuments(mapped);
+        setDocuments(mapped);
+      } finally {
+        setCompanyLoading(false);
+      }
     })();
   }, [setDocuments]);
 
@@ -188,17 +195,28 @@ export function DocumentsPage() {
       <div className="grid gap-4 xl:grid-cols-5">
         <div className={`${selected ? "xl:col-span-4" : "xl:col-span-5"} space-y-3`}>
           <DocumentUpload
-            disabled={!companyId}
+            disabled={companyLoading}
             onUploadDone={async (payload) => {
               setSaveError("");
               let createdId = "";
               let createdAt = "";
-              if (companyId) {
+              let activeCompanyId = companyId;
+              if (!activeCompanyId) {
+                const bootRes = await apiFetch("/api/bootstrap");
+                if (bootRes.ok) {
+                  const boot = await bootRes.json();
+                  if (boot.companyId) {
+                    activeCompanyId = String(boot.companyId);
+                    setCompanyId(activeCompanyId);
+                  }
+                }
+              }
+              if (activeCompanyId) {
                 const res = await apiFetch("/api/documents", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    companyId,
+                    companyId: activeCompanyId,
                     fileName: payload.fileName,
                     status: "Entwurf",
                     grossAmount: Number((payload.size / 100).toFixed(2)),
@@ -213,6 +231,9 @@ export function DocumentsPage() {
                 const createdApi = await res.json();
                 createdId = String(createdApi.id ?? "");
                 createdAt = String(createdApi.createdAt ?? "").slice(0, 10);
+              } else {
+                setSaveError("Upload aktuell nicht moeglich: Firmenkontext fehlt. Bitte neu einloggen.");
+                return;
               }
               const created = addDocumentFromUpload({
                 ...payload,
