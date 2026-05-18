@@ -45,9 +45,8 @@ function pickGrossAmount(text: string): { value?: number; confidence?: number } 
 
 export async function extractOcrFromPdfDataUrl(fileDataUrl: string): Promise<OcrResult> {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
-  pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-  const loadingTask = pdfjs.getDocument({ data: dataUrlToUint8(fileDataUrl) });
+  // Worker loading can fail behind some reverse proxies; disable worker for stable parsing.
+  const loadingTask = pdfjs.getDocument({ data: dataUrlToUint8(fileDataUrl), disableWorker: true });
   const pdf = await loadingTask.promise;
 
   let text = "";

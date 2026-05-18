@@ -46,11 +46,10 @@ function sanitizeName(raw: string): string {
 
 export async function parseSkrPdfFile(file: File, skrType: SkrType, year: number): Promise<ParsedAccount[]> {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
-  pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
   const buffer = await file.arrayBuffer();
-  const loadingTask = pdfjs.getDocument({ data: new Uint8Array(buffer) });
+  // Worker loading can fail behind some reverse proxies; disable worker for stable parsing.
+  const loadingTask = pdfjs.getDocument({ data: new Uint8Array(buffer), disableWorker: true });
   const pdf = await loadingTask.promise;
 
   const rows = new Map<string, ParsedAccount>();
