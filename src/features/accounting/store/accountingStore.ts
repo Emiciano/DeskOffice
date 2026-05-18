@@ -56,7 +56,16 @@ export const useAccountingStore = create<AccountingState>()((set, get) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...payload, companyId: state.companyId }),
     });
-    if (!res.ok) throw new Error("Import fehlgeschlagen");
+    if (!res.ok) {
+      let message = "Import fehlgeschlagen";
+      try {
+        const body = (await res.json()) as { error?: string };
+        if (body?.error) message = body.error;
+      } catch {
+        // ignore json parse errors
+      }
+      throw new Error(message);
+    }
     const data = (await res.json()) as { imported: number };
     await get().hydrateFromApi();
     return data;

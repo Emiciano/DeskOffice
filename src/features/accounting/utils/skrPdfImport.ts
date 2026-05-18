@@ -66,11 +66,9 @@ export async function parseSkrPdfFile(file: File, skrType: SkrType, year: number
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
-    const text = content.items
-      .map((item: unknown) => (item as { str?: string }).str ?? "")
-      .join(" ");
-
+    const text = content.items.map((item: unknown) => (item as { str?: string }).str ?? "").join(" ");
     const normalizedText = sanitizeName(text);
+
     const accountPattern = /(?:^|\s)(\d{4})\s+(.+?)(?=(?:\s\d{4}\s)|$)/g;
     for (const match of normalizedText.matchAll(accountPattern)) {
       const number = match[1] ?? "";
@@ -78,7 +76,7 @@ export async function parseSkrPdfFile(file: File, skrType: SkrType, year: number
       if (!number || !name) continue;
       if (ignorePattern.test(name)) continue;
       if (/^[\d.,\-/ ]+$/.test(name)) continue;
-      if (name.length < 3 || name.length > 120) continue;
+      if (name.length < 3 || name.length > 220) continue;
 
       const accountClass = number.charAt(0);
       const key = `${skrType}-${year}-${number}`;
@@ -97,3 +95,4 @@ export async function parseSkrPdfFile(file: File, skrType: SkrType, year: number
 
   return Array.from(rows.values()).sort((a, b) => a.number.localeCompare(b.number));
 }
+
