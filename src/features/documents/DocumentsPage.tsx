@@ -10,6 +10,7 @@ import { DocumentInspector } from "./DocumentInspector";
 import { useDocumentsStore } from "./documentStore";
 import type { DocumentData, DocumentFilters, DocumentItem } from "./types";
 import { apiFetch } from "@/lib/api";
+import { extractOcrFromPdfDataUrl } from "./ocr";
 
 function normalizeDocumentType(raw?: string): DocumentData["type"] {
   const value = String(raw ?? "").toLowerCase();
@@ -30,7 +31,7 @@ export function DocumentsPage() {
     updateDocumentData,
     setDocumentStatus,
     replaceDocumentFile,
-    runMockOcr,
+    applyOcrResult,
     bookDocument,
   } = useDocumentsStore();
   const [companyId, setCompanyId] = useState("");
@@ -50,6 +51,7 @@ export function DocumentsPage() {
   const [captureOpen, setCaptureOpen] = useState(false);
   const [docGroup, setDocGroup] = useState<"Alle" | "Ausgangsbelege" | "Eingangsbelege">("Alle");
   const [docSubType, setDocSubType] = useState("");
+  const [creatingContact, setCreatingContact] = useState(false);
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -209,6 +211,16 @@ export function DocumentsPage() {
               setSaveError("");
               let createdId = "";
               let createdAt = "";
+              let ocrPatch: Partial<DocumentData> = {};
+              let ocrConfidence: Partial<Record<keyof DocumentData, number>> = {};
+              try {
+                const ocr = await extractOcrFromPdfDataUrl(payload.fileDataUrl);
+                ocrPatch = ocr.patch;
+                ocrConfidence = ocr.confidence;
+              } catch {
+                ocrPatch = {};
+                ocrConfidence = {};
+              }
               let activeCompanyId = companyId;
               if (!activeCompanyId) {
                 const bootRes = await apiFetch("/api/bootstrap");
@@ -228,7 +240,12 @@ export function DocumentsPage() {
                     companyId: activeCompanyId,
                     fileName: payload.fileName,
                     status: "Entwurf",
-                    grossAmount: Number((payload.size / 100).toFixed(2)),
+                    grossAmount: Number(ocrPatch.grossAmount ?? 0),
+                    taxAmount: Number(ocrPatch.vatAmount ?? 0),
+                    netAmount: Number(ocrPatch.netAmount ?? 0),
+                    partner: ocrPatch.partner ?? null,
+                    documentDate: ocrPatch.documentDate ?? null,
+                    dueDate: ocrPatch.dueDate ?? null,
                     fileDataUrl: payload.fileDataUrl,
                     fileSize: payload.size,
                   }),
@@ -261,6 +278,7 @@ export function DocumentsPage() {
                 id: createdId || undefined,
                 uploadedAt: createdAt || undefined,
               });
+              if (Object.keys(ocrPatch).length > 0) applyOcrResult(created.id, ocrPatch, ocrConfidence);
               setSelectedId(created.id);
               setEditingId(null);
             }}
@@ -332,7 +350,39 @@ export function DocumentsPage() {
                       body: JSON.stringify({ companyId, status: "Geprueft" }),
                     });
                   }}
-                  onRunOcr={() => runMockOcr(editingDocument.id)}
+                  onRunOcr={() => {
+                    void (async () => {
+                      try {
+                        const ocr = await extractOcrFromPdfDataUrl(editingDocument.pdfUrl);
+                        applyOcrResult(editingDocument.id, ocr.patch, ocr.confidence);
+                      } catch {
+                        setSaveError("OCR konnte aus diesem PDF keine Daten auslesen.");
+                      }
+                    })();
+                  }}
+                  onCreateCustomer={async (name) => {
+                    if (!companyId || !name.trim()) return;
+                    setCreatingContact(true);
+                    try {
+                      const res = await apiFetch("/api/contacts", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          companyId,
+                          type: "customer",
+                          name: name.trim(),
+                        }),
+                      });
+                      if (!res.ok) {
+                        setSaveError("Kunde konnte nicht angelegt werden.");
+                        return;
+                      }
+                      updateDocumentData(editingDocument.id, { partner: name.trim() });
+                    } finally {
+                      setCreatingContact(false);
+                    }
+                  }}
+                  creatingContact={creatingContact}
                   onBook={() => {
                     const result = bookDocument(editingDocument.id);
                     if ("ok" in result && result.ok) {

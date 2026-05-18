@@ -7,6 +7,8 @@ type Props = {
   data: DocumentData;
   confidence?: Record<keyof DocumentData, number>;
   onChange: (patch: Partial<DocumentData>) => void;
+  onCreateCustomer: (name: string) => Promise<void>;
+  creatingContact: boolean;
 };
 
 const low = (v?: number) => (v ?? 1) < 0.75;
@@ -16,7 +18,7 @@ const frame = (name: keyof DocumentData, confidence?: Record<keyof DocumentData,
 const supplierHints = ["CloudStack GmbH", "Nordlicht Media GmbH", "Musterlieferant AG"];
 const categories = ["Software", "Werbung", "Büro", "Reisekosten", "Beratung", "Sonstiges"];
 
-export function DocumentForm({ data, confidence, onChange }: Props) {
+export function DocumentForm({ data, confidence, onChange, onCreateCustomer, creatingContact }: Props) {
   return (
     <div className="space-y-3">
       <Card className="p-4">
@@ -24,13 +26,23 @@ export function DocumentForm({ data, confidence, onChange }: Props) {
         <div className="grid gap-2.5 md:grid-cols-2">
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs text-muted-foreground">Lieferant</label>
-            <input
-              list="supplier-hints"
-              className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("partner", confidence)}`}
-              value={data.partner}
-              placeholder="Lieferant eingeben oder wählen"
-              onChange={(e) => onChange({ partner: e.target.value })}
-            />
+            <div className="flex gap-2">
+              <input
+                list="supplier-hints"
+                className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("partner", confidence)}`}
+                value={data.partner}
+                placeholder="Lieferant eingeben oder wählen"
+                onChange={(e) => onChange({ partner: e.target.value })}
+              />
+              <button
+                type="button"
+                className="h-10 shrink-0 rounded-xl border border-border px-3 text-sm hover:bg-muted disabled:opacity-60"
+                onClick={() => void onCreateCustomer(data.partner)}
+                disabled={!data.partner.trim() || creatingContact}
+              >
+                {creatingContact ? "Anlegen..." : "Kunde neu"}
+              </button>
+            </div>
             <datalist id="supplier-hints">
               {supplierHints.map((s) => <option key={s} value={s} />)}
             </datalist>
