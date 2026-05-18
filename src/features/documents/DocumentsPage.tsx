@@ -11,6 +11,15 @@ import { useDocumentsStore } from "./documentStore";
 import type { DocumentData, DocumentFilters, DocumentItem } from "./types";
 import { apiFetch } from "@/lib/api";
 
+function normalizeDocumentType(raw?: string): DocumentData["type"] {
+  const value = String(raw ?? "").toLowerCase();
+  if (value.includes("ausgang") || value === "einnahme") return "Einnahme";
+  if (value.includes("gutschrift") || value === "einnahmenminderung") return "Einnahmenminderung";
+  if (value.includes("eingang") || value.includes("quittung") || value === "ausgabe") return "Ausgabe";
+  if (value === "ausgabenminderung") return "Ausgabenminderung";
+  return "Ausgabe";
+}
+
 export function DocumentsPage() {
   const {
     documents,
@@ -87,7 +96,7 @@ export function DocumentsPage() {
         pdfUrl: d.pdfUrl || "",
         pageCount: 1,
         data: {
-          type: "Sonstiger Beleg",
+          type: normalizeDocumentType("Ausgabe"),
           invoiceNumber: "",
           documentDate: d.documentDate ? String(d.documentDate).slice(0, 10) : "",
           dueDate: d.dueDate ? String(d.dueDate).slice(0, 10) : "",
@@ -135,16 +144,16 @@ export function DocumentsPage() {
       const toHit = !filters.dateTo || d.date <= filters.dateTo;
       const groupHit =
         docGroup === "Alle" ||
-        (docGroup === "Ausgangsbelege" && (d.data.type === "Ausgangsrechnung" || d.data.type === "Gutschrift")) ||
-        (docGroup === "Eingangsbelege" && (d.data.type === "Eingangsrechnung" || d.data.type === "Quittung"));
+        (docGroup === "Ausgangsbelege" && (d.data.type === "Einnahme" || d.data.type === "Einnahmenminderung")) ||
+        (docGroup === "Eingangsbelege" && (d.data.type === "Ausgabe" || d.data.type === "Ausgabenminderung"));
 
       const subTypeHit =
         !docSubType ||
-        (docSubType === "Rechnungen" && d.data.type === "Ausgangsrechnung") ||
-        (docSubType === "Rechnungskorrekturen" && d.data.type === "Gutschrift") ||
-        (docSubType === "Ausgaben" && d.data.type === "Eingangsrechnung") ||
-        (docSubType === "Einnahmen" && d.data.type === "Ausgangsrechnung") ||
-        (docSubType === "Einnahmenminderung" && d.data.type === "Gutschrift");
+        (docSubType === "Rechnungen" && d.data.type === "Einnahme") ||
+        (docSubType === "Rechnungskorrekturen" && d.data.type === "Einnahmenminderung") ||
+        (docSubType === "Ausgaben" && d.data.type === "Ausgabe") ||
+        (docSubType === "Einnahmen" && d.data.type === "Einnahme") ||
+        (docSubType === "Einnahmenminderung" && d.data.type === "Einnahmenminderung");
 
       return queryHit && statusHit && categoryHit && partnerHit && fromHit && toHit && groupHit && subTypeHit;
     });

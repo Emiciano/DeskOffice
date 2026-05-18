@@ -43,7 +43,7 @@ export function DocumentForm({ data, confidence, onChange }: Props) {
               value={data.type}
               onChange={(e) => onChange({ type: e.target.value as DocumentData["type"] })}
             >
-              {["Eingangsrechnung", "Ausgangsrechnung", "Quittung", "Gutschrift", "Sonstiger Beleg"].map((s) => <option key={s}>{s}</option>)}
+              {["Einnahme", "Einnahmenminderung", "Ausgabe", "Ausgabenminderung"].map((s) => <option key={s}>{s}</option>)}
             </select>
           </div>
 

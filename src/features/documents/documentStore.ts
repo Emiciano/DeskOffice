@@ -16,7 +16,7 @@ type DocumentsState = {
 
 function newDraftData(): DocumentData {
   return {
-    type: "Sonstiger Beleg",
+    type: "Ausgabe",
     invoiceNumber: "",
     documentDate: new Date().toISOString().slice(0, 10),
     dueDate: "",
@@ -85,8 +85,8 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => ({
           documents: state.documents.map((d) => {
             if (d.id !== id) return d;
             const guessedType = d.fileName.toLowerCase().includes("ausgang")
-              ? "Ausgangsrechnung"
-              : "Eingangsrechnung";
+              ? "Einnahme"
+              : "Ausgabe";
             const inferredGross = inferGrossFromFileName(d.fileName);
             const baseGross =
               d.data.grossAmount > 0
@@ -167,8 +167,14 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => ({
 
         const booking: BookingRecord = {
           id: `BK-${Date.now()}`,
-          debitAccount: target.data.type === "Eingangsrechnung" ? target.data.account : "1200",
-          creditAccount: target.data.type === "Eingangsrechnung" ? "1200" : target.data.account,
+          debitAccount:
+            target.data.type === "Ausgabe" || target.data.type === "Ausgabenminderung"
+              ? target.data.account
+              : "1200",
+          creditAccount:
+            target.data.type === "Ausgabe" || target.data.type === "Ausgabenminderung"
+              ? "1200"
+              : target.data.account,
           amount: target.data.netAmount,
           taxAmount: target.data.vatAmount,
           bookingText: `${target.data.type} ${target.data.invoiceNumber}`,

@@ -11,6 +11,8 @@ type Props = {
 
 export function BookingPanel({ document, onBook, onMarkChecked, onRunOcr }: Props) {
   const booking = document.booking as BookingRecord | undefined;
+  const isExpense = document.data.type === "Ausgabe" || document.data.type === "Ausgabenminderung";
+
   return (
     <Card className="p-4">
       <h3 className="mb-3 text-sm font-medium">Buchung</h3>
@@ -24,8 +26,8 @@ export function BookingPanel({ document, onBook, onMarkChecked, onRunOcr }: Prop
       </div>
       <div className="mt-4 rounded-xl border border-border p-3 text-xs">
         <p className="font-medium">Buchungsstruktur</p>
-        <p>Soll-Konto: {document.data.type === "Eingangsrechnung" ? document.data.account || "-" : "1200"}</p>
-        <p>Haben-Konto: {document.data.type === "Eingangsrechnung" ? "1200" : document.data.account || "-"}</p>
+        <p>Soll-Konto: {isExpense ? document.data.account || "-" : "1200"}</p>
+        <p>Haben-Konto: {isExpense ? "1200" : document.data.account || "-"}</p>
         <p>Betrag: EUR {document.data.netAmount.toFixed(2)}</p>
         <p>Steuerbetrag: EUR {document.data.vatAmount.toFixed(2)}</p>
       </div>

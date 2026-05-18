@@ -1,5 +1,5 @@
 export type DocumentStatus = "Entwurf" | "Geprueft" | "Gebucht" | "Bezahlt" | "Ueberfaellig";
-export type DocumentType = "Eingangsrechnung" | "Ausgangsrechnung" | "Quittung" | "Gutschrift" | "Sonstiger Beleg";
+export type DocumentType = "Einnahme" | "Einnahmenminderung" | "Ausgabe" | "Ausgabenminderung";
 
 export type PaymentStatus = "Offen" | "Teilweise bezahlt" | "Bezahlt";
 export type PaymentMethod = "Ueberweisung" | "Lastschrift" | "Kreditkarte" | "Bar" | "Sonstiges";
