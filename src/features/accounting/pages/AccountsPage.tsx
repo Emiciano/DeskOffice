@@ -6,6 +6,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/shared";
 import { useAccountingStore } from "../store/accountingStore";
 import type { AccountFilters, ChartAccount, SkrType } from "../types/accountingTypes";
+import { parseSkrPdfFile } from "../utils/skrPdfImport";
 
 const defaultFilters: AccountFilters = { query: "", skrType: "Alle", year: "Alle", active: "Alle" };
 
@@ -23,12 +24,13 @@ export function AccountsPage() {
   } = useAccountingStore();
 
   const [filters, setFilters] = useState<AccountFilters>(defaultFilters);
+  const [pendingFilters, setPendingFilters] = useState<AccountFilters>(defaultFilters);
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<ChartAccount | null>(null);
   const [draft, setDraft] = useState<Partial<ChartAccount>>({});
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
-  const [importFormat, setImportFormat] = useState<"csv" | "json">("csv");
+  const [importFormat, setImportFormat] = useState<"csv" | "json" | "pdf">("csv");
   const [replaceCurrent, setReplaceCurrent] = useState(true);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState("");
@@ -55,9 +57,10 @@ export function AccountsPage() {
     setError("");
     setImporting(true);
     try {
+      const effectiveFormat = importFormat === "pdf" ? "json" : importFormat;
       await importAccounts({
         data: importText,
-        format: importFormat,
+        format: effectiveFormat,
         replace: replaceCurrent,
         skrType: selectedSkr,
         year: selectedYear,
@@ -76,17 +79,15 @@ export function AccountsPage() {
       <PageHeader
         title="Kontenrahmen"
         subtitle="Offizielle SKR03/SKR04 Konten je Jahr importieren und verwalten"
-        action={
-          <Button onClick={() => setImportOpen(true)}>SKR Import (CSV/JSON)</Button>
-        }
+        action={<Button onClick={() => setImportOpen(true)}>SKR Import (CSV/JSON/PDF)</Button>}
       />
 
       <Card>
-        <div className="grid gap-3 md:grid-cols-5">
+        <div className="grid gap-3 md:grid-cols-6">
           <Input
             placeholder="Suche nach Nummer oder Name"
-            value={filters.query}
-            onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
+            value={pendingFilters.query}
+            onChange={(e) => setPendingFilters((f) => ({ ...f, query: e.target.value }))}
           />
           <select
             className="rounded-xl border border-border px-3 text-sm"
@@ -103,8 +104,10 @@ export function AccountsPage() {
           />
           <select
             className="rounded-xl border border-border px-3 text-sm"
-            value={filters.skrType}
-            onChange={(e) => setFilters((f) => ({ ...f, skrType: e.target.value as AccountFilters["skrType"] }))}
+            value={pendingFilters.skrType}
+            onChange={(e) =>
+              setPendingFilters((f) => ({ ...f, skrType: e.target.value as AccountFilters["skrType"] }))
+            }
           >
             <option>Alle</option>
             <option>SKR03</option>
@@ -112,13 +115,35 @@ export function AccountsPage() {
           </select>
           <select
             className="rounded-xl border border-border px-3 text-sm"
-            value={filters.active}
-            onChange={(e) => setFilters((f) => ({ ...f, active: e.target.value as AccountFilters["active"] }))}
+            value={pendingFilters.active}
+            onChange={(e) =>
+              setPendingFilters((f) => ({ ...f, active: e.target.value as AccountFilters["active"] }))
+            }
           >
             <option>Alle</option>
             <option>Aktiv</option>
             <option>Inaktiv</option>
           </select>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              className="h-10"
+              onClick={() => setFilters(pendingFilters)}
+            >
+              Übernehmen
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10"
+              onClick={() => {
+                setPendingFilters(defaultFilters);
+                setFilters(defaultFilters);
+              }}
+            >
+              Zurücksetzen
+            </Button>
+          </div>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
           Gefundene Versionen:{" "}
@@ -139,7 +164,7 @@ export function AccountsPage() {
                 <th>Jahr</th>
                 <th>Klasse</th>
                 <th>Typ</th>
-                <th>Steuerschlüssel</th>
+                <th>Steuerschluessel</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -155,7 +180,9 @@ export function AccountsPage() {
                   <td>{a.accountType || "-"}</td>
                   <td>{a.taxKey || "-"}</td>
                   <td>
-                    <span className={`rounded-full px-2 py-1 text-xs ${a.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}`}>
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs ${a.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}`}
+                    >
                       {a.active ? "Aktiv" : "Inaktiv"}
                     </span>
                   </td>
@@ -191,10 +218,11 @@ export function AccountsPage() {
             <select
               className="h-10 rounded-xl border border-border px-3 text-sm"
               value={importFormat}
-              onChange={(e) => setImportFormat(e.target.value as "csv" | "json")}
+              onChange={(e) => setImportFormat(e.target.value as "csv" | "json" | "pdf")}
             >
               <option value="csv">CSV</option>
               <option value="json">JSON</option>
+              <option value="pdf">PDF</option>
             </select>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={replaceCurrent} onChange={(e) => setReplaceCurrent(e.target.checked)} />
@@ -205,15 +233,40 @@ export function AccountsPage() {
             className="mt-3 min-h-64 w-full rounded-xl border border-border px-3 py-2 text-sm"
             value={importText}
             onChange={(e) => setImportText(e.target.value)}
-            placeholder="Offizielle SKR CSV/JSON Daten hier einfügen oder per Upload später erweitern."
+            placeholder={
+              importFormat === "pdf"
+                ? "PDF-Import: Datei wählen, Kontozeilen werden automatisch extrahiert."
+                : "Offizielle SKR CSV/JSON Daten hier einfügen oder per Upload erweitern."
+            }
+            readOnly={importFormat === "pdf"}
           />
           <input
             type="file"
-            accept={importFormat === "csv" ? ".csv,text/csv,text/plain" : ".json,application/json,text/plain"}
+            accept={
+              importFormat === "csv"
+                ? ".csv,text/csv,text/plain"
+                : importFormat === "json"
+                  ? ".json,application/json,text/plain"
+                  : ".pdf,application/pdf"
+            }
             className="mt-2 block w-full text-sm"
             onChange={(event) => {
               const file = event.target.files?.[0];
               if (!file) return;
+
+              if (importFormat === "pdf") {
+                setImporting(true);
+                setError("");
+                void parseSkrPdfFile(file, selectedSkr, selectedYear)
+                  .then((rows) => {
+                    if (rows.length === 0) throw new Error("Keine Kontozeilen im PDF gefunden.");
+                    setImportText(JSON.stringify(rows, null, 2));
+                  })
+                  .catch((err) => setError(err instanceof Error ? err.message : "PDF konnte nicht verarbeitet werden."))
+                  .finally(() => setImporting(false));
+                return;
+              }
+
               const reader = new FileReader();
               reader.onload = () => setImportText(String(reader.result ?? ""));
               reader.readAsText(file, "utf-8");
@@ -236,8 +289,14 @@ export function AccountsPage() {
           <h3 className="mb-3 text-lg font-semibold">Konto bearbeiten</h3>
           <div className="grid gap-3 md:grid-cols-2">
             <Input value={draft.name ?? ""} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
-            <Input value={draft.accountClass ?? ""} onChange={(e) => setDraft((d) => ({ ...d, accountClass: e.target.value }))} />
-            <Input value={draft.accountType ?? ""} onChange={(e) => setDraft((d) => ({ ...d, accountType: e.target.value }))} />
+            <Input
+              value={draft.accountClass ?? ""}
+              onChange={(e) => setDraft((d) => ({ ...d, accountClass: e.target.value }))}
+            />
+            <Input
+              value={draft.accountType ?? ""}
+              onChange={(e) => setDraft((d) => ({ ...d, accountType: e.target.value }))}
+            />
             <Input value={draft.taxKey ?? ""} onChange={(e) => setDraft((d) => ({ ...d, taxKey: e.target.value }))} />
             <label className="flex items-center gap-2 text-sm">
               <input

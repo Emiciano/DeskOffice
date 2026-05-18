@@ -12,6 +12,7 @@
     "pm2:stop": "pm2 delete ecosystem.config.cjs",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
+    "skr:pdf:extract": "node scripts/skr-pdf-to-json.mjs",
     "build": "tsc -b && vite build",
     "build:server": "tsc -p tsconfig.server.json",
     "preview": "vite preview"
