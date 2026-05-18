@@ -82,7 +82,8 @@ export function CustomersPage() {
   const [instagram, setInstagram] = useState("");
   const [vatId, setVatId] = useState("");
   const [taxNumber, setTaxNumber] = useState("");
-  const [eInvoiceMail, setEInvoiceMail] = useState("");
+  const [supplierNumberAtCustomer, setSupplierNumberAtCustomer] = useState("");
+  const [leitwegId, setLeitwegId] = useState("");
   const [note, setNote] = useState("");
   const [tags, setTags] = useState("");
   const [contactPerson, setContactPerson] = useState("");
@@ -157,7 +158,8 @@ export function CustomersPage() {
       setInstagram("");
       setVatId("");
       setTaxNumber("");
-      setEInvoiceMail("");
+      setSupplierNumberAtCustomer("");
+      setLeitwegId("");
       setNote("");
       setTags("");
       setContactPerson("");
@@ -240,7 +242,27 @@ export function CustomersPage() {
                   ) : null}
 
                   {activeSection === "einvoice" ? (
-                    <Input placeholder="E-Rechnung E-Mail" value={eInvoiceMail} onChange={(e) => setEInvoiceMail(e.target.value)} />
+                    <div className="space-y-3">
+                      <div>
+                        <p className="mb-1 text-xs text-muted-foreground">Lieferanten-Nr. beim Kunden</p>
+                        <Input
+                          placeholder="Ihre Lieferantennummer bei diesem Kunden"
+                          value={supplierNumberAtCustomer}
+                          onChange={(e) => setSupplierNumberAtCustomer(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <p className="mb-1 text-xs text-muted-foreground">Leitweg-ID (Pflicht fuer XRechnung)</p>
+                        <Input
+                          placeholder="Leitweg-ID"
+                          value={leitwegId}
+                          onChange={(e) => setLeitwegId(e.target.value)}
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          XRechnung ist fuer Behoerden verpflichtend und benoetigt zusaetzlich eine Leitweg-ID.
+                        </p>
+                      </div>
+                    </div>
                   ) : null}
 
                   {activeSection === "note" ? <Input placeholder="Interne Notiz" value={note} onChange={(e) => setNote(e.target.value)} /> : null}
