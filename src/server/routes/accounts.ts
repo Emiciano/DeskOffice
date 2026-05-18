@@ -17,6 +17,89 @@ type ImportRow = {
 
 export const accountsRouter = Router();
 
+function sanitizeName(raw: string): string {
+  const compact = raw.replace(/\s+/g, " ").trim();
+  return compact
+    .replace(/Ã„/g, "Ä")
+    .replace(/Ã–/g, "Ö")
+    .replace(/Ãœ/g, "Ü")
+    .replace(/Ã¤/g, "ä")
+    .replace(/Ã¶/g, "ö")
+    .replace(/Ã¼/g, "ü")
+    .replace(/ÃŸ/g, "ß");
+}
+
+function accountTypeFromClass(accountClass: string): string {
+  switch (accountClass) {
+    case "0":
+    case "1":
+      return "asset";
+    case "2":
+      return "liability";
+    case "3":
+    case "4":
+    case "6":
+    case "7":
+      return "expense";
+    case "8":
+      return "revenue";
+    case "9":
+      return "statistic";
+    default:
+      return "";
+  }
+}
+
+function dataUrlToUint8(dataUrl: string): Uint8Array {
+  const base64 = dataUrl.split(",")[1] ?? "";
+  const binary = Buffer.from(base64, "base64");
+  return new Uint8Array(binary);
+}
+
+async function parsePdfRows(dataUrl: string, skrType: SkrType, year: number): Promise<ImportRow[]> {
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const loadingTask = (pdfjs as unknown as { getDocument: (params: unknown) => { promise: Promise<unknown> } }).getDocument({
+    data: dataUrlToUint8(dataUrl),
+  });
+  const pdf = (await loadingTask.promise) as {
+    numPages: number;
+    getPage: (index: number) => Promise<{ getTextContent: () => Promise<{ items: unknown[] }> }>;
+  };
+
+  const rows = new Map<string, ImportRow>();
+  const ignorePattern =
+    /(kontenrahmen|datev|seite\s+\d+|konto\s+bezeichnung|klasse|gruppe|summe|stand\s+\d{2}\.\d{2}\.\d{4})/i;
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+    const text = sanitizeName(content.items.map((item: unknown) => (item as { str?: string }).str ?? "").join(" "));
+    const accountPattern = /(?:^|\s)(\d{4})\s+(.+?)(?=(?:\s\d{4}\s)|$)/g;
+    for (const match of text.matchAll(accountPattern)) {
+      const number = match[1] ?? "";
+      const name = sanitizeName(match[2] ?? "");
+      if (!number || !name) continue;
+      if (ignorePattern.test(name)) continue;
+      if (/^[\d.,\-/ ]+$/.test(name)) continue;
+      if (name.length < 3 || name.length > 220) continue;
+      const accountClass = number.charAt(0);
+      const key = `${skrType}-${year}-${number}`;
+      rows.set(key, {
+        number,
+        name,
+        skrType,
+        year,
+        accountClass,
+        accountType: accountTypeFromClass(accountClass),
+        taxKey: null,
+        active: true,
+      });
+    }
+  }
+
+  return Array.from(rows.values());
+}
+
 function parseBool(value: string | undefined): boolean {
   const v = String(value ?? "").trim().toLowerCase();
   return ["1", "true", "ja", "yes", "aktiv", "active"].includes(v);
@@ -167,6 +250,43 @@ accountsRouter.post("/import", requireRoles("owner", "admin"), async (req, res) 
   });
 
   res.json({ imported: uniqueRows.length, skrType: defaultSkrType, year: defaultYear, replace });
+});
+
+accountsRouter.post("/import-pdf", requireRoles("owner", "admin"), async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
+  const dataUrl = String(req.body.dataUrl ?? "");
+  const skrType = String(req.body.skrType ?? "").toUpperCase() as SkrType;
+  const year = Number(req.body.year ?? new Date().getFullYear());
+  const replace = req.body.replace === true;
+  if (!dataUrl.startsWith("data:application/pdf")) return res.status(400).json({ error: "PDF dataUrl required" });
+  if (skrType !== "SKR03" && skrType !== "SKR04") return res.status(400).json({ error: "valid skrType required" });
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) return res.status(400).json({ error: "valid year required" });
+
+  const rows = validateRows(await parsePdfRows(dataUrl, skrType, year));
+  if (rows.length === 0) return res.status(400).json({ error: "No valid SKR rows found in PDF" });
+  const uniqueRows = Array.from(new Map(rows.map((r) => [`${r.skrType}-${r.year}-${r.number}`, r])).values());
+
+  await prisma.$transaction(async (tx) => {
+    if (replace) {
+      await tx.account.deleteMany({ where: { companyId, skrType, year } });
+    }
+    for (const row of uniqueRows) {
+      await tx.account.upsert({
+        where: { companyId_number_skrType_year: { companyId, number: row.number, skrType: row.skrType, year: row.year } },
+        update: {
+          name: row.name,
+          accountClass: row.accountClass,
+          accountType: row.accountType,
+          taxKey: row.taxKey,
+          active: row.active,
+        },
+        create: { ...row, companyId },
+      });
+    }
+  });
+
+  res.json({ imported: uniqueRows.length, skrType, year, replace });
 });
 
 accountsRouter.patch("/:id", requireRoles("owner", "admin"), async (req, res) => {

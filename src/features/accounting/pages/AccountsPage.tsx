@@ -4,9 +4,9 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/shared";
+import { apiFetch } from "@/lib/api";
 import { useAccountingStore } from "../store/accountingStore";
 import type { AccountFilters, ChartAccount, SkrType } from "../types/accountingTypes";
-import { parseSkrPdfFile } from "../utils/skrPdfImport";
 
 const defaultFilters: AccountFilters = { query: "", skrType: "Alle", year: "Alle", active: "Alle" };
 
@@ -31,6 +31,7 @@ export function AccountsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importFormat, setImportFormat] = useState<"csv" | "json" | "pdf">("csv");
+  const [importFile, setImportFile] = useState<File | null>(null);
   const [replaceCurrent, setReplaceCurrent] = useState(true);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState("");
@@ -57,6 +58,36 @@ export function AccountsPage() {
     setError("");
     setImporting(true);
     try {
+      if (importFormat === "pdf") {
+        if (!importFile) throw new Error("Bitte zuerst eine PDF auswählen.");
+        const fileDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result ?? ""));
+          reader.onerror = () => reject(new Error("PDF konnte nicht gelesen werden."));
+          reader.readAsDataURL(importFile);
+        });
+        const res = await apiFetch("/api/accounts/import-pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            companyId: "default-company",
+            skrType: selectedSkr,
+            year: selectedYear,
+            replace: replaceCurrent,
+            dataUrl: fileDataUrl,
+          }),
+        });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(body.error ?? "PDF-Import fehlgeschlagen");
+        }
+        await hydrateFromApi();
+        setImportOpen(false);
+        setImportText("");
+        setImportFile(null);
+        return;
+      }
+
       const effectiveFormat = importFormat === "pdf" ? "json" : importFormat;
       await importAccounts({
         data: importText,
@@ -255,15 +286,8 @@ export function AccountsPage() {
               if (!file) return;
 
               if (importFormat === "pdf") {
-                setImporting(true);
-                setError("");
-                void parseSkrPdfFile(file, selectedSkr, selectedYear)
-                  .then((rows) => {
-                    if (rows.length === 0) throw new Error("Keine Kontozeilen im PDF gefunden.");
-                    setImportText(JSON.stringify(rows, null, 2));
-                  })
-                  .catch((err) => setError(err instanceof Error ? err.message : "PDF konnte nicht verarbeitet werden."))
-                  .finally(() => setImporting(false));
+                setImportFile(file);
+                setImportText(`Ausgewählt: ${file.name}`);
                 return;
               }
 
