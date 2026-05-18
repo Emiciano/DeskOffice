@@ -189,7 +189,6 @@ export function InvoicesPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [note, setNote] = useState("");
-  const [template, setTemplate] = useState<TemplateMode>("clean");
   const [items, setItems] = useState<InvoiceItem[]>([{ description: "", quantity: 1, unitPrice: 0, taxRate: 19 }]);
   const [companySettings, setCompanySettings] = useState<CompanySettings>(defaultCompanySettings);
   const [rowActionLoading, setRowActionLoading] = useState<string>("");
@@ -328,7 +327,6 @@ export function InvoicesPage() {
       setDiscountPercent(0);
       setItems([{ description: "", quantity: 1, unitPrice: 0, taxRate: 19 }]);
       setNote("");
-      setTemplate("clean");
       setOpen(false);
       await load(companyId);
     } catch (error) {
@@ -456,26 +454,6 @@ export function InvoicesPage() {
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                     />
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground">Rechnungsvorlage</p>
-                      <div className="grid gap-2 sm:grid-cols-3">
-                        {[
-                          { id: "clean", label: "Clean", style: "bg-white border-slate-300" },
-                          { id: "modern", label: "Modern", style: "bg-gradient-to-br from-indigo-50 to-violet-50 border-indigo-300" },
-                          { id: "compact", label: "Compact", style: "bg-slate-50 border-slate-400" },
-                        ].map((option) => (
-                          <button
-                            key={option.id}
-                            type="button"
-                            onClick={() => setTemplate(option.id as TemplateMode)}
-                            className={`rounded-xl border px-3 py-3 text-left text-sm transition ${option.style} ${template === option.id ? "ring-2 ring-primary" : "hover:border-primary/50"}`}
-                          >
-                            <div className="font-medium">{option.label}</div>
-                            <div className="mt-1 text-xs text-muted-foreground">Vorschau-Layout</div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                     <div className="rounded-xl border border-border p-3">
                       <div className="mb-2 flex items-center justify-between">
                         <p className="text-sm font-medium">Positionen</p>
@@ -530,7 +508,7 @@ export function InvoicesPage() {
                 </Card>
                 <Card className="min-h-0 overflow-hidden p-3">
                   <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-                    <FileText size={16} />Vorlagenansicht
+                    <FileText size={16} />Rechnungsvorschau ({companySettings.invoiceTemplate})
                   </div>
                   <div className="no-scrollbar h-[calc(94vh-120px)] overflow-y-auto">
                     <InvoicePreview
@@ -542,7 +520,7 @@ export function InvoicesPage() {
                       discountPercent={discountPercent}
                       items={items}
                       totals={totals}
-                      template={template}
+                      template={(companySettings.invoiceTemplate as TemplateMode) || "clean"}
                       note={note}
                       settings={companySettings}
                     />

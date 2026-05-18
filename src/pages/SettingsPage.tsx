@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { CompanySettings, defaultCompanySettings } from "@/types/companySettings";
 import { apiFetch } from "@/lib/api";
 
-type SettingsSection = "general" | "tax" | "bank" | "logo";
+type SettingsSection = "general" | "tax" | "invoiceTemplate" | "bank" | "logo";
 
 const sections: Array<{ id: SettingsSection; label: string }> = [
   { id: "general", label: "Allgemein" },
   { id: "tax", label: "Buchhaltung & Steuer" },
+  { id: "invoiceTemplate", label: "Rechnungsvorlage" },
   { id: "bank", label: "Bankverbindung" },
   { id: "logo", label: "Logo" },
 ];
@@ -305,6 +306,40 @@ export function SettingsPage() {
             </Card>
           ) : null}
 
+          {active === "invoiceTemplate" ? (
+            <Card className="space-y-4 p-5">
+              <h3 className="text-2xl font-semibold">Rechnungsvorlage</h3>
+              <p className="text-sm text-muted-foreground">
+                Diese Vorlage wird fuer neue Rechnungen im Rechnungs-Modal verwendet.
+              </p>
+              <div className="grid gap-3 md:grid-cols-3">
+                {[
+                  { id: "clean", label: "Clean", hint: "Klar und klassisch", card: "bg-white border-slate-300" },
+                  { id: "modern", label: "Modern", hint: "Farbiger Header", card: "bg-gradient-to-br from-indigo-50 to-violet-50 border-indigo-300" },
+                  { id: "compact", label: "Compact", hint: "Kompakte Darstellung", card: "bg-slate-50 border-slate-400" },
+                ].map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setField("invoiceTemplate", option.id as CompanySettings["invoiceTemplate"])}
+                    className={`rounded-xl border p-3 text-left transition ${settings.invoiceTemplate === option.id ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/50"}`}
+                  >
+                    <div className={`mb-3 rounded-lg border p-3 ${option.card}`}>
+                      <div className="mb-2 h-2 w-16 rounded bg-slate-300/70" />
+                      <div className="space-y-1">
+                        <div className="h-2 w-full rounded bg-slate-200" />
+                        <div className="h-2 w-4/5 rounded bg-slate-200" />
+                        <div className="h-2 w-3/5 rounded bg-slate-200" />
+                      </div>
+                    </div>
+                    <div className="font-medium">{option.label}</div>
+                    <div className="text-xs text-muted-foreground">{option.hint}</div>
+                  </button>
+                ))}
+              </div>
+            </Card>
+          ) : null}
+
           {active === "logo" ? (
             <Card className="space-y-4 p-5">
               <h3 className="text-2xl font-semibold">Logo</h3>
@@ -339,4 +374,3 @@ export function SettingsPage() {
     </div>
   );
 }
-

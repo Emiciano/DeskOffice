@@ -31,6 +31,7 @@ export type CompanySettings = {
   invoiceNextNumber: number;
   offerPrefix: string;
   offerNextNumber: number;
+  invoiceTemplate: "clean" | "modern" | "compact";
 };
 
 export const defaultCompanySettings: CompanySettings = {
@@ -66,4 +67,5 @@ export const defaultCompanySettings: CompanySettings = {
   invoiceNextNumber: 101,
   offerPrefix: "AN",
   offerNextNumber: 31,
+  invoiceTemplate: "clean",
 };

@@ -133,6 +133,7 @@ model CompanySettings {
   invoiceNextNumber      Int      @default(101)
   offerPrefix            String   @default("AN")
   offerNextNumber        Int      @default(31)
+  invoiceTemplate        String   @default("clean")
   updatedAt              DateTime @updatedAt
   createdAt              DateTime @default(now())
 }

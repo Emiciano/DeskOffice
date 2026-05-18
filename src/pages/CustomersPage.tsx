@@ -3,6 +3,7 @@ import { PageHeader, StatusBadge } from "@/components/shared";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { apiFetch } from "@/lib/api";
 
 type ContactRow = {
@@ -25,15 +26,9 @@ type ContactDetail = {
     type: string;
     email?: string | null;
     phone?: string | null;
-    street?: string | null;
-    postalCode?: string | null;
-    city?: string | null;
-    country?: string | null;
-    notes?: string | null;
   };
   invoices: Array<{ id: string; number: string; amountGross: number; status: string; createdAt: string }>;
-  documents: Array<{ id: string; fileName: string; status: string; createdAt: string }>;
-  totals: { invoiceCount: number; invoiceGross: number; openInvoices: number; documentCount: number };
+  totals: { invoiceCount: number; invoiceGross: number; openInvoices: number };
 };
 
 export function CustomersPage() {
@@ -41,21 +36,20 @@ export function CustomersPage() {
   const [rows, setRows] = useState<ContactRow[]>([]);
   const [query, setQuery] = useState("");
   const [type, setType] = useState<"all" | "customer" | "supplier">("all");
+  const [selectedId, setSelectedId] = useState("");
+  const [detail, setDetail] = useState<ContactDetail | null>(null);
+
+  const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<"customer" | "supplier">("customer");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
-  const [selectedId, setSelectedId] = useState("");
-  const [detail, setDetail] = useState<ContactDetail | null>(null);
+  const [saving, setSaving] = useState(false);
 
   async function load(company: string, nextType: "all" | "customer" | "supplier") {
     const res = await apiFetch(`/api/contacts?companyId=${company}&type=${nextType}`);
     const data = (await res.json()) as ContactRow[];
     setRows(data);
-    if (selectedId && !data.some((r) => r.id === selectedId)) {
-      setSelectedId("");
-      setDetail(null);
-    }
   }
 
   async function loadDetail(id: string) {
@@ -93,26 +87,56 @@ export function CustomersPage() {
 
   async function createContact() {
     if (!companyId || !newName.trim()) return;
-    await apiFetch("/api/contacts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        companyId,
-        type: newType,
-        name: newName.trim(),
-        email: newEmail || null,
-        phone: newPhone || null,
-      }),
-    });
-    setNewName("");
-    setNewEmail("");
-    setNewPhone("");
-    await load(companyId, type);
+    try {
+      setSaving(true);
+      await apiFetch("/api/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyId,
+          type: newType,
+          name: newName.trim(),
+          email: newEmail || null,
+          phone: newPhone || null,
+        }),
+      });
+      setCreateOpen(false);
+      setNewName("");
+      setNewEmail("");
+      setNewPhone("");
+      await load(companyId, type);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <div>
-      <PageHeader title="Kontakte" subtitle="Kunden und Lieferanten mit Umsatz, offenen Posten und Beleghistorie" />
+      <PageHeader
+        title="Kontakte"
+        subtitle="Kunden und Lieferanten mit Umsatz und offenen Posten"
+        action={
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild><Button>Kunde anlegen</Button></DialogTrigger>
+            <DialogContent>
+              <h3 className="mb-4 text-lg font-semibold">Kontakt anlegen</h3>
+              <div className="space-y-3">
+                <select className="h-10 w-full rounded-xl border border-border px-3 text-sm" value={newType} onChange={(e) => setNewType(e.target.value as "customer" | "supplier")}>
+                  <option value="customer">Kunde</option>
+                  <option value="supplier">Lieferant</option>
+                </select>
+                <Input placeholder="Name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+                <Input placeholder="E-Mail" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+                <Input placeholder="Telefon" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setCreateOpen(false)}>Abbrechen</Button>
+                  <Button onClick={createContact} disabled={saving}>{saving ? "Speichern..." : "Speichern"}</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        }
+      />
 
       <div className="mb-4 grid gap-4 md:grid-cols-3">
         <Card>
@@ -130,23 +154,13 @@ export function CustomersPage() {
       </div>
 
       <Card className="mb-4">
-        <div className="grid gap-2 md:grid-cols-6">
-          <Input className="md:col-span-2" placeholder="Kontakt suchen..." value={query} onChange={(e) => setQuery(e.target.value)} />
+        <div className="grid gap-2 md:grid-cols-3">
+          <Input placeholder="Kontakt suchen..." value={query} onChange={(e) => setQuery(e.target.value)} />
           <select className="h-10 rounded-xl border border-border px-3 text-sm" value={type} onChange={(e) => setType(e.target.value as "all" | "customer" | "supplier")}>
             <option value="all">Alle</option>
             <option value="customer">Kunden</option>
             <option value="supplier">Lieferanten</option>
           </select>
-          <select className="h-10 rounded-xl border border-border px-3 text-sm" value={newType} onChange={(e) => setNewType(e.target.value as "customer" | "supplier")}>
-            <option value="customer">Kunde</option>
-            <option value="supplier">Lieferant</option>
-          </select>
-          <Input placeholder="Name" value={newName} onChange={(e) => setNewName(e.target.value)} />
-          <Button onClick={createContact}>Kontakt anlegen</Button>
-        </div>
-        <div className="mt-2 grid gap-2 md:grid-cols-2">
-          <Input placeholder="E-Mail" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
-          <Input placeholder="Telefon" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
         </div>
       </Card>
 
@@ -182,9 +196,7 @@ export function CustomersPage() {
                   <td>EUR {row.revenue.toFixed(2)}</td>
                   <td>{row.invoiceCount}</td>
                   <td>{row.openItems}</td>
-                  <td>
-                    <StatusBadge status={row.active ? "Aktiv" : "Inaktiv"} />
-                  </td>
+                  <td><StatusBadge status={row.active ? "Aktiv" : "Inaktiv"} /></td>
                 </tr>
               ))}
             </tbody>
@@ -193,7 +205,7 @@ export function CustomersPage() {
 
         <Card>
           {!detail ? (
-            <p className="text-sm text-muted-foreground">Kontakt aus der Liste wählen, um Details zu sehen.</p>
+            <p className="text-sm text-muted-foreground">Kontakt aus der Liste waehlen, um Details zu sehen.</p>
           ) : (
             <div className="space-y-3 text-sm">
               <div>
@@ -218,17 +230,6 @@ export function CustomersPage() {
                   {detail.totals.invoiceCount} Rechnungen • {detail.totals.openInvoices} offen
                 </p>
               </div>
-              <div>
-                <p className="mb-1 text-xs text-muted-foreground">Letzte Rechnungen</p>
-                <div className="space-y-1">
-                  {detail.invoices.slice(0, 5).map((invoice) => (
-                    <div key={invoice.id} className="flex items-center justify-between rounded-lg bg-muted px-2 py-1">
-                      <span>{invoice.number}</span>
-                      <span>EUR {invoice.amountGross.toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
         </Card>
@@ -236,3 +237,4 @@ export function CustomersPage() {
     </div>
   );
 }
+

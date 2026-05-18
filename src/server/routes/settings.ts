@@ -37,6 +37,7 @@ function sanitize(payload: Record<string, unknown>) {
     invoiceNextNumber: Math.max(1, Number(payload.invoiceNextNumber ?? 101) || 101),
     offerPrefix: String(payload.offerPrefix ?? "AN").slice(0, 12).toUpperCase(),
     offerNextNumber: Math.max(1, Number(payload.offerNextNumber ?? 31) || 31),
+    invoiceTemplate: String(payload.invoiceTemplate ?? "clean"),
   };
 }
 
