@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
 import { getCompanyId } from "../auth.js";
+import { Prisma } from "@prisma/client";
 
 export const taxesRouter = Router();
 type TaxBooking = {
@@ -52,19 +53,29 @@ async function loadOrCreateSnapshot(companyId: string, year: number, month: numb
     .filter((b) => b.debitAccount.startsWith("3") || b.debitAccount.startsWith("4"))
     .reduce((sum, b) => sum + b.amount, 0);
 
-  return prisma.taxSnapshot.create({
-    data: {
-      companyId,
-      year,
-      month,
-      periodLabel: `${year}-${String(month).padStart(2, "0")}`,
-      vatOutput19,
-      vatInput,
-      vatLiability: vatOutput19 - vatInput,
-      euerRevenue,
-      euerExpense,
-    },
-  });
+  try {
+    return await prisma.taxSnapshot.create({
+      data: {
+        companyId,
+        year,
+        month,
+        periodLabel: `${year}-${String(month).padStart(2, "0")}`,
+        vatOutput19,
+        vatInput,
+        vatLiability: vatOutput19 - vatInput,
+        euerRevenue,
+        euerExpense,
+      },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      const retry = await prisma.taxSnapshot.findUnique({
+        where: { companyId_year_month: { companyId, year, month } },
+      });
+      if (retry) return retry;
+    }
+    throw err;
+  }
 }
 
 taxesRouter.get("/snapshot", async (req, res) => {
