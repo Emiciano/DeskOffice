@@ -37,8 +37,15 @@ export function DocumentUpload({ onUploadDone, disabled = false }: Props) {
         setProgress((p) => {
           if (p >= 100) {
             window.clearInterval(interval);
-            void onUploadDone({ fileName: file.name, pdfUrl: url, fileDataUrl, size: file.size });
-            setUploadingName("");
+            void (async () => {
+              try {
+                await onUploadDone({ fileName: file.name, pdfUrl: url, fileDataUrl, size: file.size });
+                setUploadingName("");
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Upload fehlgeschlagen.");
+                setUploadingName("");
+              }
+            })();
             return 100;
           }
           return p + 20;
@@ -103,4 +110,3 @@ export function DocumentUpload({ onUploadDone, disabled = false }: Props) {
     </Card>
   );
 }
-

@@ -225,7 +225,19 @@ export function DocumentsPage() {
                   }),
                 });
                 if (!res.ok) {
-                  setSaveError("Beleg konnte nicht gespeichert werden.");
+                  let reason = "Beleg konnte nicht gespeichert werden.";
+                  try {
+                    const body = await res.json();
+                    if (body?.error) reason = String(body.error);
+                  } catch {
+                    try {
+                      const text = await res.text();
+                      if (text) reason = text.slice(0, 180);
+                    } catch {
+                      // ignore parsing fallback
+                    }
+                  }
+                  setSaveError(reason);
                   return;
                 }
                 const createdApi = await res.json();
