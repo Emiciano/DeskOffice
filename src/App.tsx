@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
+import { FloatingCopilotChat } from "@/components/layout/FloatingCopilotChat";
 import { useUiStore } from "@/store/uiStore";
 import { useAuthStore } from "@/store/authStore";
 
@@ -16,7 +17,6 @@ const SettingsPage = lazy(() => import("@/pages/SettingsPage").then((m) => ({ de
 const AdminPage = lazy(() => import("@/pages/AdminPage").then((m) => ({ default: m.AdminPage })));
 const BookingsPage = lazy(() => import("@/pages/BookingsPage").then((m) => ({ default: m.BookingsPage })));
 const SmartInboxPage = lazy(() => import("@/pages/SmartInboxPage").then((m) => ({ default: m.SmartInboxPage })));
-const AICopilotPage = lazy(() => import("@/pages/AICopilotPage").then((m) => ({ default: m.AICopilotPage })));
 const DocumentsPage = lazy(() => import("@/features/documents/DocumentsPage").then((m) => ({ default: m.DocumentsPage })));
 const AccountsPage = lazy(() => import("@/features/accounting/pages/AccountsPage").then((m) => ({ default: m.AccountsPage })));
 const LoginPage = lazy(() => import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage })));
@@ -66,7 +66,6 @@ export default function App() {
               <Route path="/kontenrahmen" element={<AccountsPage />} />
               <Route path="/buchungen" element={<BookingsPage />} />
               <Route path="/inbox" element={<SmartInboxPage />} />
-              <Route path="/copilot" element={<AICopilotPage />} />
               <Route path="/berichte" element={<ReportsPage />} />
               <Route path="/einstellungen" element={<SettingsPage />} />
               <Route path="/admin" element={<AdminPage />} />
@@ -75,6 +74,7 @@ export default function App() {
           </Suspense>
         </div>
       </main>
+      <FloatingCopilotChat />
     </div>
   );
 }
