@@ -34,6 +34,23 @@ function newDraftData(): DocumentData {
   };
 }
 
+function inferGrossFromFileName(fileName: string): number {
+  const normalized = fileName.toLowerCase();
+  if (normalized.includes("macbook")) return 890;
+  if (normalized.includes("rechenzentrum")) return 1290;
+  if (normalized.includes("nordlicht")) return 3570;
+  if (normalized.includes("cloud")) return 1290;
+
+  const amountMatch = normalized.match(/(\d{2,5})([.,](\d{2}))?/);
+  if (amountMatch) {
+    const integer = Number(amountMatch[1] ?? 0);
+    const decimal = Number(amountMatch[3] ?? 0);
+    if (integer > 0) return Number((integer + decimal / 100).toFixed(2));
+  }
+
+  return 0;
+}
+
 export const useDocumentsStore = create<DocumentsState>()((set, get) => ({
       documents: [],
       setDocuments: (documents) => set({ documents }),
@@ -46,7 +63,7 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => ({
           supplierOrCustomer: "",
           status: "Entwurf",
           category: "",
-          amount: Number((size / 100).toFixed(2)),
+          amount: 0,
           date: new Date().toISOString().slice(0, 10),
           dueDate: "",
           uploadedAt: uploadedAt ?? new Date().toISOString().slice(0, 10),
@@ -60,7 +77,7 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => ({
       replaceDocumentFile: (id, fileName, pdfUrl, size) =>
         set((state) => ({
           documents: state.documents.map((d) =>
-            d.id === id ? { ...d, fileName, pdfUrl, amount: Number((size / 100).toFixed(2)) } : d,
+            d.id === id ? { ...d, fileName, pdfUrl } : d,
           ),
         })),
       runMockOcr: (id) =>
@@ -70,9 +87,16 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => ({
             const guessedType = d.fileName.toLowerCase().includes("ausgang")
               ? "Ausgangsrechnung"
               : "Eingangsrechnung";
-            const net = d.data.netAmount > 0 ? d.data.netAmount : Number((d.amount / 1.19).toFixed(2));
+            const inferredGross = inferGrossFromFileName(d.fileName);
+            const baseGross =
+              d.data.grossAmount > 0
+                ? d.data.grossAmount
+                : d.amount > 0
+                  ? d.amount
+                  : inferredGross;
+            const gross = Number(baseGross.toFixed(2));
+            const net = Number((gross / 1.19).toFixed(2));
             const vat = Number((net * 0.19).toFixed(2));
-            const gross = Number((net + vat).toFixed(2));
             return {
               ...d,
               data: {
