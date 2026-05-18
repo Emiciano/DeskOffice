@@ -10,6 +10,28 @@ type AuthContext = {
   permissions: string[];
 };
 
+function defaultPermissionsForRole(role: string): string[] {
+  const r = role.toLowerCase();
+  if (r === "owner" || r === "admin") return ["*"];
+  if (r === "tax_advisor" || r === "steuerberater") {
+    return [
+      "documents:read", "invoices:read", "offers:read", "contacts:read", "accounts:read", "bookings:read",
+      "banking:read", "reports:read", "taxes:read", "settings:read",
+    ];
+  }
+  return [
+    "documents:read", "documents:write",
+    "invoices:read", "invoices:write",
+    "offers:read", "offers:write",
+    "contacts:read", "contacts:write",
+    "settings:read", "settings:write",
+    "products:read", "products:write",
+    "bookings:read", "bookings:write",
+    "banking:read", "banking:write",
+    "accounts:read",
+  ];
+}
+
 declare global {
   namespace Express {
     interface Request {
@@ -54,7 +76,7 @@ export async function attachAuth(req: Request, _res: Response, next: NextFunctio
       permissions = [];
     }
   }
-  if (session.user.role.toLowerCase() === "owner") permissions = ["*"];
+  if (permissions.length === 0) permissions = defaultPermissionsForRole(session.user.role);
 
   req.auth = {
     userId: session.user.id,

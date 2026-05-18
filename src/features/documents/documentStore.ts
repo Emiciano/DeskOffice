@@ -3,9 +3,10 @@ import type { BookingRecord, DocumentData, DocumentItem, DocumentStatus } from "
 
 type DocumentsState = {
   documents: DocumentItem[];
+  setDocuments: (documents: DocumentItem[]) => void;
   selectedId: string | null;
   setSelectedId: (id: string | null) => void;
-  addDocumentFromUpload: (payload: { fileName: string; pdfUrl: string; size: number }) => DocumentItem;
+  addDocumentFromUpload: (payload: { id?: string; fileName: string; pdfUrl: string; size: number; uploadedAt?: string }) => DocumentItem;
   updateDocumentData: (id: string, patch: Partial<DocumentData>) => void;
   setDocumentStatus: (id: string, status: DocumentStatus) => void;
   replaceDocumentFile: (id: string, fileName: string, pdfUrl: string, size: number) => void;
@@ -35,11 +36,12 @@ function newDraftData(): DocumentData {
 
 export const useDocumentsStore = create<DocumentsState>()((set, get) => ({
       documents: [],
+      setDocuments: (documents) => set({ documents }),
       selectedId: null,
       setSelectedId: (id) => set({ selectedId: id }),
-      addDocumentFromUpload: ({ fileName, pdfUrl, size }) => {
+      addDocumentFromUpload: ({ id, fileName, pdfUrl, size, uploadedAt }) => {
         const next: DocumentItem = {
-          id: `DOC-${Date.now()}`,
+          id: id ?? `DOC-${Date.now()}`,
           fileName,
           supplierOrCustomer: "",
           status: "Entwurf",
@@ -47,7 +49,7 @@ export const useDocumentsStore = create<DocumentsState>()((set, get) => ({
           amount: Number((size / 100).toFixed(2)),
           date: new Date().toISOString().slice(0, 10),
           dueDate: "",
-          uploadedAt: new Date().toISOString().slice(0, 10),
+          uploadedAt: uploadedAt ?? new Date().toISOString().slice(0, 10),
           pdfUrl,
           pageCount: 1,
           data: newDraftData(),

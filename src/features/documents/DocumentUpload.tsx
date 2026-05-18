@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 type Props = {
-  onUploadDone: (payload: { fileName: string; pdfUrl: string; size: number }) => void;
+  onUploadDone: (payload: { fileName: string; pdfUrl: string; fileDataUrl: string; size: number }) => void | Promise<void>;
 };
 
 export function DocumentUpload({ onUploadDone }: Props) {
@@ -25,17 +25,26 @@ export function DocumentUpload({ onUploadDone }: Props) {
     setProgress(0);
 
     const url = URL.createObjectURL(file);
-    const interval = window.setInterval(() => {
-      setProgress((p) => {
-        if (p >= 100) {
-          window.clearInterval(interval);
-          onUploadDone({ fileName: file.name, pdfUrl: url, size: file.size });
-          setUploadingName("");
-          return 100;
-        }
-        return p + 20;
-      });
-    }, 120);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const fileDataUrl = String(reader.result ?? "");
+      const interval = window.setInterval(() => {
+        setProgress((p) => {
+          if (p >= 100) {
+            window.clearInterval(interval);
+            void onUploadDone({ fileName: file.name, pdfUrl: url, fileDataUrl, size: file.size });
+            setUploadingName("");
+            return 100;
+          }
+          return p + 20;
+        });
+      }, 120);
+    };
+    reader.onerror = () => {
+      setError("Datei konnte nicht gelesen werden.");
+      setUploadingName("");
+    };
+    reader.readAsDataURL(file);
   };
 
   return (

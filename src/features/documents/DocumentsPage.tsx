@@ -8,11 +8,13 @@ import { DocumentList } from "./DocumentList";
 import { DocumentDetail } from "./DocumentDetail";
 import { DocumentInspector } from "./DocumentInspector";
 import { useDocumentsStore } from "./documentStore";
-import type { DocumentFilters } from "./types";
+import type { DocumentData, DocumentFilters, DocumentItem } from "./types";
+import { apiFetch } from "@/lib/api";
 
 export function DocumentsPage() {
   const {
     documents,
+    setDocuments,
     selectedId,
     setSelectedId,
     addDocumentFromUpload,
@@ -22,6 +24,8 @@ export function DocumentsPage() {
     runMockOcr,
     bookDocument,
   } = useDocumentsStore();
+  const [companyId, setCompanyId] = useState("");
+  const [saveError, setSaveError] = useState("");
 
   const [filters, setFilters] = useState<DocumentFilters>({
     query: "",
@@ -42,6 +46,63 @@ export function DocumentsPage() {
     setSelectedId(null);
     setEditingId(null);
   }, [setSelectedId]);
+
+  useEffect(() => {
+    void (async () => {
+      const boot = await apiFetch("/api/bootstrap").then((r) => r.json());
+      if (!boot.companyId) return;
+      const id = String(boot.companyId);
+      setCompanyId(id);
+      const res = await apiFetch(`/api/documents?companyId=${id}`);
+      if (!res.ok) return;
+      const rows = (await res.json()) as Array<{
+        id: string;
+        fileName: string;
+        status: string;
+        category: string | null;
+        grossAmount: number;
+        partner: string | null;
+        documentDate: string | null;
+        dueDate: string | null;
+        createdAt: string;
+        accountNumber: string | null;
+        taxAmount: number;
+        netAmount: number;
+        pdfUrl?: string;
+      }>;
+      const mapped: DocumentItem[] = rows.map((d) => ({
+        id: d.id,
+        fileName: d.fileName,
+        supplierOrCustomer: d.partner ?? "",
+        status: (d.status as DocumentItem["status"]) ?? "Entwurf",
+        category: d.category ?? "",
+        amount: Number(d.grossAmount ?? 0),
+        date: d.documentDate ? String(d.documentDate).slice(0, 10) : "",
+        dueDate: d.dueDate ? String(d.dueDate).slice(0, 10) : "",
+        uploadedAt: String(d.createdAt).slice(0, 10),
+        pdfUrl: d.pdfUrl || "",
+        pageCount: 1,
+        data: {
+          type: "Sonstiger Beleg",
+          invoiceNumber: "",
+          documentDate: d.documentDate ? String(d.documentDate).slice(0, 10) : "",
+          dueDate: d.dueDate ? String(d.dueDate).slice(0, 10) : "",
+          partner: d.partner ?? "",
+          netAmount: Number(d.netAmount ?? 0),
+          vatAmount: Number(d.taxAmount ?? 0),
+          grossAmount: Number(d.grossAmount ?? 0),
+          currency: "EUR",
+          paymentStatus: "Offen",
+          paymentMethod: "Ueberweisung",
+          category: d.category ?? "",
+          account: d.accountNumber ?? "",
+          costCenter: "",
+          notes: "",
+        },
+      }));
+      setDocuments(mapped);
+    })();
+  }, [setDocuments]);
 
   useEffect(() => {
     const group = searchParams.get("group");
@@ -127,12 +188,41 @@ export function DocumentsPage() {
       <div className="grid gap-4 xl:grid-cols-5">
         <div className={`${selected ? "xl:col-span-4" : "xl:col-span-5"} space-y-3`}>
           <DocumentUpload
-            onUploadDone={(payload) => {
-              const created = addDocumentFromUpload(payload);
+            onUploadDone={async (payload) => {
+              setSaveError("");
+              let createdId = "";
+              let createdAt = "";
+              if (companyId) {
+                const res = await apiFetch("/api/documents", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    companyId,
+                    fileName: payload.fileName,
+                    status: "Entwurf",
+                    grossAmount: Number((payload.size / 100).toFixed(2)),
+                    fileDataUrl: payload.fileDataUrl,
+                    fileSize: payload.size,
+                  }),
+                });
+                if (!res.ok) {
+                  setSaveError("Beleg konnte nicht gespeichert werden.");
+                  return;
+                }
+                const createdApi = await res.json();
+                createdId = String(createdApi.id ?? "");
+                createdAt = String(createdApi.createdAt ?? "").slice(0, 10);
+              }
+              const created = addDocumentFromUpload({
+                ...payload,
+                id: createdId || undefined,
+                uploadedAt: createdAt || undefined,
+              });
               setSelectedId(created.id);
               setEditingId(null);
             }}
           />
+          {saveError ? <div className="text-sm text-rose-600">{saveError}</div> : null}
           <DocumentList
             documents={filtered}
             selectedId={selectedId}
@@ -172,21 +262,75 @@ export function DocumentsPage() {
                   onReplaceFile={(file) => {
                     if (file.type === "application/pdf") {
                       replaceDocumentFile(editingDocument.id, file.name, URL.createObjectURL(file), file.size);
+                      void (async () => {
+                        const reader = new FileReader();
+                        reader.onload = async () => {
+                          await apiFetch(`/api/documents/${editingDocument.id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              companyId,
+                              fileName: file.name,
+                              fileDataUrl: String(reader.result ?? ""),
+                              fileSize: file.size,
+                            }),
+                          });
+                        };
+                        reader.readAsDataURL(file);
+                      })();
                     }
                   }}
                   onChangeData={(patch) => updateDocumentData(editingDocument.id, patch)}
-                  onMarkChecked={() => setDocumentStatus(editingDocument.id, "Geprueft")}
+                  onMarkChecked={() => {
+                    setDocumentStatus(editingDocument.id, "Geprueft");
+                    void apiFetch(`/api/documents/${editingDocument.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ companyId, status: "Geprueft" }),
+                    });
+                  }}
                   onRunOcr={() => runMockOcr(editingDocument.id)}
-                  onBook={() => bookDocument(editingDocument.id)}
+                  onBook={() => {
+                    const result = bookDocument(editingDocument.id);
+                    if ("ok" in result && result.ok) {
+                      void apiFetch(`/api/documents/${editingDocument.id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ companyId, status: "Gebucht" }),
+                      });
+                    }
+                    return result;
+                  }}
                 />
               </div>
               <div className="mt-2 flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setCaptureOpen(false)}>Abbrechen</Button>
                 <Button
-                  onClick={() => {
+                  onClick={async () => {
                     setDocumentStatus(editingDocument.id, "Geprueft");
+                    const patch: Partial<DocumentData> = editingDocument.data;
+                    const res = await apiFetch(`/api/documents/${editingDocument.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        companyId,
+                        status: "Geprueft",
+                        partner: patch.partner,
+                        category: patch.category,
+                        accountNumber: patch.account,
+                        grossAmount: patch.grossAmount,
+                        taxAmount: patch.vatAmount,
+                        netAmount: patch.netAmount,
+                        documentDate: patch.documentDate,
+                        dueDate: patch.dueDate,
+                      }),
+                    });
+                    if (!res.ok) {
+                      setSaveError("Belegdaten konnten nicht gespeichert werden.");
+                      return;
+                    }
                     setCaptureOpen(false);
-                    window.alert("Beleg gespeichert.");
+                    setSaveError("");
                   }}
                 >
                   Speichern

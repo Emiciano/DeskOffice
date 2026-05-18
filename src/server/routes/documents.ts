@@ -7,8 +7,18 @@ export const documentsRouter = Router();
 documentsRouter.get("/", requirePermissions("documents:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
-  const items = await prisma.document.findMany({ where: { companyId }, orderBy: { createdAt: "desc" } });
-  res.json(items);
+  const items = await prisma.document.findMany({
+    where: { companyId },
+    include: { files: { orderBy: { createdAt: "desc" }, take: 1 } },
+    orderBy: { createdAt: "desc" },
+  });
+  res.json(
+    items.map((item) => ({
+      ...item,
+      pdfUrl: item.files[0]?.storageKey ?? "",
+      fileSize: item.files[0]?.sizeBytes ?? 0,
+    })),
+  );
 });
 
 documentsRouter.post("/", requirePermissions("documents:write"), async (req, res) => {
@@ -28,20 +38,37 @@ documentsRouter.post("/", requirePermissions("documents:write"), async (req, res
     return res.status(400).json({ error: "amount fields must be numbers" });
   }
 
-  const created = await prisma.document.create({
-    data: {
-      companyId,
-      fileName,
-      status,
-      partner,
-      category,
-      accountNumber,
-      grossAmount,
-      taxAmount,
-      netAmount,
-      documentDate: req.body.documentDate ? new Date(String(req.body.documentDate)) : null,
-      dueDate: req.body.dueDate ? new Date(String(req.body.dueDate)) : null,
-    },
+  const fileDataUrl = req.body.fileDataUrl ? String(req.body.fileDataUrl) : "";
+  const created = await prisma.$transaction(async (tx) => {
+    const document = await tx.document.create({
+      data: {
+        companyId,
+        fileName,
+        status,
+        partner,
+        category,
+        accountNumber,
+        grossAmount,
+        taxAmount,
+        netAmount,
+        documentDate: req.body.documentDate ? new Date(String(req.body.documentDate)) : null,
+        dueDate: req.body.dueDate ? new Date(String(req.body.dueDate)) : null,
+      },
+    });
+    if (fileDataUrl) {
+      await tx.documentFile.create({
+        data: {
+          companyId,
+          documentId: document.id,
+          storageKey: fileDataUrl,
+          fileName,
+          mimeType: "application/pdf",
+          sizeBytes: Number(req.body.fileSize ?? 0) || 0,
+          source: "upload",
+        },
+      });
+    }
+    return document;
   });
   res.status(201).json(created);
 });
@@ -49,8 +76,26 @@ documentsRouter.post("/", requirePermissions("documents:write"), async (req, res
 documentsRouter.patch("/:id", requirePermissions("documents:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
-  const updated = await prisma.document.updateMany({ where: { id: req.params.id, companyId }, data: req.body });
+  const payload = req.body as Record<string, unknown>;
+  const fileDataUrl = payload.fileDataUrl ? String(payload.fileDataUrl) : "";
+  const fileName = payload.fileName ? String(payload.fileName) : "";
+  const fileSize = Number(payload.fileSize ?? 0) || 0;
+  const { fileDataUrl: _f, ...data } = payload;
+  const updated = await prisma.document.updateMany({ where: { id: req.params.id, companyId }, data });
   if (updated.count === 0) return res.status(404).json({ error: "Document not found" });
+  if (fileDataUrl) {
+    await prisma.documentFile.create({
+      data: {
+        companyId,
+        documentId: req.params.id,
+        storageKey: fileDataUrl,
+        fileName: fileName || "beleg.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: fileSize,
+        source: "upload",
+      },
+    });
+  }
   res.json({ ok: true });
 });
 
