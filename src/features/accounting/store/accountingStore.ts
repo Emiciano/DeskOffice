@@ -16,8 +16,8 @@ type AccountingState = {
   selectedYear: number;
   companyId: string;
   versions: Array<{ skrType: SkrType; year: number; count: number }>;
-  setSelectedSkr: (skr: SkrType) => void;
-  setSelectedYear: (year: number) => void;
+  setSelectedSkr: (skr: SkrType) => Promise<void>;
+  setSelectedYear: (year: number) => Promise<void>;
   hydrateFromApi: () => Promise<void>;
   importAccounts: (payload: ImportPayload) => Promise<{ imported: number }>;
   updateAccount: (id: string, patch: Partial<ChartAccount>) => Promise<void>;
@@ -29,15 +29,41 @@ export const useAccountingStore = create<AccountingState>()((set, get) => ({
   selectedYear: new Date().getFullYear(),
   companyId: "default-company",
   versions: [],
-  setSelectedSkr: (selectedSkr) => set({ selectedSkr }),
-  setSelectedYear: (selectedYear) => set({ selectedYear }),
+  setSelectedSkr: async (selectedSkr) => {
+    const state = get();
+    const yearFallback = state.versions.find((v) => v.skrType === selectedSkr)?.year ?? state.selectedYear;
+    const items = await apiFetch(
+      `/api/accounts?companyId=${state.companyId}&skrType=${selectedSkr}&year=${yearFallback}`,
+    ).then((r) => r.json());
+    set({
+      selectedSkr,
+      selectedYear: yearFallback,
+      accounts: Array.isArray(items) ? items : [],
+    });
+  },
+  setSelectedYear: async (selectedYear) => {
+    const state = get();
+    const items = await apiFetch(
+      `/api/accounts?companyId=${state.companyId}&skrType=${state.selectedSkr}&year=${selectedYear}`,
+    ).then((r) => r.json());
+    set({
+      selectedYear,
+      accounts: Array.isArray(items) ? items : [],
+    });
+  },
   hydrateFromApi: async () => {
     const b = await apiFetch("/api/bootstrap").then((r) => r.json());
     const companyId = String(b.companyId ?? "default-company");
     const versions = await apiFetch(`/api/accounts/versions?companyId=${companyId}`).then((r) => r.json());
-    const typedVersions = Array.isArray(versions) ? versions : [];
-    const selectedYear = typedVersions[0]?.year ?? get().selectedYear;
-    const selectedSkr = typedVersions[0]?.skrType ?? get().selectedSkr;
+    const typedVersions = (Array.isArray(versions) ? versions : []) as Array<{ skrType: SkrType; year: number; count: number }>;
+    const settings = await apiFetch(`/api/settings?companyId=${companyId}`).then((r) => r.json()).catch(() => ({}));
+    const preferredSkr = settings?.accountFrame === "SKR04" ? "SKR04" : settings?.accountFrame === "SKR03" ? "SKR03" : get().selectedSkr;
+    const selectedVersion =
+      typedVersions.find((v) => v.skrType === preferredSkr) ??
+      typedVersions.find((v) => v.skrType === get().selectedSkr) ??
+      typedVersions[0];
+    const selectedYear = selectedVersion?.year ?? get().selectedYear;
+    const selectedSkr = selectedVersion?.skrType ?? get().selectedSkr;
     const items = await apiFetch(
       `/api/accounts?companyId=${companyId}&skrType=${selectedSkr}&year=${selectedYear}`,
     ).then((r) => r.json());
