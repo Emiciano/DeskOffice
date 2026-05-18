@@ -69,6 +69,7 @@ export function AccountsPage() {
         const res = await apiFetch("/api/accounts/import-pdf", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          timeoutMs: 180_000,
           body: JSON.stringify({
             companyId: "default-company",
             skrType: selectedSkr,
@@ -345,4 +346,3 @@ export function AccountsPage() {
     </div>
   );
 }
-
