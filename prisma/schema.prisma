@@ -128,7 +128,7 @@ model CompanySettings {
   bankCode               String   @default("")
   iban                   String   @default("")
   bic                    String   @default("")
-  logoUrl                String   @default("")
+  logoUrl                String   @default("") @db.LongText
   invoicePrefix          String   @default("RE")
   invoiceNextNumber      Int      @default(101)
   offerPrefix            String   @default("AN")
@@ -184,7 +184,7 @@ model DocumentFile {
   company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   documentId   String
   document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  storageKey   String
+  storageKey   String   @db.LongText
   fileName     String
   mimeType     String
   sizeBytes    Int
