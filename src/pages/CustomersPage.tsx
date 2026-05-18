@@ -31,6 +31,33 @@ type ContactDetail = {
   totals: { invoiceCount: number; invoiceGross: number; openInvoices: number };
 };
 
+type ContactSectionKey =
+  | "address"
+  | "email"
+  | "phone"
+  | "social"
+  | "tax"
+  | "einvoice"
+  | "note"
+  | "tags"
+  | "contactPerson"
+  | "bank"
+  | "terms";
+
+const contactSections: Array<{ key: ContactSectionKey; label: string }> = [
+  { key: "address", label: "Adresse" },
+  { key: "email", label: "E-Mail" },
+  { key: "phone", label: "Rufnummer" },
+  { key: "social", label: "Social Media" },
+  { key: "tax", label: "Steuerangaben" },
+  { key: "einvoice", label: "E-Rechnung" },
+  { key: "note", label: "Notiz" },
+  { key: "tags", label: "Tags" },
+  { key: "contactPerson", label: "Ansprechpartner" },
+  { key: "bank", label: "Bankkonto" },
+  { key: "terms", label: "Konditionen" },
+];
+
 export function CustomersPage() {
   const [companyId, setCompanyId] = useState("");
   const [rows, setRows] = useState<ContactRow[]>([]);
@@ -45,6 +72,23 @@ export function CustomersPage() {
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const [activeSection, setActiveSection] = useState<ContactSectionKey>("address");
+  const [street, setStreet] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [city, setCity] = useState("");
+  const [country, setCountry] = useState("Deutschland");
+  const [website, setWebsite] = useState("");
+  const [linkedin, setLinkedin] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [vatId, setVatId] = useState("");
+  const [taxNumber, setTaxNumber] = useState("");
+  const [eInvoiceMail, setEInvoiceMail] = useState("");
+  const [note, setNote] = useState("");
+  const [tags, setTags] = useState("");
+  const [contactPerson, setContactPerson] = useState("");
+  const [iban, setIban] = useState("");
+  const [bic, setBic] = useState("");
+  const [paymentTerms, setPaymentTerms] = useState("14");
 
   async function load(company: string, nextType: "all" | "customer" | "supplier") {
     const res = await apiFetch(`/api/contacts?companyId=${company}&type=${nextType}`);
@@ -104,6 +148,23 @@ export function CustomersPage() {
       setNewName("");
       setNewEmail("");
       setNewPhone("");
+      setStreet("");
+      setPostalCode("");
+      setCity("");
+      setCountry("Deutschland");
+      setWebsite("");
+      setLinkedin("");
+      setInstagram("");
+      setVatId("");
+      setTaxNumber("");
+      setEInvoiceMail("");
+      setNote("");
+      setTags("");
+      setContactPerson("");
+      setIban("");
+      setBic("");
+      setPaymentTerms("14");
+      setActiveSection("address");
       await load(companyId, type);
     } finally {
       setSaving(false);
@@ -118,19 +179,93 @@ export function CustomersPage() {
         action={
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild><Button>Kunde anlegen</Button></DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-4xl">
               <h3 className="mb-4 text-lg font-semibold">Kontakt anlegen</h3>
-              <div className="space-y-3">
-                <select className="h-10 w-full rounded-xl border border-border px-3 text-sm" value={newType} onChange={(e) => setNewType(e.target.value as "customer" | "supplier")}>
-                  <option value="customer">Kunde</option>
-                  <option value="supplier">Lieferant</option>
-                </select>
-                <Input placeholder="Name" value={newName} onChange={(e) => setNewName(e.target.value)} />
-                <Input placeholder="E-Mail" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
-                <Input placeholder="Telefon" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setCreateOpen(false)}>Abbrechen</Button>
-                  <Button onClick={createContact} disabled={saving}>{saving ? "Speichern..." : "Speichern"}</Button>
+              <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+                <div className="rounded-xl border border-border p-2">
+                  {contactSections.map((section) => (
+                    <button
+                      type="button"
+                      key={section.key}
+                      onClick={() => setActiveSection(section.key)}
+                      className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm transition ${
+                        activeSection === section.key
+                          ? "bg-primary/10 font-medium text-primary"
+                          : "text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {section.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="space-y-3">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input type="radio" checked={newType === "customer"} onChange={() => setNewType("customer")} />
+                      Firma / Kunde
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input type="radio" checked={newType === "supplier"} onChange={() => setNewType("supplier")} />
+                      Lieferant
+                    </label>
+                  </div>
+                  <Input placeholder="Firmenname" value={newName} onChange={(e) => setNewName(e.target.value)} />
+
+                  {activeSection === "address" ? (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Input placeholder="Straße" value={street} onChange={(e) => setStreet(e.target.value)} />
+                      <Input placeholder="PLZ" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+                      <Input placeholder="Stadt" value={city} onChange={(e) => setCity(e.target.value)} />
+                      <Input placeholder="Land" value={country} onChange={(e) => setCountry(e.target.value)} />
+                    </div>
+                  ) : null}
+
+                  {activeSection === "email" ? <Input placeholder="E-Mail" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} /> : null}
+
+                  {activeSection === "phone" ? <Input placeholder="Rufnummer" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} /> : null}
+
+                  {activeSection === "social" ? (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Input placeholder="Webseite" value={website} onChange={(e) => setWebsite(e.target.value)} />
+                      <Input placeholder="LinkedIn" value={linkedin} onChange={(e) => setLinkedin(e.target.value)} />
+                      <Input placeholder="Instagram" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
+                    </div>
+                  ) : null}
+
+                  {activeSection === "tax" ? (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Input placeholder="USt-IdNr." value={vatId} onChange={(e) => setVatId(e.target.value)} />
+                      <Input placeholder="Steuernummer" value={taxNumber} onChange={(e) => setTaxNumber(e.target.value)} />
+                    </div>
+                  ) : null}
+
+                  {activeSection === "einvoice" ? (
+                    <Input placeholder="E-Rechnung E-Mail" value={eInvoiceMail} onChange={(e) => setEInvoiceMail(e.target.value)} />
+                  ) : null}
+
+                  {activeSection === "note" ? <Input placeholder="Interne Notiz" value={note} onChange={(e) => setNote(e.target.value)} /> : null}
+
+                  {activeSection === "tags" ? <Input placeholder="Tags (kommagetrennt)" value={tags} onChange={(e) => setTags(e.target.value)} /> : null}
+
+                  {activeSection === "contactPerson" ? (
+                    <Input placeholder="Ansprechpartner Name" value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} />
+                  ) : null}
+
+                  {activeSection === "bank" ? (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Input placeholder="IBAN" value={iban} onChange={(e) => setIban(e.target.value)} />
+                      <Input placeholder="BIC" value={bic} onChange={(e) => setBic(e.target.value)} />
+                    </div>
+                  ) : null}
+
+                  {activeSection === "terms" ? (
+                    <Input placeholder="Zahlungsziel in Tagen" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
+                  ) : null}
+
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setCreateOpen(false)}>Abbrechen</Button>
+                    <Button onClick={createContact} disabled={saving}>{saving ? "Speichern..." : "Speichern"}</Button>
+                  </div>
                 </div>
               </div>
             </DialogContent>
@@ -237,4 +372,3 @@ export function CustomersPage() {
     </div>
   );
 }
-
