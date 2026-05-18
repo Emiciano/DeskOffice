@@ -49,8 +49,14 @@ export async function parseSkrPdfFile(file: File, skrType: SkrType, year: number
 
   const buffer = await file.arrayBuffer();
   // Worker loading can fail behind some reverse proxies; disable worker for stable parsing.
-  const loadingTask = pdfjs.getDocument({ data: new Uint8Array(buffer), disableWorker: true });
-  const pdf = await loadingTask.promise;
+  const loadingTask = (pdfjs as unknown as { getDocument: (params: unknown) => { promise: Promise<unknown> } }).getDocument({
+    data: new Uint8Array(buffer),
+    disableWorker: true,
+  });
+  const pdf = (await loadingTask.promise) as {
+    numPages: number;
+    getPage: (index: number) => Promise<{ getTextContent: () => Promise<{ items: unknown[] }> }>;
+  };
 
   const rows = new Map<string, ParsedAccount>();
   const ignorePattern =
