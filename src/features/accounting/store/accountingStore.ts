@@ -1,54 +1,76 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { chartOfAccountsSeed } from "@/data/chartOfAccounts";
 import { apiFetch } from "@/lib/api";
 import type { ChartAccount, SkrType } from "../types/accountingTypes";
+
+type ImportPayload = {
+  format: "csv" | "json";
+  data: string;
+  skrType: SkrType;
+  year: number;
+  replace: boolean;
+};
 
 type AccountingState = {
   accounts: ChartAccount[];
   selectedSkr: SkrType;
+  selectedYear: number;
   companyId: string;
+  versions: Array<{ skrType: SkrType; year: number; count: number }>;
   setSelectedSkr: (skr: SkrType) => void;
+  setSelectedYear: (year: number) => void;
   hydrateFromApi: () => Promise<void>;
-  addAccount: (payload: Omit<ChartAccount, "id">) => void;
-  updateAccount: (id: string, patch: Partial<ChartAccount>) => void;
-  toggleActive: (id: string) => void;
+  importAccounts: (payload: ImportPayload) => Promise<{ imported: number }>;
+  updateAccount: (id: string, patch: Partial<ChartAccount>) => Promise<void>;
 };
 
-export const useAccountingStore = create<AccountingState>()(
-  persist(
-    (set) => ({
-      accounts: chartOfAccountsSeed,
-      selectedSkr: "SKR03",
-      companyId: "default-company",
-      setSelectedSkr: (selectedSkr) => set({ selectedSkr }),
-      hydrateFromApi: async () => {
-        try {
-          const b = await apiFetch("/api/bootstrap").then((r) => r.json());
-          const companyId = String(b.companyId ?? "default-company");
-          const items = await apiFetch(`/api/accounts?companyId=${companyId}`).then((r) => r.json());
-          if (Array.isArray(items) && items.length > 0) {
-            set({ accounts: items, companyId });
-          } else {
-            set({ companyId });
-          }
-        } catch {
-          // Fallback bleibt im lokalen Seed-State.
-        }
-      },
-      addAccount: (payload) =>
-        set((state) => ({
-          accounts: [{ ...payload, id: `${payload.skrType}-${payload.number}-${Date.now()}` }, ...state.accounts],
-        })),
-      updateAccount: (id, patch) =>
-        set((state) => ({
-          accounts: state.accounts.map((a) => (a.id === id ? { ...a, ...patch } : a)),
-        })),
-      toggleActive: (id) =>
-        set((state) => ({
-          accounts: state.accounts.map((a) => (a.id === id ? { ...a, active: !a.active } : a)),
-        })),
-    }),
-    { name: "accounting-store-v1" },
-  ),
-);
+export const useAccountingStore = create<AccountingState>()((set, get) => ({
+  accounts: [],
+  selectedSkr: "SKR03",
+  selectedYear: new Date().getFullYear(),
+  companyId: "default-company",
+  versions: [],
+  setSelectedSkr: (selectedSkr) => set({ selectedSkr }),
+  setSelectedYear: (selectedYear) => set({ selectedYear }),
+  hydrateFromApi: async () => {
+    const b = await apiFetch("/api/bootstrap").then((r) => r.json());
+    const companyId = String(b.companyId ?? "default-company");
+    const versions = await apiFetch(`/api/accounts/versions?companyId=${companyId}`).then((r) => r.json());
+    const typedVersions = Array.isArray(versions) ? versions : [];
+    const selectedYear = typedVersions[0]?.year ?? get().selectedYear;
+    const selectedSkr = typedVersions[0]?.skrType ?? get().selectedSkr;
+    const items = await apiFetch(
+      `/api/accounts?companyId=${companyId}&skrType=${selectedSkr}&year=${selectedYear}`,
+    ).then((r) => r.json());
+    set({
+      accounts: Array.isArray(items) ? items : [],
+      companyId,
+      versions: typedVersions,
+      selectedYear,
+      selectedSkr,
+    });
+  },
+  importAccounts: async (payload) => {
+    const state = get();
+    const res = await apiFetch("/api/accounts/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, companyId: state.companyId }),
+    });
+    if (!res.ok) throw new Error("Import fehlgeschlagen");
+    const data = (await res.json()) as { imported: number };
+    await get().hydrateFromApi();
+    return data;
+  },
+  updateAccount: async (id, patch) => {
+    const state = get();
+    const res = await apiFetch(`/api/accounts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...patch, companyId: state.companyId }),
+    });
+    if (!res.ok) throw new Error("Konto konnte nicht gespeichert werden");
+    set((current) => ({
+      accounts: current.accounts.map((a) => (a.id === id ? { ...a, ...patch } : a)),
+    }));
+  },
+}));

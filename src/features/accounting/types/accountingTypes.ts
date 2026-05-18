@@ -1,10 +1,21 @@
-import type { AccountType, ChartAccount, SkrType } from "@/data/chartOfAccounts";
+export type SkrType = "SKR03" | "SKR04";
+export type AccountStatus = "Aktiv" | "Inaktiv";
 
-export type { AccountType, ChartAccount, SkrType };
+export type ChartAccount = {
+  id: string;
+  number: string;
+  name: string;
+  skrType: SkrType;
+  year: number;
+  accountClass: string;
+  accountType: string;
+  taxKey: string | null;
+  active: boolean;
+};
 
 export type AccountFilters = {
   query: string;
   skrType: "Alle" | SkrType;
-  type: "Alle" | AccountType;
-  active: "Alle" | "Aktiv" | "Inaktiv";
+  year: "Alle" | number;
+  active: "Alle" | AccountStatus;
 };

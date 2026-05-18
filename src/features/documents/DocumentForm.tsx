@@ -105,8 +105,7 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
                 onSelect={(account) => {
                   onChange({
                     account: account.number,
-                    category: data.category || account.category,
-                    vatAmount: data.vatAmount || Number(((data.netAmount * account.taxRate) / 100).toFixed(2)),
+                    category: data.category || account.accountClass || account.accountType,
                   });
                 }}
               />

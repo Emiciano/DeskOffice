@@ -11,13 +11,16 @@ type Props = {
 };
 
 export function AccountAutocomplete({ value, onSelect, placeholder = "Konto suchen..." }: Props) {
-  const { accounts, selectedSkr } = useAccountingStore();
+  const { accounts, selectedSkr, selectedYear } = useAccountingStore();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
 
   const selected = accounts.find((a) => a.number === value) ?? null;
-  const source = useMemo(() => accounts.filter((a) => a.skrType === selectedSkr && a.active), [accounts, selectedSkr]);
+  const source = useMemo(
+    () => accounts.filter((a) => a.skrType === selectedSkr && a.year === selectedYear && a.active),
+    [accounts, selectedSkr, selectedYear],
+  );
   const results = useMemo(() => filterAccounts(source, query).slice(0, 12), [source, query]);
 
   return (
@@ -27,9 +30,7 @@ export function AccountAutocomplete({ value, onSelect, placeholder = "Konto such
         className="flex h-10 w-full items-center justify-between rounded-xl border border-border px-3 text-sm"
         onClick={() => setOpen((o) => !o)}
       >
-        <span className={selected ? "" : "text-muted-foreground"}>
-          {selected ? accountLabel(selected) : placeholder}
-        </span>
+        <span className={selected ? "" : "text-muted-foreground"}>{selected ? accountLabel(selected) : placeholder}</span>
       </button>
       {open ? (
         <div className="absolute z-50 mt-1 w-full rounded-xl border border-border bg-white p-2 shadow-soft">
@@ -66,10 +67,14 @@ export function AccountAutocomplete({ value, onSelect, placeholder = "Konto such
                 }}
               >
                 <div className="flex items-center justify-between">
-                  <span>{acc.number} {acc.name}</span>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{acc.taxRate}%</span>
+                  <span>
+                    {acc.number} {acc.name}
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{acc.taxKey || "-"}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">{acc.type} · {acc.category}</p>
+                <p className="text-xs text-muted-foreground">
+                  {acc.accountType} · Klasse {acc.accountClass} · {acc.skrType}-{acc.year}
+                </p>
               </button>
             ))}
             {results.length === 0 ? <p className="px-2 py-3 text-xs text-muted-foreground">Keine passenden Konten</p> : null}

@@ -142,18 +142,19 @@ model Account {
   id        String   @id @default(cuid())
   number    String
   name      String
-  type      String
   skrType   String
-  taxRate   Float
-  category  String
+  year      Int
+  accountClass String
+  accountType String
+  taxKey    String?
   active    Boolean  @default(true)
   companyId String
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([companyId, skrType])
-  @@unique([companyId, number, skrType])
+  @@index([companyId, skrType, year, active])
+  @@unique([companyId, number, skrType, year])
 }
 
 model Document {
