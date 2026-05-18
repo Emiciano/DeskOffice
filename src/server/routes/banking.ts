@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
 import { getCompanyId, requirePermissions } from "../auth.js";
+import { writeEntityAuditLog } from "../audit.js";
 
 export const bankingRouter = Router();
 
@@ -89,6 +90,17 @@ bankingRouter.patch("/transactions/:id/match", requirePermissions("banking:write
       });
 
       if (matchedInvoiceId) {
+        await tx.bankMatch.create({
+          data: {
+            companyId,
+            bankTransactionId: id,
+            targetType: "invoice",
+            targetId: matchedInvoiceId,
+            score: 1,
+            confirmed: true,
+            confirmedBy: req.auth?.userId ?? null,
+          },
+        });
         const invoiceUpdate = await tx.invoice.updateMany({
           where: { id: matchedInvoiceId, companyId },
           data: { status: "Bezahlt" },
@@ -96,6 +108,17 @@ bankingRouter.patch("/transactions/:id/match", requirePermissions("banking:write
         if (invoiceUpdate.count === 0) throw new Error("invoice not found");
       }
       if (matchedDocumentId) {
+        await tx.bankMatch.create({
+          data: {
+            companyId,
+            bankTransactionId: id,
+            targetType: "document",
+            targetId: matchedDocumentId,
+            score: 1,
+            confirmed: true,
+            confirmedBy: req.auth?.userId ?? null,
+          },
+        });
         const documentUpdate = await tx.document.updateMany({
           where: { id: matchedDocumentId, companyId },
           data: { status: "Bezahlt" },
@@ -112,6 +135,14 @@ bankingRouter.patch("/transactions/:id/match", requirePermissions("banking:write
   if (updated === "invoice-not-found") return res.status(404).json({ error: "Invoice not found" });
   if (updated === "document-not-found") return res.status(404).json({ error: "Document not found" });
   if (!updated) return res.status(404).json({ error: "Transaction not found" });
+  await writeEntityAuditLog({
+    companyId,
+    userId: req.auth?.userId,
+    action: "MATCH_CONFIRM",
+    entityType: "banking",
+    entityId: id,
+    newValue: updated,
+  });
   res.json(updated);
 });
 
@@ -139,9 +170,9 @@ bankingRouter.get("/transactions/:id/suggestions", requirePermissions("banking:r
       customer: inv.customer,
       amountGross: inv.amountGross,
       status: inv.status,
-      score: Math.abs(inv.amountGross - amountAbs),
+      score: Number((1 / (1 + Math.abs(inv.amountGross - amountAbs))).toFixed(4)),
     }))
-    .sort((a, b) => a.score - b.score)
+    .sort((a, b) => b.score - a.score)
     .slice(0, 5);
 
   res.json(suggestions);

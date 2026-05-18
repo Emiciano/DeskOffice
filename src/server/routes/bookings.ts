@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
 import { getCompanyId, requirePermissions } from "../auth.js";
+import { assertPeriodUnlocked } from "../services/period-lock.js";
+import { writeEntityAuditLog } from "../audit.js";
 
 export const bookingsRouter = Router();
 
@@ -33,6 +35,7 @@ bookingsRouter.post("/", requirePermissions("bookings:write"), async (req, res) 
 
   const document = await prisma.document.findFirst({ where: { id: payload.documentId, companyId } });
   if (!document) return res.status(404).json({ error: "Document not found" });
+  await assertPeriodUnlocked(companyId, new Date(payload.bookingDate), "booking:create");
 
   const created = await prisma.booking.create({
     data: {
@@ -51,7 +54,15 @@ bookingsRouter.post("/", requirePermissions("bookings:write"), async (req, res) 
   });
   await prisma.document.updateMany({
     where: { id: created.documentId, companyId },
-    data: { status: "Gebucht" },
+    data: { status: "Gebucht", finalizedAt: new Date() },
+  });
+  await writeEntityAuditLog({
+    companyId,
+    userId: req.auth?.userId,
+    action: "CREATE",
+    entityType: "booking",
+    entityId: created.id,
+    newValue: created,
   });
   res.status(201).json(created);
 });
@@ -63,7 +74,19 @@ bookingsRouter.post("/:id/reverse", requirePermissions("bookings:write"), async 
   const original = await prisma.booking.findFirst({ where: { id, companyId } });
   if (!original) return res.status(404).json({ error: "Booking not found" });
   if (original.status === "Storniert") return res.status(400).json({ error: "Already reversed" });
-  const updated = await prisma.booking.updateMany({ where: { id, companyId }, data: { status: "Storniert" } });
-  if (updated.count === 0) return res.status(404).json({ error: "Booking not found" });
+  await assertPeriodUnlocked(companyId, original.bookingDate, "booking:reverse");
+  const updated = await prisma.booking.update({
+    where: { id },
+    data: { status: "Storniert", deletedAt: new Date(), deletedBy: req.auth?.userId ?? null },
+  });
+  await writeEntityAuditLog({
+    companyId,
+    userId: req.auth?.userId,
+    action: "CANCEL",
+    entityType: "booking",
+    entityId: id,
+    oldValue: original,
+    newValue: updated,
+  });
   res.json({ ok: true });
 });

@@ -27,9 +27,34 @@ export async function writeAuditLog(req: Request, statusCode: number) {
       entityId,
       metadata: JSON.stringify({
         query: req.query ?? {},
+        body: req.body ?? {},
       }),
       ipAddress: req.ip ?? null,
       userAgent: req.headers["user-agent"] ?? null,
+    },
+  });
+}
+
+export async function writeEntityAuditLog(input: {
+  companyId: string;
+  userId?: string | null;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  oldValue?: unknown;
+  newValue?: unknown;
+  metadata?: unknown;
+}) {
+  await prisma.auditLog.create({
+    data: {
+      companyId: input.companyId,
+      userId: input.userId ?? null,
+      action: input.action,
+      entityType: input.entityType,
+      entityId: input.entityId ?? null,
+      oldValue: input.oldValue == null ? null : JSON.stringify(input.oldValue),
+      newValue: input.newValue == null ? null : JSON.stringify(input.newValue),
+      metadata: input.metadata == null ? null : JSON.stringify(input.metadata),
     },
   });
 }

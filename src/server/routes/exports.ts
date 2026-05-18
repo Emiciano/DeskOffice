@@ -61,13 +61,22 @@ exportsRouter.get("/:id/download", requirePermissions("exports:read"), async (re
     orderBy: { bookingDate: "asc" },
     take: 300,
   });
-  const lines = [
-    "bookingDate;debitAccount;creditAccount;amount;taxAmount;bookingText;category;status",
-    ...bookings.map(
-      (b) =>
-        `${b.bookingDate.toISOString().slice(0, 10)};${b.debitAccount};${b.creditAccount};${b.amount.toFixed(2)};${b.taxAmount.toFixed(2)};${(b.bookingText || "").replace(/;/g, ",")};${(b.category || "").replace(/;/g, ",")};${b.status}`,
-    ),
-  ];
+  const lines =
+    exp.exportType.toLowerCase() === "datev"
+      ? [
+          "umsatz;steuer;konto;gegenkonto;belegfeld1;buchungstext;datum",
+          ...bookings.map(
+            (b) =>
+              `${b.amount.toFixed(2)};${b.taxAmount.toFixed(2)};${b.debitAccount};${b.creditAccount};${b.documentId};${(b.bookingText || "").replace(/;/g, ",")};${b.bookingDate.toISOString().slice(0, 10).replace(/-/g, "")}`,
+          ),
+        ]
+      : [
+          "bookingDate;debitAccount;creditAccount;amount;taxAmount;bookingText;category;status",
+          ...bookings.map(
+            (b) =>
+              `${b.bookingDate.toISOString().slice(0, 10)};${b.debitAccount};${b.creditAccount};${b.amount.toFixed(2)};${b.taxAmount.toFixed(2)};${(b.bookingText || "").replace(/;/g, ",")};${(b.category || "").replace(/;/g, ",")};${b.status}`,
+          ),
+        ];
   const csv = lines.join("\n");
 
   await prisma.dataExport.update({

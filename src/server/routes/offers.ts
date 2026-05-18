@@ -1,25 +1,41 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
 import { getCompanyId, requirePermissions } from "../auth.js";
+import { nextSequenceNumber } from "../services/numbering.js";
+import { writeEntityAuditLog } from "../audit.js";
 
 export const offersRouter = Router();
 
 offersRouter.get("/", requirePermissions("offers:read"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
-  const items = await prisma.offer.findMany({ where: { companyId }, orderBy: { createdAt: "desc" } });
+  const items = await prisma.offer.findMany({ where: { companyId, deletedAt: null }, orderBy: { createdAt: "desc" } });
   res.json(items);
 });
 
 offersRouter.post("/", requirePermissions("offers:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
+  const body = req.body as Record<string, unknown>;
   const created = await prisma.offer.create({
     data: {
-      ...req.body,
       companyId,
-      validUntil: new Date(req.body.validUntil),
+      customer: String(body.customer ?? "").trim(),
+      amountNet: Number(body.amountNet ?? 0) || 0,
+      amountTax: Number(body.amountTax ?? 0) || 0,
+      amountGross: Number(body.amountGross ?? 0) || 0,
+      status: String(body.status ?? "Entwurf"),
+      number: String(body.number ?? "") || await nextSequenceNumber(companyId, "offer"),
+      validUntil: new Date(String(body.validUntil)),
     },
+  });
+  await writeEntityAuditLog({
+    companyId,
+    userId: req.auth?.userId,
+    action: "CREATE",
+    entityType: "offer",
+    entityId: created.id,
+    newValue: created,
   });
   res.status(201).json(created);
 });
@@ -32,14 +48,7 @@ offersRouter.post("/:id/convert", requirePermissions("offers:write"), async (req
   if (!offer) return res.status(404).json({ error: "Offer not found" });
 
   const invoice = await prisma.$transaction(async (tx) => {
-    const settings = await tx.companySettings.upsert({
-      where: { companyId: offer.companyId },
-      update: {},
-      create: { companyId: offer.companyId, companyName: "" },
-    });
-    const next = settings.invoiceNextNumber || 101;
-    const prefix = settings.invoicePrefix || "RE";
-    const number = `${prefix}-${new Date().getFullYear()}-${String(next).padStart(4, "0")}`;
+    const number = await nextSequenceNumber(offer.companyId, "invoice");
 
     const created = await tx.invoice.create({
       data: {
@@ -55,10 +64,6 @@ offersRouter.post("/:id/convert", requirePermissions("offers:write"), async (req
         companyId: offer.companyId,
       },
     });
-    await tx.companySettings.update({
-      where: { companyId: offer.companyId },
-      data: { invoiceNextNumber: next + 1 },
-    });
     await tx.offer.update({ where: { id: offer.id }, data: { status: "Angenommen" } });
     return created;
   });
@@ -69,7 +74,20 @@ offersRouter.post("/:id/convert", requirePermissions("offers:write"), async (req
 offersRouter.delete("/:id", requirePermissions("offers:write"), async (req, res) => {
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
-  const removed = await prisma.offer.deleteMany({ where: { id: req.params.id, companyId } });
-  if (removed.count === 0) return res.status(404).json({ error: "Offer not found" });
+  const prev = await prisma.offer.findFirst({ where: { id: req.params.id, companyId, deletedAt: null } });
+  if (!prev) return res.status(404).json({ error: "Offer not found" });
+  const removed = await prisma.offer.update({
+    where: { id: req.params.id },
+    data: { deletedAt: new Date(), deletedBy: req.auth?.userId ?? null },
+  });
+  await writeEntityAuditLog({
+    companyId,
+    userId: req.auth?.userId,
+    action: "SOFT_DELETE",
+    entityType: "offer",
+    entityId: req.params.id,
+    oldValue: prev,
+    newValue: removed,
+  });
   res.status(204).send();
 });

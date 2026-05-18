@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
 import { getCompanyId, requirePermissions } from "../auth.js";
+import { assertPeriodUnlocked } from "../services/period-lock.js";
+import { nextSequenceNumber } from "../services/numbering.js";
+import { writeEntityAuditLog } from "../audit.js";
 
 export const invoicesRouter = Router();
 
@@ -57,15 +60,24 @@ invoicesRouter.post("/", requirePermissions("invoices:write"), async (req, res) 
     items?: Array<{ description: string; quantity: number; unitPrice: number; taxRate: number }>;
   };
 
-  const normalizedItems = items.map((item) => {
+  const normalizedItems = items.map((item: { description: string; quantity: number; unitPrice: number; taxRate: number; taxMode?: string; taxKey?: string; reverseCharge?: boolean; euSupply?: boolean; smallBusiness?: boolean; }) => {
     const amountNet = Number((item.quantity * item.unitPrice).toFixed(2));
-    const amountTax = Number(((amountNet * item.taxRate) / 100).toFixed(2));
+    const taxMode = String(item.taxMode ?? "standard");
+    const rate = Number(item.taxRate ?? 0);
+    const amountTax = ["taxfree", "reverseCharge", "smallBusiness"].includes(taxMode)
+      ? 0
+      : Number(((amountNet * rate) / 100).toFixed(2));
     const amountGross = Number((amountNet + amountTax).toFixed(2));
     return {
       description: item.description,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
-      taxRate: item.taxRate,
+      taxRate: rate,
+      taxMode,
+      taxKey: item.taxKey ?? null,
+      reverseCharge: Boolean(item.reverseCharge ?? false),
+      euSupply: Boolean(item.euSupply ?? false),
+      smallBusiness: Boolean(item.smallBusiness ?? false),
       amountNet,
       amountTax,
       amountGross,
@@ -86,10 +98,10 @@ invoicesRouter.post("/", requirePermissions("invoices:write"), async (req, res) 
       create: { companyId, companyName: "" },
     });
 
-    const next = settings.invoiceNextNumber || 101;
-    const prefix = settings.invoicePrefix || "RE";
-    const autoNumber = `${prefix}-${new Date().getFullYear()}-${String(next).padStart(4, "0")}`;
+    const autoNumber = await nextSequenceNumber(companyId, "invoice");
     const finalNumber = raw.number && raw.number.trim() ? raw.number.trim() : autoNumber;
+    const dueDate = new Date(raw.dueDate);
+    await assertPeriodUnlocked(companyId, dueDate, "invoice:create");
 
     const invoice = await tx.invoice.create({
       data: {
@@ -98,10 +110,11 @@ invoicesRouter.post("/", requirePermissions("invoices:write"), async (req, res) 
         customer: raw.customer,
         status: raw.status,
         kind: raw.kind ?? "Rechnung",
+        taxMode: String((req.body as Record<string, unknown>).taxMode ?? "standard"),
         amountNet,
         amountTax,
         amountGross,
-        dueDate: new Date(raw.dueDate),
+        dueDate,
         items: {
           create: normalizedItems,
         },
@@ -109,12 +122,15 @@ invoicesRouter.post("/", requirePermissions("invoices:write"), async (req, res) 
       include: { items: true },
     });
 
-    await tx.companySettings.update({
-      where: { companyId },
-      data: { invoiceNextNumber: next + 1 },
-    });
-
     return invoice;
+  });
+  await writeEntityAuditLog({
+    companyId,
+    userId: req.auth?.userId,
+    action: "CREATE",
+    entityType: "invoice",
+    entityId: created.id,
+    newValue: created,
   });
   res.status(201).json(created);
 });
@@ -128,8 +144,40 @@ invoicesRouter.patch("/:id/status", requirePermissions("invoices:write"), async 
   }
   const companyId = getCompanyId(req);
   if (!companyId) return res.status(400).json({ error: "companyId required" });
-  const updated = await prisma.invoice.updateMany({ where: { id, companyId }, data: { status } });
-  if (updated.count === 0) return res.status(404).json({ error: "Invoice not found" });
+  const prev = await prisma.invoice.findFirst({ where: { id, companyId } });
+  if (!prev) return res.status(404).json({ error: "Invoice not found" });
+  await assertPeriodUnlocked(companyId, prev.dueDate, "invoice:update-status");
+  const updated = await prisma.invoice.update({
+    where: { id },
+    data: {
+      status,
+      finalizedAt: status === "Versendet" || status === "Bezahlt" ? (prev.finalizedAt ?? new Date()) : prev.finalizedAt,
+    },
+  });
+  if ((status === "Versendet" || status === "Bezahlt") && req.body.pdfData) {
+    const latest = await prisma.invoiceSnapshot.findFirst({
+      where: { invoiceId: id },
+      orderBy: { version: "desc" },
+    });
+    await prisma.invoiceSnapshot.create({
+      data: {
+        companyId,
+        invoiceId: id,
+        version: (latest?.version ?? 0) + 1,
+        pdfData: String(req.body.pdfData),
+        hash: `${id}-${Date.now()}`,
+      },
+    });
+  }
+  await writeEntityAuditLog({
+    companyId,
+    userId: req.auth?.userId,
+    action: "UPDATE_STATUS",
+    entityType: "invoice",
+    entityId: id,
+    oldValue: prev,
+    newValue: updated,
+  });
   res.json({ ok: true });
 });
 
@@ -165,14 +213,7 @@ invoicesRouter.post("/:id/recurring-next", requirePermissions("invoices:write"),
   const nextDueDate = new Date(source.dueDate);
   nextDueDate.setMonth(nextDueDate.getMonth() + 1);
 
-  const settings = await prisma.companySettings.upsert({
-    where: { companyId },
-    update: {},
-    create: { companyId, companyName: "" },
-  });
-  const next = settings.invoiceNextNumber || 101;
-  const prefix = settings.invoicePrefix || "RE";
-  const number = `${prefix}-${new Date().getFullYear()}-${String(next).padStart(4, "0")}`;
+  const number = await nextSequenceNumber(companyId, "invoice");
 
   const created = await prisma.invoice.create({
     data: {
@@ -191,6 +232,11 @@ invoicesRouter.post("/:id/recurring-next", requirePermissions("invoices:write"),
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           taxRate: item.taxRate,
+          taxMode: item.taxMode,
+          taxKey: item.taxKey,
+          reverseCharge: item.reverseCharge,
+          euSupply: item.euSupply,
+          smallBusiness: item.smallBusiness,
           amountNet: item.amountNet,
           amountTax: item.amountTax,
           amountGross: item.amountGross,
@@ -199,9 +245,58 @@ invoicesRouter.post("/:id/recurring-next", requirePermissions("invoices:write"),
     },
     include: { items: true },
   });
-  await prisma.companySettings.update({
-    where: { companyId },
-    data: { invoiceNextNumber: next + 1 },
-  });
   res.status(201).json(created);
+});
+
+invoicesRouter.post("/:id/cancel", requirePermissions("invoices:write"), async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
+  const { id } = req.params;
+  const reason = String(req.body.reason ?? "Storno");
+
+  const prev = await prisma.invoice.findFirst({ where: { id, companyId } });
+  if (!prev) return res.status(404).json({ error: "Invoice not found" });
+  await assertPeriodUnlocked(companyId, prev.dueDate, "invoice:cancel");
+
+  const updated = await prisma.invoice.update({
+    where: { id },
+    data: {
+      status: "Storniert",
+      cancelledAt: new Date(),
+      cancellationReason: reason,
+    },
+  });
+  await writeEntityAuditLog({
+    companyId,
+    userId: req.auth?.userId,
+    action: "CANCEL",
+    entityType: "invoice",
+    entityId: id,
+    oldValue: prev,
+    newValue: updated,
+    metadata: { reason },
+  });
+  res.json(updated);
+});
+
+invoicesRouter.delete("/:id", requirePermissions("invoices:write"), async (req, res) => {
+  const companyId = getCompanyId(req);
+  if (!companyId) return res.status(400).json({ error: "companyId required" });
+  const { id } = req.params;
+  const prev = await prisma.invoice.findFirst({ where: { id, companyId } });
+  if (!prev) return res.status(404).json({ error: "Invoice not found" });
+  const updated = await prisma.invoice.update({
+    where: { id },
+    data: { deletedAt: new Date(), deletedBy: req.auth?.userId ?? null },
+  });
+  await writeEntityAuditLog({
+    companyId,
+    userId: req.auth?.userId,
+    action: "SOFT_DELETE",
+    entityType: "invoice",
+    entityId: id,
+    oldValue: prev,
+    newValue: updated,
+  });
+  res.status(204).send();
 });

@@ -33,6 +33,12 @@ model Company {
   subscriptions Subscription[]
   auditLogs AuditLog[]
   roles Role[]
+  taxProfile TaxProfile?
+  numberSequences NumberSequence[]
+  periodLocks PeriodLock[]
+  backgroundJobs BackgroundJob[]
+  bankMatches BankMatch[]
+  invoiceSnapshots InvoiceSnapshot[]
 }
 
 model User {
@@ -169,6 +175,15 @@ model Document {
   partner       String?
   documentDate  DateTime?
   dueDate       DateTime?
+  taxRate       Float?
+  taxMode       String?   @default("standard")
+  taxKey        String?
+  reverseCharge Boolean   @default(false)
+  euSupply      Boolean   @default(false)
+  smallBusiness Boolean   @default(false)
+  finalizedAt   DateTime?
+  deletedAt     DateTime?
+  deletedBy     String?
   companyId     String
   company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   booking       Booking?
@@ -177,6 +192,7 @@ model Document {
   updatedAt     DateTime  @updatedAt
 
   @@index([companyId, status])
+  @@index([companyId, deletedAt])
 }
 
 model DocumentFile {
@@ -211,6 +227,9 @@ model Booking {
   status         String
   companyId      String
   company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  finalizedAt    DateTime?
+  deletedAt      DateTime?
+  deletedBy      String?
   createdAt      DateTime @default(now())
 }
 
@@ -225,14 +244,22 @@ model Invoice {
   status      String
   sourceOfferId String?
   kind        String   @default("Rechnung")
+  taxMode     String?  @default("standard")
+  finalizedAt DateTime?
+  cancelledAt DateTime?
+  cancellationReason String?
+  deletedAt   DateTime?
+  deletedBy   String?
   companyId   String
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   items       InvoiceItem[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   eInvoice    EInvoiceDocument?
+  snapshots   InvoiceSnapshot[]
 
   @@index([companyId, status])
+  @@index([companyId, deletedAt])
   @@unique([companyId, number])
 }
 
@@ -276,6 +303,11 @@ model InvoiceItem {
   quantity    Float
   unitPrice   Float
   taxRate     Float
+  taxMode     String?  @default("standard")
+  taxKey      String?
+  reverseCharge Boolean @default(false)
+  euSupply    Boolean  @default(false)
+  smallBusiness Boolean @default(false)
   amountNet   Float
   amountTax   Float
   amountGross Float
@@ -294,6 +326,8 @@ model Offer {
   status      String
   companyId   String
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  deletedAt   DateTime?
+  deletedBy   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -316,12 +350,15 @@ model BankTransaction {
   matchedRuleId String?
   matchedInvoiceId String?
   matchedDocumentId String?
+  deletedAt   DateTime?
+  deletedBy   String?
   bankAccountId String?
   bankAccount   BankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   companyId   String
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  matches     BankMatch[]
 
   @@index([companyId, bookingDate])
 }
@@ -455,6 +492,8 @@ model AuditLog {
   action     String
   entityType String
   entityId   String?
+  oldValue   String?  @db.LongText
+  newValue   String?  @db.LongText
   metadata   String?  @db.LongText
   ipAddress  String?
   userAgent  String?
@@ -477,4 +516,102 @@ model AdvisorInvite {
 
   @@index([companyId, status])
   @@unique([companyId, email, status])
+}
+
+model TaxProfile {
+  id                  String   @id @default(cuid())
+  companyId           String   @unique
+  company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  taxationType        String   @default("regular")
+  defaultVatRate      Float    @default(19)
+  allowedVatRates     String   @db.LongText
+  reverseChargeEnabled Boolean @default(false)
+  euVatEnabled        Boolean  @default(true)
+  smallBusinessNote   String?
+  taxNumber           String?
+  vatId               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model NumberSequence {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  scope       String
+  prefix      String
+  year        Int
+  nextNumber  Int      @default(1)
+  padding     Int      @default(4)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, scope, year])
+  @@index([companyId, scope])
+}
+
+model InvoiceSnapshot {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  version     Int      @default(1)
+  pdfData     String   @db.LongText
+  hash        String
+  immutableAt DateTime @default(now())
+
+  @@unique([invoiceId, version])
+  @@index([companyId, immutableAt])
+}
+
+model PeriodLock {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  year        Int
+  month       Int
+  locked      Boolean  @default(true)
+  reason      String?
+  lockedBy    String?
+  lockedAt    DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, year, month])
+  @@index([companyId, year])
+}
+
+model BackgroundJob {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  jobType     String
+  payload     String   @db.LongText
+  status      String   @default("pending")
+  attempts    Int      @default(0)
+  error       String?
+  result      String?  @db.LongText
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId, status, jobType])
+}
+
+model BankMatch {
+  id                String   @id @default(cuid())
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bankTransactionId String
+  bankTransaction   BankTransaction @relation(fields: [bankTransactionId], references: [id], onDelete: Cascade)
+  targetType        String
+  targetId          String
+  score             Float
+  confirmed         Boolean  @default(false)
+  confirmedBy       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([companyId, bankTransactionId, score])
 }
