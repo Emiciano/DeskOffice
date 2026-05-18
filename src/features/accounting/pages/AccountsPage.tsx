@@ -88,10 +88,9 @@ export function AccountsPage() {
         return;
       }
 
-      const effectiveFormat = importFormat === "pdf" ? "json" : importFormat;
       await importAccounts({
         data: importText,
-        format: effectiveFormat,
+        format: importFormat,
         replace: replaceCurrent,
         skrType: selectedSkr,
         year: selectedYear,
@@ -156,11 +155,7 @@ export function AccountsPage() {
             <option>Inaktiv</option>
           </select>
           <div className="flex gap-2">
-            <Button
-              type="button"
-              className="h-10"
-              onClick={() => setFilters(pendingFilters)}
-            >
+            <Button type="button" className="h-10" onClick={() => setFilters(pendingFilters)}>
               Übernehmen
             </Button>
             <Button
@@ -195,7 +190,7 @@ export function AccountsPage() {
                 <th>Jahr</th>
                 <th>Klasse</th>
                 <th>Typ</th>
-                <th>Steuerschluessel</th>
+                <th>Steuerschlüssel</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -350,3 +345,4 @@ export function AccountsPage() {
     </div>
   );
 }
+
