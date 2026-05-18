@@ -188,6 +188,7 @@ export function DocumentsPage() {
       <div className="grid gap-4 xl:grid-cols-5">
         <div className={`${selected ? "xl:col-span-4" : "xl:col-span-5"} space-y-3`}>
           <DocumentUpload
+            disabled={!companyId}
             onUploadDone={async (payload) => {
               setSaveError("");
               let createdId = "";
@@ -304,7 +305,58 @@ export function DocumentsPage() {
                 />
               </div>
               <div className="mt-2 flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  className="text-rose-600"
+                  onClick={async () => {
+                    const res = await apiFetch(`/api/documents/${editingDocument.id}?companyId=${companyId}`, {
+                      method: "DELETE",
+                    });
+                    if (!res.ok) {
+                      setSaveError("Beleg konnte nicht geloescht werden.");
+                      return;
+                    }
+                    setDocuments(documents.filter((d) => d.id !== editingDocument.id));
+                    setSelectedId(null);
+                    setEditingId(null);
+                    setCaptureOpen(false);
+                    setSaveError("");
+                  }}
+                >
+                  Loeschen
+                </Button>
                 <Button variant="outline" onClick={() => setCaptureOpen(false)}>Abbrechen</Button>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    const patch: Partial<DocumentData> = editingDocument.data;
+                    const res = await apiFetch(`/api/documents/${editingDocument.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        companyId,
+                        status: "Entwurf",
+                        partner: patch.partner,
+                        category: patch.category,
+                        accountNumber: patch.account,
+                        grossAmount: patch.grossAmount,
+                        taxAmount: patch.vatAmount,
+                        netAmount: patch.netAmount,
+                        documentDate: patch.documentDate,
+                        dueDate: patch.dueDate,
+                      }),
+                    });
+                    if (!res.ok) {
+                      setSaveError("Entwurf konnte nicht gespeichert werden.");
+                      return;
+                    }
+                    setDocumentStatus(editingDocument.id, "Entwurf");
+                    setCaptureOpen(false);
+                    setSaveError("");
+                  }}
+                >
+                  Als Entwurf speichern
+                </Button>
                 <Button
                   onClick={async () => {
                     setDocumentStatus(editingDocument.id, "Geprueft");
