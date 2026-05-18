@@ -143,9 +143,9 @@ model Account {
   number    String
   name      String
   skrType   String
-  year      Int
-  accountClass String
-  accountType String
+  year      Int      @default(2026)
+  accountClass String @default("")
+  accountType String @default("")
   taxKey    String?
   active    Boolean  @default(true)
   companyId String
