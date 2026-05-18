@@ -42,7 +42,7 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-6">
       <Card className="w-full max-w-md space-y-4">
         <div>
-          <h1 className="text-2xl font-semibold">Buchhaltung CMS</h1>
+          <h1 className="text-2xl font-semibold">LunaOffice</h1>
           <p className="text-sm text-muted-foreground">
             {mode === "login" ? "Einloggen" : "Neues Konto und Firma erstellen"}
           </p>
