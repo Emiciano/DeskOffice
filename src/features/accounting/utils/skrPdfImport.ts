@@ -46,12 +46,13 @@ function sanitizeName(raw: string): string {
 
 export async function parseSkrPdfFile(file: File, skrType: SkrType, year: number): Promise<ParsedAccount[]> {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const workerModule = await import("pdfjs-dist/build/pdf.worker.min.mjs?worker");
+  const PdfWorker = workerModule.default as unknown as { new (): Worker };
+  pdfjs.GlobalWorkerOptions.workerPort = new PdfWorker();
 
   const buffer = await file.arrayBuffer();
-  // Worker loading can fail behind some reverse proxies; disable worker for stable parsing.
   const loadingTask = (pdfjs as unknown as { getDocument: (params: unknown) => { promise: Promise<unknown> } }).getDocument({
     data: new Uint8Array(buffer),
-    disableWorker: true,
   });
   const pdf = (await loadingTask.promise) as {
     numPages: number;
