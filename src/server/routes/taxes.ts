@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
 import { getCompanyId } from "../auth.js";
-import { Prisma } from "@prisma/client";
 
 export const taxesRouter = Router();
 type TaxBooking = {
@@ -68,7 +67,8 @@ async function loadOrCreateSnapshot(companyId: string, year: number, month: numb
       },
     });
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+    const prismaCode = (err as { code?: unknown } | null)?.code;
+    if (prismaCode === "P2002") {
       const retry = await prisma.taxSnapshot.findUnique({
         where: { companyId_year_month: { companyId, year, month } },
       });
