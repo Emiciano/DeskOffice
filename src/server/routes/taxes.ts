@@ -3,6 +3,12 @@ import { prisma } from "../db.js";
 import { getCompanyId } from "../auth.js";
 
 export const taxesRouter = Router();
+type TaxBooking = {
+  creditAccount: string;
+  debitAccount: string;
+  taxAmount: number;
+  amount: number;
+};
 
 function parseYearMonth(query: Record<string, unknown>) {
   const year = Number(query.year ?? new Date().getFullYear());
@@ -20,12 +26,18 @@ async function loadOrCreateSnapshot(companyId: string, year: number, month: numb
 
   const monthStart = new Date(year, month - 1, 1);
   const monthEnd = new Date(year, month, 1);
-  const bookings = await prisma.booking.findMany({
+  const bookings = (await prisma.booking.findMany({
     where: {
       companyId,
       bookingDate: { gte: monthStart, lt: monthEnd },
     },
-  });
+    select: {
+      creditAccount: true,
+      debitAccount: true,
+      taxAmount: true,
+      amount: true,
+    },
+  })) as TaxBooking[];
 
   const vatOutput19 = bookings
     .filter((b) => b.creditAccount.startsWith("84"))
