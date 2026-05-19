@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Search, Star, History, Grid3X3, Building2, BriefcaseBusiness, Car, MonitorCog, PenBox, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,19 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
     onChange({ category: draftCategory });
     setCategoryModalOpen(false);
   };
+
+  useEffect(() => {
+    const modal = document.querySelector<HTMLElement>("[data-doc-capture-modal='true']");
+    if (!modal) return;
+    if (categoryModalOpen) {
+      modal.classList.add("xl:-translate-x-[320px]");
+    } else {
+      modal.classList.remove("xl:-translate-x-[320px]");
+    }
+    return () => {
+      modal.classList.remove("xl:-translate-x-[320px]");
+    };
+  }, [categoryModalOpen]);
 
   return (
     <>
@@ -195,9 +209,9 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
         </Card>
       </div>
 
-      {categoryModalOpen ? (
-        <div className="fixed right-6 top-20 z-[140] w-[560px] max-w-[42vw]">
-          <div className="h-[82vh] rounded-3xl border border-border bg-card shadow-2xl">
+      {categoryModalOpen ? createPortal(
+        <div className="fixed left-[calc(50%+380px)] top-[56px] z-[180] hidden w-[520px] max-w-[36vw] xl:block">
+          <div className="h-[84vh] rounded-3xl border border-border bg-background shadow-2xl">
             <div className="flex h-full flex-col p-4">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-2xl font-semibold">Kategorie auswählen</h3>
@@ -306,7 +320,7 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
             </div>
           </div>
         </div>
-      ) : null}
+      , document.body) : null}
     </>
   );
 }

@@ -310,7 +310,7 @@ export function DocumentsPage() {
       </div>
 
       <Dialog open={captureOpen} onOpenChange={setCaptureOpen}>
-        <DialogContent className="h-[96vh] max-h-[96vh] overflow-hidden p-3">
+        <DialogContent className="h-[96vh] max-h-[96vh] overflow-visible p-3 transition-transform duration-200" data-doc-capture-modal="true">
           {editingDocument ? (
             <div className="flex h-full min-h-0 flex-col">
               <div className="mb-2 flex items-center gap-2 text-sm">
