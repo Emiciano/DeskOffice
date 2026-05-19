@@ -1,3 +1,5 @@
+import { useMemo, useState } from "react";
+import { Search, Star, History, Grid3X3, Building2, BriefcaseBusiness, Car, MonitorCog, PenBox, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AccountAutocomplete } from "@/features/accounting/components/AccountAutocomplete";
@@ -18,147 +20,294 @@ const frame = (name: keyof DocumentData, confidence?: Record<keyof DocumentData,
 const supplierHints = ["CloudStack GmbH", "Nordlicht Media GmbH", "Musterlieferant AG"];
 const categories = ["Software", "Werbung", "Büro", "Reisekosten", "Beratung", "Sonstiges"];
 
+const categoryCards = [
+  { name: "Dienstleister, Agenturen & Freelancer", number: "5900", group: "Dienstleistung / Beratung", desc: "Externe Dienstleistungen für Projekte, Agenturarbeit und freie Mitarbeit." },
+  { name: "Marketing & Werbung", number: "6600", group: "Werbung", desc: "Anzeigen, Sponsoring, Flyer, Online-Marketing und Kampagnenkosten." },
+  { name: "Bürobedarf", number: "6815", group: "Büro", desc: "Verbrauchsmaterial wie Papier, Stifte, Etiketten und Bürokleinteile." },
+  { name: "Software Abos & Lizenzen", number: "6837", group: "Software", desc: "SaaS-Abos, Programme, Lizenzen und Cloud-Tools." },
+  { name: "Reisekosten", number: "6670", group: "Reisekosten", desc: "Bahn, Hotel, Taxi, Flüge und Reisekosten im Geschäftskontext." },
+  { name: "Fahrzeugkosten", number: "4530", group: "Fahrzeug", desc: "Tanken, Wartung, Versicherung und betriebliche Fahrzeugkosten." },
+];
+
 export function DocumentForm({ data, confidence, onChange, onCreateCustomer, creatingContact }: Props) {
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [categorySearch, setCategorySearch] = useState("");
+  const [categoryNav, setCategoryNav] = useState("favoriten");
+  const [draftCategory, setDraftCategory] = useState(data.category ?? "");
+
+  const filteredCards = useMemo(() => {
+    const q = categorySearch.trim().toLowerCase();
+    if (!q) return categoryCards;
+    return categoryCards.filter((c) => `${c.name} ${c.number} ${c.group} ${c.desc}`.toLowerCase().includes(q));
+  }, [categorySearch]);
+
+  const applyCategory = () => {
+    onChange({ category: draftCategory });
+    setCategoryModalOpen(false);
+  };
+
   return (
-    <div className="space-y-3">
-      <Card className="p-4">
-        <h3 className="mb-3 text-lg font-semibold">Belegdaten</h3>
-        <div className="grid gap-2.5 md:grid-cols-2">
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-xs text-muted-foreground">Lieferant</label>
-            <div className="flex gap-2">
-              <input
-                list="supplier-hints"
-                className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("partner", confidence)}`}
-                value={data.partner}
-                placeholder="Lieferant eingeben oder wählen"
-                onChange={(e) => onChange({ partner: e.target.value })}
+    <>
+      <div className={`space-y-3 transition-transform duration-200 ${categoryModalOpen ? "-translate-x-10 xl:-translate-x-20" : ""}`}>
+        <Card className="p-4">
+          <h3 className="mb-3 text-lg font-semibold">Belegdaten</h3>
+          <div className="grid gap-2.5 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <label className="mb-1 block text-xs text-muted-foreground">Lieferant</label>
+              <div className="flex gap-2">
+                <input
+                  list="supplier-hints"
+                  className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("partner", confidence)}`}
+                  value={data.partner}
+                  placeholder="Lieferant eingeben oder wählen"
+                  onChange={(e) => onChange({ partner: e.target.value })}
+                />
+                <button
+                  type="button"
+                  className="h-10 shrink-0 rounded-xl border border-border px-3 text-sm hover:bg-muted disabled:opacity-60"
+                  onClick={() => void onCreateCustomer(data.partner)}
+                  disabled={!data.partner.trim() || creatingContact}
+                >
+                  {creatingContact ? "Anlegen..." : "Kunde neu"}
+                </button>
+              </div>
+              <datalist id="supplier-hints">
+                {supplierHints.map((s) => <option key={s} value={s} />)}
+              </datalist>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Belegtyp</label>
+              <select
+                className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("type", confidence)}`}
+                value={data.type}
+                onChange={(e) => onChange({ type: e.target.value as DocumentData["type"] })}
+              >
+                {["Einnahme", "Einnahmenminderung", "Ausgabe", "Ausgabenminderung"].map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Belegnummer</label>
+              <Input className={frame("invoiceNumber", confidence)} value={data.invoiceNumber} onChange={(e) => onChange({ invoiceNumber: e.target.value })} />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Belegdatum</label>
+              <Input className={frame("documentDate", confidence)} type="date" value={data.documentDate} onChange={(e) => onChange({ documentDate: e.target.value })} />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Fälligkeitsdatum</label>
+              <Input className={frame("dueDate", confidence)} type="date" value={data.dueDate} onChange={(e) => onChange({ dueDate: e.target.value })} />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="mb-1 block text-xs text-muted-foreground">Beschreibung (optional)</label>
+              <textarea
+                className={`min-h-16 w-full rounded-xl border border-border px-3 py-2 text-sm ${frame("notes", confidence)}`}
+                maxLength={255}
+                value={data.notes}
+                onChange={(e) => onChange({ notes: e.target.value })}
               />
+              <p className="mt-1 text-right text-xs text-muted-foreground">{data.notes.length} / 255</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="mb-3 text-lg font-semibold">Kategorisierung</h3>
+          <div className="grid gap-2.5 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <label className="mb-1 block text-xs text-muted-foreground">Kategorie</label>
               <button
                 type="button"
-                className="h-10 shrink-0 rounded-xl border border-border px-3 text-sm hover:bg-muted disabled:opacity-60"
-                onClick={() => void onCreateCustomer(data.partner)}
-                disabled={!data.partner.trim() || creatingContact}
+                className={`h-10 w-full rounded-xl border border-border px-3 text-left text-sm hover:bg-muted ${frame("category", confidence)}`}
+                onClick={() => {
+                  setDraftCategory(data.category ?? "");
+                  setCategoryModalOpen(true);
+                }}
               >
-                {creatingContact ? "Anlegen..." : "Kunde neu"}
+                {data.category || "Suchbegriff, Kategorie oder Sachkonto ..."}
               </button>
             </div>
-            <datalist id="supplier-hints">
-              {supplierHints.map((s) => <option key={s} value={s} />)}
-            </datalist>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Belegtyp</label>
-            <select
-              className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("type", confidence)}`}
-              value={data.type}
-              onChange={(e) => onChange({ type: e.target.value as DocumentData["type"] })}
-            >
-              {["Einnahme", "Einnahmenminderung", "Ausgabe", "Ausgabenminderung"].map((s) => <option key={s}>{s}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Belegnummer</label>
-            <Input className={frame("invoiceNumber", confidence)} value={data.invoiceNumber} onChange={(e) => onChange({ invoiceNumber: e.target.value })} />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Belegdatum</label>
-            <Input className={frame("documentDate", confidence)} type="date" value={data.documentDate} onChange={(e) => onChange({ documentDate: e.target.value })} />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Fälligkeitsdatum</label>
-            <Input className={frame("dueDate", confidence)} type="date" value={data.dueDate} onChange={(e) => onChange({ dueDate: e.target.value })} />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-xs text-muted-foreground">Beschreibung (optional)</label>
-            <textarea
-              className={`min-h-16 w-full rounded-xl border border-border px-3 py-2 text-sm ${frame("notes", confidence)}`}
-              maxLength={255}
-              value={data.notes}
-              onChange={(e) => onChange({ notes: e.target.value })}
-            />
-            <p className="mt-1 text-right text-xs text-muted-foreground">{data.notes.length} / 255</p>
-          </div>
-        </div>
-      </Card>
-
-      <Card className="p-4">
-        <h3 className="mb-3 text-lg font-semibold">Kategorisierung</h3>
-        <div className="grid gap-2.5 md:grid-cols-2">
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-xs text-muted-foreground">Kategorie</label>
-            <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("category", confidence)}`} value={data.category} onChange={(e) => onChange({ category: e.target.value })}>
-              <option value="">Suchbegriff, Kategorie oder Sachkonto ...</option>
-              {categories.map((c) => <option key={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Buchungskonto</label>
-            <div className={frame("account", confidence)}>
-              <AccountAutocomplete
-                value={data.account}
-                onSelect={(account) => {
-                  onChange({
-                    account: account.number,
-                    category: data.category || account.accountClass || account.accountType,
-                  });
-                }}
-              />
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Buchungskonto</label>
+              <div className={frame("account", confidence)}>
+                <AccountAutocomplete
+                  value={data.account}
+                  onSelect={(account) => {
+                    onChange({
+                      account: account.number,
+                      category: data.category || account.accountClass || account.accountType,
+                    });
+                  }}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Kostenstelle</label>
+              <Input className={frame("costCenter", confidence)} value={data.costCenter} onChange={(e) => onChange({ costCenter: e.target.value })} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Nettobetrag</label>
+              <Input className={frame("netAmount", confidence)} type="number" value={data.netAmount} onChange={(e) => onChange({ netAmount: Number(e.target.value) })} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Umsatzsteuer</label>
+              <Input className={frame("vatAmount", confidence)} type="number" value={data.vatAmount} onChange={(e) => onChange({ vatAmount: Number(e.target.value) })} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Gesamtbetrag inkl. Steuer</label>
+              <Input className={frame("grossAmount", confidence)} type="number" value={data.grossAmount} onChange={(e) => onChange({ grossAmount: Number(e.target.value) })} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Währung</label>
+              <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("currency", confidence)}`} value={data.currency} onChange={(e) => onChange({ currency: e.target.value })}>
+                <option>EUR</option>
+                <option>USD</option>
+                <option>CHF</option>
+              </select>
             </div>
           </div>
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Kostenstelle</label>
-            <Input className={frame("costCenter", confidence)} value={data.costCenter} onChange={(e) => onChange({ costCenter: e.target.value })} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Nettobetrag</label>
-            <Input className={frame("netAmount", confidence)} type="number" value={data.netAmount} onChange={(e) => onChange({ netAmount: Number(e.target.value) })} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Umsatzsteuer</label>
-            <Input className={frame("vatAmount", confidence)} type="number" value={data.vatAmount} onChange={(e) => onChange({ vatAmount: Number(e.target.value) })} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Gesamtbetrag inkl. Steuer</label>
-            <Input className={frame("grossAmount", confidence)} type="number" value={data.grossAmount} onChange={(e) => onChange({ grossAmount: Number(e.target.value) })} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Währung</label>
-            <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("currency", confidence)}`} value={data.currency} onChange={(e) => onChange({ currency: e.target.value })}>
-              <option>EUR</option>
-              <option>USD</option>
-              <option>CHF</option>
-            </select>
-          </div>
-        </div>
-      </Card>
+        </Card>
 
-      <Card className="p-4">
-        <h3 className="mb-3 text-lg font-semibold">Belegstatus</h3>
-        <div className="grid gap-2.5 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Zahlungsstatus</label>
-            <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("paymentStatus", confidence)}`} value={data.paymentStatus} onChange={(e) => onChange({ paymentStatus: e.target.value as DocumentData["paymentStatus"] })}>
-              {["Offen", "Teilweise bezahlt", "Bezahlt"].map((s) => <option key={s}>{s}</option>)}
-            </select>
+        <Card className="p-4">
+          <h3 className="mb-3 text-lg font-semibold">Belegstatus</h3>
+          <div className="grid gap-2.5 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Zahlungsstatus</label>
+              <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("paymentStatus", confidence)}`} value={data.paymentStatus} onChange={(e) => onChange({ paymentStatus: e.target.value as DocumentData["paymentStatus"] })}>
+                {["Offen", "Teilweise bezahlt", "Bezahlt"].map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Zahlungsart</label>
+              <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("paymentMethod", confidence)}`} value={data.paymentMethod} onChange={(e) => onChange({ paymentMethod: e.target.value as DocumentData["paymentMethod"] })}>
+                <option value="Ueberweisung">Überweisung</option>
+                <option value="Lastschrift">Lastschrift</option>
+                <option value="Kreditkarte">Kreditkarte</option>
+                <option value="Bar">Bar</option>
+                <option value="Sonstiges">Sonstiges</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Zahlungsart</label>
-            <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("paymentMethod", confidence)}`} value={data.paymentMethod} onChange={(e) => onChange({ paymentMethod: e.target.value as DocumentData["paymentMethod"] })}>
-              <option value="Ueberweisung">Überweisung</option>
-              <option value="Lastschrift">Lastschrift</option>
-              <option value="Kreditkarte">Kreditkarte</option>
-              <option value="Bar">Bar</option>
-              <option value="Sonstiges">Sonstiges</option>
-            </select>
+        </Card>
+      </div>
+
+      {categoryModalOpen ? (
+        <div className="pointer-events-none fixed inset-0 z-[120] flex items-center justify-end p-4">
+          <div className="pointer-events-auto h-[88vh] w-[min(920px,90vw)] rounded-3xl border border-border bg-card shadow-2xl">
+            <div className="flex h-full flex-col p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-2xl font-semibold">Kategorie auswählen</h3>
+                <button
+                  type="button"
+                  className="rounded-full p-2 hover:bg-muted"
+                  onClick={() => setCategoryModalOpen(false)}
+                  aria-label="Schließen"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="relative mb-3">
+                <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="h-11 pl-9"
+                  placeholder="Suche nach Stichwort, Kategorie oder Buchhaltungskonto"
+                  value={categorySearch}
+                  onChange={(e) => setCategorySearch(e.target.value)}
+                />
+              </div>
+
+              <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] gap-4">
+                <aside className="rounded-2xl border border-border bg-background/60 p-3">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Übersicht</p>
+                  {[
+                    { key: "favoriten", label: "Favoriten", icon: Star },
+                    { key: "zuletzt", label: "Zuletzt verwendet", icon: History },
+                    { key: "alle", label: "Alle Kategorien", icon: Grid3X3 },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const active = categoryNav === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setCategoryNav(item.key)}
+                        className={`mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}
+                      >
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                        {item.label}
+                      </button>
+                    );
+                  })}
+
+                  <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Ausgaben</p>
+                  {[
+                    { icon: Building2, label: "Banken / Finanzen" },
+                    { icon: BriefcaseBusiness, label: "Betriebsbedarf" },
+                    { icon: PenBox, label: "Büro" },
+                    { icon: MonitorCog, label: "Dienstleistung / Beratung" },
+                    { icon: Car, label: "Fahrzeug" },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button key={item.label} type="button" className="mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-muted/70">
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </aside>
+
+                <div className="no-scrollbar min-h-0 overflow-y-auto pr-1">
+                  <div className="mb-3 rounded-2xl border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                    Wir haben beliebte Kategorien aus deiner Branche für dich ausgewählt.
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {filteredCards.map((card) => (
+                      <button
+                        key={card.name}
+                        type="button"
+                        onClick={() => setDraftCategory(card.name)}
+                        className={`rounded-2xl border p-3 text-left transition-colors hover:bg-muted/60 ${draftCategory === card.name ? "border-primary ring-1 ring-primary/30" : "border-border"}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-lg font-semibold leading-tight">{card.name}</p>
+                          <Star className={`mt-1 h-4 w-4 ${draftCategory === card.name ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">{card.number}</p>
+                        <p className="mt-3 text-sm text-muted-foreground">{card.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  className="h-11 rounded-xl border border-border px-5 text-sm hover:bg-muted"
+                  onClick={() => setCategoryModalOpen(false)}
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="button"
+                  className="h-11 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground hover:brightness-95 disabled:opacity-60"
+                  onClick={applyCategory}
+                  disabled={!draftCategory}
+                >
+                  Übernehmen
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </Card>
-    </div>
+      ) : null}
+    </>
   );
 }
+
