@@ -13,6 +13,7 @@ type Props = {
   onChange: (patch: Partial<DocumentData>) => void;
   onCreateCustomer: (name: string) => Promise<void>;
   creatingContact: boolean;
+  onCategoryPanelOpenChange?: (open: boolean) => void;
 };
 
 type CategoryCard = {
@@ -51,7 +52,14 @@ const expenseGroups = [
   { icon: Car, label: "Fahrzeug" },
 ] as const;
 
-export function DocumentForm({ data, confidence, onChange, onCreateCustomer, creatingContact }: Props) {
+export function DocumentForm({
+  data,
+  confidence,
+  onChange,
+  onCreateCustomer,
+  creatingContact,
+  onCategoryPanelOpenChange,
+}: Props) {
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [categoryModalMounted, setCategoryModalMounted] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
@@ -66,7 +74,11 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
     const q = categorySearch.trim().toLowerCase();
     if (!q) return categoryCards;
     return categoryCards.filter((c) => `${c.name} ${c.number} ${c.group} ${c.desc}`.toLowerCase().includes(q));
-  }, [categorySearch]);
+  }, [categorySearch, categoryCards]);
+
+  useEffect(() => {
+    onCategoryPanelOpenChange?.(categoryModalOpen);
+  }, [categoryModalOpen, onCategoryPanelOpenChange]);
 
   useEffect(() => {
     if (!categoryModalOpen) return;
@@ -91,11 +103,9 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
         const versionRows = (Array.isArray(versions) ? versions : []) as Array<{ skrType: string; year: number }>;
         const version = versionRows[0];
         if (!version?.skrType || !version?.year) return;
-        const rows = await apiFetch(
-          `/api/accounts?companyId=${companyId}&skrType=${version.skrType}&year=${version.year}`,
-        ).then((r) => (r.ok ? r.json() : []));
+        const rows = await apiFetch(`/api/accounts?companyId=${companyId}&skrType=${version.skrType}&year=${version.year}`).then((r) => (r.ok ? r.json() : []));
         const mapped = (Array.isArray(rows) ? rows : [])
-          .slice(0, 120)
+          .slice(0, 160)
           .map((row: { name: string; number: string; accountClass?: string; accountType?: string }) => ({
             name: String(row.name ?? "").trim(),
             number: String(row.number ?? "").trim(),
@@ -111,27 +121,6 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
 
     return () => {
       cancelled = true;
-    };
-  }, [categoryModalOpen]);
-
-  const applyCategory = () => {
-    onChange({
-      category: draftCategory,
-      account: draftAccount || data.account,
-    });
-    setCategoryModalOpen(false);
-  };
-
-  useEffect(() => {
-    const modal =
-      document.querySelector<HTMLElement>("[data-doc-capture-modal='true']") ??
-      document.querySelector<HTMLElement>("[role='dialog']");
-    if (!modal) return;
-    modal.style.transition = "transform 260ms ease-out";
-    modal.style.transform = categoryModalOpen ? "translateX(-120px)" : "";
-    return () => {
-      modal.style.transform = "";
-      modal.style.transition = "";
     };
   }, [categoryModalOpen]);
 
@@ -156,6 +145,14 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
   useEffect(() => () => {
     if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
   }, []);
+
+  const applyCategory = () => {
+    onChange({
+      category: draftCategory,
+      account: draftAccount || data.account,
+    });
+    setCategoryModalOpen(false);
+  };
 
   return (
     <>
@@ -283,73 +280,33 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
             </div>
           </div>
         </Card>
-
-        <Card className="p-4">
-          <h3 className="mb-3 text-lg font-semibold">Belegstatus</h3>
-          <div className="grid gap-2.5 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Zahlungsstatus</label>
-              <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("paymentStatus", confidence)}`} value={data.paymentStatus} onChange={(e) => onChange({ paymentStatus: e.target.value as DocumentData["paymentStatus"] })}>
-                {["Offen", "Teilweise bezahlt", "Bezahlt"].map((s) => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Zahlungsart</label>
-              <select className={`h-10 w-full rounded-xl border border-border px-3 text-sm ${frame("paymentMethod", confidence)}`} value={data.paymentMethod} onChange={(e) => onChange({ paymentMethod: e.target.value as DocumentData["paymentMethod"] })}>
-                <option value="Ueberweisung">Überweisung</option>
-                <option value="Lastschrift">Lastschrift</option>
-                <option value="Kreditkarte">Kreditkarte</option>
-                <option value="Bar">Bar</option>
-                <option value="Sonstiges">Sonstiges</option>
-              </select>
-            </div>
-          </div>
-        </Card>
       </div>
 
       {categoryModalMounted
         ? createPortal(
-            <div
-              className={`fixed right-5 top-5 z-[180] transition-all duration-300 ease-out ${categoryModalVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
-              aria-hidden={!categoryModalVisible}
-            >
-              <div className="h-[92vh] w-[min(760px,46vw)] rounded-3xl border border-border bg-background shadow-2xl">
+            <div className={`fixed right-4 top-4 z-[180] transition-all duration-300 ease-out ${categoryModalVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}>
+              <div className="h-[92vh] w-[min(860px,52vw)] rounded-3xl border border-border bg-background shadow-2xl">
                 <div className="flex h-full flex-col p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-2xl font-semibold">Kategorie auswählen</h3>
-                    <button
-                      type="button"
-                      className="rounded-full p-2 hover:bg-muted"
-                      onClick={() => setCategoryModalOpen(false)}
-                      aria-label="Schließen"
-                    >
+                    <button type="button" className="rounded-full p-2 hover:bg-muted" onClick={() => setCategoryModalOpen(false)} aria-label="Schließen">
                       <X className="h-5 w-5" />
                     </button>
                   </div>
 
                   <div className="relative mb-3">
                     <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      className="h-11 pl-9"
-                      placeholder="Suche nach Stichwort, Kategorie oder Buchhaltungskonto"
-                      value={categorySearch}
-                      onChange={(e) => setCategorySearch(e.target.value)}
-                    />
+                    <Input className="h-11 pl-9" placeholder="Suche nach Stichwort, Kategorie oder Buchhaltungskonto" value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)} />
                   </div>
 
-                  <div className="grid min-h-0 flex-1 grid-cols-[170px_minmax(0,1fr)] gap-3">
+                  <div className="grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)] gap-3">
                     <aside className="rounded-2xl border border-border bg-background p-2.5">
                       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Übersicht</p>
                       {navItems.map((item) => {
                         const Icon = item.icon;
                         const active = categoryNav === item.key;
                         return (
-                          <button
-                            key={item.key}
-                            type="button"
-                            onClick={() => setCategoryNav(item.key)}
-                            className={`mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}
-                          >
+                          <button key={item.key} type="button" onClick={() => setCategoryNav(item.key)} className={`mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}>
                             <Icon className="h-4 w-4 text-muted-foreground" />
                             {item.label}
                           </button>
@@ -375,7 +332,7 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
                       <div className="grid gap-3 md:grid-cols-2">
                         {filteredCards.map((card) => (
                           <button
-                            key={card.name}
+                            key={`${card.number}-${card.name}`}
                             type="button"
                             onClick={() => {
                               setDraftCategory(card.name);
@@ -396,11 +353,7 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
                   </div>
 
                   <div className="mt-4 flex items-center justify-end gap-2">
-                    <button
-                      type="button"
-                      className="h-11 rounded-xl border border-border px-5 text-sm hover:bg-muted"
-                      onClick={() => setCategoryModalOpen(false)}
-                    >
+                    <button type="button" className="h-11 rounded-xl border border-border px-5 text-sm hover:bg-muted" onClick={() => setCategoryModalOpen(false)}>
                       Abbrechen
                     </button>
                     <button

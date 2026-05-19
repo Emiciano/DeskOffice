@@ -11,6 +11,7 @@ type Props = {
   onRunOcr: () => void;
   onCreateCustomer: (name: string) => Promise<void>;
   creatingContact: boolean;
+  onCategoryPanelOpenChange?: (open: boolean) => void;
   onBook: () => { ok: true } | { ok: false; errors: string[] };
 };
 
@@ -22,6 +23,7 @@ export function DocumentDetail({
   onRunOcr,
   onCreateCustomer,
   creatingContact,
+  onCategoryPanelOpenChange,
   onBook,
 }: Props) {
   if (!document) {
@@ -44,6 +46,7 @@ export function DocumentDetail({
           onChange={onChangeData}
           onCreateCustomer={onCreateCustomer}
           creatingContact={creatingContact}
+          onCategoryPanelOpenChange={onCategoryPanelOpenChange}
         />
         <BookingPanel document={document} onBook={onBook} onMarkChecked={onMarkChecked} onRunOcr={onRunOcr} />
       </div>
