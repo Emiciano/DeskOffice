@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   Search,
   Star,
@@ -41,42 +40,12 @@ const frame = (name: keyof DocumentData, confidence?: Record<keyof DocumentData,
 const supplierHints = ["CloudStack GmbH", "Nordlicht Media GmbH", "Musterlieferant AG"];
 
 const fallbackCategoryCards: CategoryCard[] = [
-  {
-    name: "Dienstleister, Agenturen & Freelancer",
-    number: "5900",
-    group: "Dienstleistung / Beratung",
-    desc: "Externe Dienstleistungen für Projekte, Agenturarbeit und freie Mitarbeit.",
-  },
-  {
-    name: "Marketing & Werbung",
-    number: "6600",
-    group: "Betriebsbedarf",
-    desc: "Anzeigen, Sponsoring, Flyer, Online-Marketing und Kampagnenkosten.",
-  },
-  {
-    name: "Bürobedarf",
-    number: "6815",
-    group: "Büro",
-    desc: "Verbrauchsmaterial wie Papier, Stifte, Etiketten und Bürokleinteile.",
-  },
-  {
-    name: "Software Abos & Lizenzen",
-    number: "6837",
-    group: "Dienstleistung / Beratung",
-    desc: "SaaS-Abos, Programme, Lizenzen und Cloud-Tools.",
-  },
-  {
-    name: "Reisekosten",
-    number: "6670",
-    group: "Betriebsbedarf",
-    desc: "Bahn, Hotel, Taxi, Flüge und Reisekosten im Geschäftskontext.",
-  },
-  {
-    name: "Fahrzeugkosten",
-    number: "4530",
-    group: "Fahrzeug",
-    desc: "Tanken, Wartung, Versicherung und betriebliche Fahrzeugkosten.",
-  },
+  { name: "Dienstleister, Agenturen & Freelancer", number: "5900", group: "Dienstleistung / Beratung", desc: "Externe Dienstleistungen für Projekte, Agenturarbeit und freie Mitarbeit." },
+  { name: "Marketing & Werbung", number: "6600", group: "Betriebsbedarf", desc: "Anzeigen, Sponsoring, Flyer, Online-Marketing und Kampagnenkosten." },
+  { name: "Bürobedarf", number: "6815", group: "Büro", desc: "Verbrauchsmaterial wie Papier, Stifte, Etiketten und Bürokleinteile." },
+  { name: "Software Abos & Lizenzen", number: "6837", group: "Dienstleistung / Beratung", desc: "SaaS-Abos, Programme, Lizenzen und Cloud-Tools." },
+  { name: "Reisekosten", number: "6670", group: "Betriebsbedarf", desc: "Bahn, Hotel, Taxi, Flüge und Reisekosten im Geschäftskontext." },
+  { name: "Fahrzeugkosten", number: "4530", group: "Fahrzeug", desc: "Tanken, Wartung, Versicherung und betriebliche Fahrzeugkosten." },
 ];
 
 const navItems = [
@@ -108,7 +77,7 @@ export function DocumentForm({
   const [categoryModalMounted, setCategoryModalMounted] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
-  const [categoryNav, setCategoryNav] = useState<(typeof navItems)[number]["key"]>("favoriten");
+  const [categoryNav, setCategoryNav] = useState<(typeof navItems)[number]["key"]>("alle");
   const [activeGroup, setActiveGroup] = useState("Alle Kategorien");
   const [draftCategory, setDraftCategory] = useState(data.category ?? "");
   const [draftAccount, setDraftAccount] = useState(data.account ?? "");
@@ -124,9 +93,7 @@ export function DocumentForm({
     let cancelled = false;
 
     const mapGroup = (accountClass: string, accountType: string): string => {
-      if (accountType === "liability" || accountType === "tax" || accountType === "bank" || accountType === "cash") {
-        return "Banken / Finanzen";
-      }
+      if (accountType === "liability" || accountType === "tax" || accountType === "bank" || accountType === "cash") return "Banken / Finanzen";
       if (accountClass === "4" || accountClass === "5") return "Betriebsbedarf";
       if (accountClass === "6") return "Büro";
       if (accountClass === "7") return "Dienstleistung / Beratung";
@@ -172,13 +139,12 @@ export function DocumentForm({
         window.clearTimeout(closeTimerRef.current);
         closeTimerRef.current = null;
       }
-      setCategoryNav("favoriten");
+      setCategoryNav("alle");
       setActiveGroup("Alle Kategorien");
       setCategoryModalMounted(true);
       requestAnimationFrame(() => setCategoryModalVisible(true));
       return;
     }
-
     setCategoryModalVisible(false);
     closeTimerRef.current = window.setTimeout(() => {
       setCategoryModalMounted(false);
@@ -205,10 +171,7 @@ export function DocumentForm({
   }, [categoryCards, categoryNav, activeGroup, categorySearch]);
 
   const applyCategory = () => {
-    onChange({
-      category: draftCategory,
-      account: draftAccount || data.account,
-    });
+    onChange({ category: draftCategory, account: draftAccount || data.account });
     setCategoryModalOpen(false);
   };
 
@@ -344,106 +307,109 @@ export function DocumentForm({
         </Card>
       </div>
 
-      {categoryModalMounted
-        ? createPortal(
-            <div className={`fixed right-4 top-4 z-[180] transition-all duration-300 ease-out ${categoryModalVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}>
-              <div className="h-[92vh] w-[min(900px,56vw)] rounded-3xl border border-border bg-background shadow-2xl">
-                <div className="flex h-full flex-col p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-2xl font-semibold">Kategorie auswählen</h3>
-                    <button type="button" className="rounded-full p-2 hover:bg-muted" onClick={() => setCategoryModalOpen(false)} aria-label="Schließen">
-                      <X className="h-5 w-5" />
-                    </button>
+      {categoryModalMounted ? (
+        <div
+          className={`fixed right-5 top-4 z-[220] transition-all duration-300 ease-out ${
+            categoryModalVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"
+          }`}
+        >
+          <div className="h-[92vh] w-[min(720px,40vw)] rounded-3xl border border-border bg-background shadow-2xl">
+            <div className="flex h-full flex-col p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-2xl font-semibold">Kategorie auswählen</h3>
+                <button type="button" className="rounded-full p-2 hover:bg-muted" onClick={() => setCategoryModalOpen(false)} aria-label="Schließen">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="relative mb-3">
+                <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                <Input className="h-11 pl-9" placeholder="Suche nach Stichwort, Kategorie oder Buchhaltungskonto" value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)} />
+              </div>
+
+              <div className="grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)] gap-3">
+                <aside className="rounded-2xl border border-border bg-background p-2.5">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Übersicht</p>
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = categoryNav === item.key;
+                    return (
+                      <button key={item.key} type="button" onClick={() => setCategoryNav(item.key)} className={`mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}>
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                        {item.label}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveGroup("Alle Kategorien")}
+                    className={`mt-3 mb-2 block w-full rounded-xl px-2.5 py-2 text-left text-xs ${
+                      activeGroup === "Alle Kategorien" ? "bg-muted font-medium" : "hover:bg-muted/70"
+                    }`}
+                  >
+                    Alle Gruppen
+                  </button>
+
+                  <p className="mb-2 mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Ausgaben</p>
+                  {expenseGroups.map((item) => {
+                    const Icon = item.icon;
+                    const active = activeGroup === item.label;
+                    return (
+                      <button key={item.label} type="button" onClick={() => setActiveGroup(item.label)} className={`mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}>
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </aside>
+
+                <div className="no-scrollbar min-h-0 overflow-y-auto pr-1">
+                  <div className="mb-3 rounded-2xl border border-border bg-muted/30 p-2.5 text-xs text-muted-foreground">
+                    Wir haben beliebte Kategorien aus deiner Branche für dich ausgewählt.
                   </div>
-
-                  <div className="relative mb-3">
-                    <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
-                    <Input className="h-11 pl-9" placeholder="Suche nach Stichwort, Kategorie oder Buchhaltungskonto" value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)} />
-                  </div>
-
-                  <div className="grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)] gap-3">
-                    <aside className="rounded-2xl border border-border bg-background p-2.5">
-                      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Übersicht</p>
-                      {navItems.map((item) => {
-                        const Icon = item.icon;
-                        const active = categoryNav === item.key;
-                        return (
-                          <button key={item.key} type="button" onClick={() => setCategoryNav(item.key)} className={`mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}>
-                            <Icon className="h-4 w-4 text-muted-foreground" />
-                            {item.label}
-                          </button>
-                        );
-                      })}
-
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {filteredCards.map((card) => (
                       <button
+                        key={`${card.number}-${card.name}`}
                         type="button"
-                        onClick={() => setActiveGroup("Alle Kategorien")}
-                        className={`mt-3 mb-2 block w-full rounded-xl px-2.5 py-2 text-left text-xs ${
-                          activeGroup === "Alle Kategorien" ? "bg-muted font-medium" : "hover:bg-muted/70"
+                        onClick={() => {
+                          setDraftCategory(card.name);
+                          setDraftAccount(card.number);
+                        }}
+                        className={`rounded-2xl border p-2.5 text-left transition-colors hover:bg-muted/60 ${
+                          draftCategory === card.name ? "border-primary ring-1 ring-primary/30" : "border-border"
                         }`}
                       >
-                        Alle Gruppen
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-base font-semibold leading-tight">{card.name}</p>
+                          <Star className={`mt-1 h-4 w-4 ${draftCategory === card.name ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">{card.number}</p>
+                        <p className="mt-2 text-xs text-muted-foreground">{card.desc}</p>
                       </button>
-
-                      <p className="mb-2 mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Ausgaben</p>
-                      {expenseGroups.map((item) => {
-                        const Icon = item.icon;
-                        const active = activeGroup === item.label;
-                        return (
-                          <button key={item.label} type="button" onClick={() => setActiveGroup(item.label)} className={`mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}>
-                            <Icon className="h-4 w-4 text-muted-foreground" />
-                            {item.label}
-                          </button>
-                        );
-                      })}
-                    </aside>
-
-                    <div className="no-scrollbar min-h-0 overflow-y-auto pr-1">
-                      <div className="mb-3 rounded-2xl border border-border bg-muted/30 p-2.5 text-xs text-muted-foreground">
-                        Wir haben beliebte Kategorien aus deiner Branche für dich ausgewählt.
+                    ))}
+                    {filteredCards.length === 0 ? (
+                      <div className="col-span-2 rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                        Keine Kategorien für die aktuelle Auswahl gefunden.
                       </div>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {filteredCards.map((card) => (
-                          <button
-                            key={`${card.number}-${card.name}`}
-                            type="button"
-                            onClick={() => {
-                              setDraftCategory(card.name);
-                              setDraftAccount(card.number);
-                            }}
-                            className={`rounded-2xl border p-2.5 text-left transition-colors hover:bg-muted/60 ${draftCategory === card.name ? "border-primary ring-1 ring-primary/30" : "border-border"}`}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="text-base font-semibold leading-tight">{card.name}</p>
-                              <Star className={`mt-1 h-4 w-4 ${draftCategory === card.name ? "fill-primary text-primary" : "text-muted-foreground"}`} />
-                            </div>
-                            <p className="mt-1 text-xs text-muted-foreground">{card.number}</p>
-                            <p className="mt-2 text-xs text-muted-foreground">{card.desc}</p>
-                          </button>
-                        ))}
-                        {filteredCards.length === 0 ? (
-                          <div className="col-span-2 rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                            Keine Kategorien für die aktuelle Auswahl gefunden.
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-end gap-2">
-                    <button type="button" className="h-11 rounded-xl border border-border px-5 text-sm hover:bg-muted" onClick={() => setCategoryModalOpen(false)}>
-                      Abbrechen
-                    </button>
-                    <button type="button" className="h-11 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground hover:brightness-95 disabled:opacity-60" onClick={applyCategory} disabled={!draftCategory}>
-                      Übernehmen
-                    </button>
+                    ) : null}
                   </div>
                 </div>
               </div>
-            </div>,
-            document.body,
-          )
-        : null}
+
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button type="button" className="h-11 rounded-xl border border-border px-5 text-sm hover:bg-muted" onClick={() => setCategoryModalOpen(false)}>
+                  Abbrechen
+                </button>
+                <button type="button" className="h-11 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground hover:brightness-95 disabled:opacity-60" onClick={applyCategory} disabled={!draftCategory}>
+                  Übernehmen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

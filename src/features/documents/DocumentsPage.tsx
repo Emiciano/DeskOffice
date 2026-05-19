@@ -320,7 +320,7 @@ export function DocumentsPage() {
         <DialogContent
           className={`h-[96vh] max-h-[96vh] overflow-visible p-3 transition-all duration-300 ease-out ${
             categoryPanelOpen
-              ? "w-[min(1120px,68vw)] -translate-x-[320px]"
+              ? "w-[min(1140px,72vw)] -translate-x-[220px]"
               : "w-[min(1260px,94vw)]"
           }`}
           data-doc-capture-modal="true"
