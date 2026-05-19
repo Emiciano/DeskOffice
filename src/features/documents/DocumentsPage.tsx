@@ -318,7 +318,7 @@ export function DocumentsPage() {
         }}
       >
         <DialogContent
-          className={`h-[96vh] max-h-[96vh] overflow-visible p-3 transition-all duration-300 ease-out ${
+          className={`h-[96vh] max-h-[96vh] overflow-visible p-3 ${
             categoryPanelOpen
               ? "w-[min(1140px,72vw)] -translate-x-[220px]"
               : "w-[min(1260px,94vw)]"

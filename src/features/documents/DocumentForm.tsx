@@ -39,14 +39,7 @@ const frame = (name: keyof DocumentData, confidence?: Record<keyof DocumentData,
 
 const supplierHints = ["CloudStack GmbH", "Nordlicht Media GmbH", "Musterlieferant AG"];
 
-const fallbackCategoryCards: CategoryCard[] = [
-  { name: "Dienstleister, Agenturen & Freelancer", number: "5900", group: "Dienstleistung / Beratung", desc: "Externe Dienstleistungen für Projekte, Agenturarbeit und freie Mitarbeit." },
-  { name: "Marketing & Werbung", number: "6600", group: "Betriebsbedarf", desc: "Anzeigen, Sponsoring, Flyer, Online-Marketing und Kampagnenkosten." },
-  { name: "Bürobedarf", number: "6815", group: "Büro", desc: "Verbrauchsmaterial wie Papier, Stifte, Etiketten und Bürokleinteile." },
-  { name: "Software Abos & Lizenzen", number: "6837", group: "Dienstleistung / Beratung", desc: "SaaS-Abos, Programme, Lizenzen und Cloud-Tools." },
-  { name: "Reisekosten", number: "6670", group: "Betriebsbedarf", desc: "Bahn, Hotel, Taxi, Flüge und Reisekosten im Geschäftskontext." },
-  { name: "Fahrzeugkosten", number: "4530", group: "Fahrzeug", desc: "Tanken, Wartung, Versicherung und betriebliche Fahrzeugkosten." },
-];
+const fallbackCategoryCards: CategoryCard[] = [];
 
 const navItems = [
   { key: "favoriten", label: "Favoriten", icon: Star },
@@ -55,11 +48,16 @@ const navItems = [
 ] as const;
 
 const expenseGroups = [
-  { icon: Building2, label: "Banken / Finanzen" },
-  { icon: BriefcaseBusiness, label: "Betriebsbedarf" },
-  { icon: PenBox, label: "Büro" },
-  { icon: MonitorCog, label: "Dienstleistung / Beratung" },
-  { icon: Car, label: "Fahrzeug" },
+  { icon: Building2, label: "Klasse 0" },
+  { icon: BriefcaseBusiness, label: "Klasse 1" },
+  { icon: PenBox, label: "Klasse 2" },
+  { icon: MonitorCog, label: "Klasse 3" },
+  { icon: Car, label: "Klasse 4" },
+  { icon: Building2, label: "Klasse 5" },
+  { icon: BriefcaseBusiness, label: "Klasse 6" },
+  { icon: MonitorCog, label: "Klasse 7" },
+  { icon: PenBox, label: "Klasse 8" },
+  { icon: Car, label: "Klasse 9" },
 ] as const;
 
 const favoriteAccounts = new Set(["5900", "6600", "6815", "6837", "6670", "4530"]);
@@ -92,13 +90,12 @@ export function DocumentForm({
     if (!categoryModalOpen) return;
     let cancelled = false;
 
-    const mapGroup = (accountClass: string, accountType: string): string => {
-      if (accountType === "liability" || accountType === "tax" || accountType === "bank" || accountType === "cash") return "Banken / Finanzen";
-      if (accountClass === "4" || accountClass === "5") return "Betriebsbedarf";
-      if (accountClass === "6") return "Büro";
-      if (accountClass === "7") return "Dienstleistung / Beratung";
-      if (accountClass === "3") return "Fahrzeug";
-      return "Betriebsbedarf";
+    const mapGroup = (accountClass: string, number: string): string => {
+      const normalizedClass = String(accountClass ?? "").trim();
+      if (normalizedClass && /^[0-9]$/.test(normalizedClass)) return `Klasse ${normalizedClass}`;
+      const first = String(number ?? "").trim().charAt(0);
+      if (/^[0-9]$/.test(first)) return `Klasse ${first}`;
+      return "Klasse 0";
     };
 
     void (async () => {
@@ -117,7 +114,7 @@ export function DocumentForm({
           .map((row: { name: string; number: string; accountClass?: string; accountType?: string }) => ({
             name: String(row.name ?? "").trim(),
             number: String(row.number ?? "").trim(),
-            group: mapGroup(String(row.accountClass ?? ""), String(row.accountType ?? "")),
+            group: mapGroup(String(row.accountClass ?? ""), String(row.number ?? "")),
             desc: `${String(version.skrType)}-${String(version.year)}`,
           }))
           .filter((row: CategoryCard) => row.name.length > 0 && row.number.length > 0);
@@ -142,7 +139,7 @@ export function DocumentForm({
       setCategoryNav("alle");
       setActiveGroup("Alle Kategorien");
       setCategoryModalMounted(true);
-      requestAnimationFrame(() => setCategoryModalVisible(true));
+      setCategoryModalVisible(true);
       return;
     }
     setCategoryModalVisible(false);
@@ -308,11 +305,7 @@ export function DocumentForm({
       </div>
 
       {categoryModalMounted ? (
-        <div
-          className={`fixed right-5 top-4 z-[220] transition-all duration-300 ease-out ${
-            categoryModalVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"
-          }`}
-        >
+        <div className={`fixed right-5 top-4 z-[220] ${categoryModalVisible ? "opacity-100" : "opacity-0"}`}>
           <div className="h-[92vh] w-[min(720px,40vw)] rounded-3xl border border-border bg-background shadow-2xl">
             <div className="flex h-full flex-col p-4">
               <div className="mb-3 flex items-center justify-between">
