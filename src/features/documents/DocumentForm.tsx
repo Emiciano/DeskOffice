@@ -4,6 +4,7 @@ import { Search, Star, History, Grid3X3, Building2, BriefcaseBusiness, Car, Moni
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AccountAutocomplete } from "@/features/accounting/components/AccountAutocomplete";
+import { apiFetch } from "@/lib/api";
 import type { DocumentData } from "./types";
 
 type Props = {
@@ -14,14 +15,20 @@ type Props = {
   creatingContact: boolean;
 };
 
+type CategoryCard = {
+  name: string;
+  number: string;
+  group: string;
+  desc: string;
+};
+
 const low = (v?: number) => (v ?? 1) < 0.75;
 const frame = (name: keyof DocumentData, confidence?: Record<keyof DocumentData, number>) =>
   low(confidence?.[name]) ? "border-amber-400 ring-1 ring-amber-200" : "";
 
 const supplierHints = ["CloudStack GmbH", "Nordlicht Media GmbH", "Musterlieferant AG"];
-const categories = ["Software", "Werbung", "Büro", "Reisekosten", "Beratung", "Sonstiges"];
 
-const categoryCards = [
+const fallbackCategoryCards: CategoryCard[] = [
   { name: "Dienstleister, Agenturen & Freelancer", number: "5900", group: "Dienstleistung / Beratung", desc: "Externe Dienstleistungen für Projekte, Agenturarbeit und freie Mitarbeit." },
   { name: "Marketing & Werbung", number: "6600", group: "Werbung", desc: "Anzeigen, Sponsoring, Flyer, Online-Marketing und Kampagnenkosten." },
   { name: "Bürobedarf", number: "6815", group: "Büro", desc: "Verbrauchsmaterial wie Papier, Stifte, Etiketten und Bürokleinteile." },
@@ -30,6 +37,20 @@ const categoryCards = [
   { name: "Fahrzeugkosten", number: "4530", group: "Fahrzeug", desc: "Tanken, Wartung, Versicherung und betriebliche Fahrzeugkosten." },
 ];
 
+const navItems = [
+  { key: "favoriten", label: "Favoriten", icon: Star },
+  { key: "zuletzt", label: "Zuletzt verwendet", icon: History },
+  { key: "alle", label: "Alle Kategorien", icon: Grid3X3 },
+] as const;
+
+const expenseGroups = [
+  { icon: Building2, label: "Banken / Finanzen" },
+  { icon: BriefcaseBusiness, label: "Betriebsbedarf" },
+  { icon: PenBox, label: "Büro" },
+  { icon: MonitorCog, label: "Dienstleistung / Beratung" },
+  { icon: Car, label: "Fahrzeug" },
+] as const;
+
 export function DocumentForm({ data, confidence, onChange, onCreateCustomer, creatingContact }: Props) {
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [categoryModalMounted, setCategoryModalMounted] = useState(false);
@@ -37,8 +58,9 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
   const [categorySearch, setCategorySearch] = useState("");
   const [categoryNav, setCategoryNav] = useState("favoriten");
   const [draftCategory, setDraftCategory] = useState(data.category ?? "");
+  const [draftAccount, setDraftAccount] = useState(data.account ?? "");
+  const [categoryCards, setCategoryCards] = useState<CategoryCard[]>(fallbackCategoryCards);
   const closeTimerRef = useRef<number | null>(null);
-  const [categoryPanelStyle, setCategoryPanelStyle] = useState<{ top: number; left: number; height: number; width: number } | null>(null);
 
   const filteredCards = useMemo(() => {
     const q = categorySearch.trim().toLowerCase();
@@ -46,8 +68,57 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
     return categoryCards.filter((c) => `${c.name} ${c.number} ${c.group} ${c.desc}`.toLowerCase().includes(q));
   }, [categorySearch]);
 
+  useEffect(() => {
+    if (!categoryModalOpen) return;
+    let cancelled = false;
+
+    const mapGroup = (accountClass: string, accountType: string): string => {
+      if (accountType === "revenue") return "Einnahmen";
+      if (accountType === "liability") return "Banken / Finanzen";
+      if (accountClass === "4") return "Betriebsbedarf";
+      if (accountClass === "6") return "Büro";
+      if (accountClass === "7") return "Dienstleistung / Beratung";
+      if (accountClass === "3") return "Fahrzeug";
+      return "Sonstiges";
+    };
+
+    void (async () => {
+      try {
+        const boot = await apiFetch("/api/bootstrap").then((r) => (r.ok ? r.json() : null));
+        const companyId = String(boot?.companyId ?? "");
+        if (!companyId) return;
+        const versions = await apiFetch(`/api/accounts/versions?companyId=${companyId}`).then((r) => (r.ok ? r.json() : []));
+        const versionRows = (Array.isArray(versions) ? versions : []) as Array<{ skrType: string; year: number }>;
+        const version = versionRows[0];
+        if (!version?.skrType || !version?.year) return;
+        const rows = await apiFetch(
+          `/api/accounts?companyId=${companyId}&skrType=${version.skrType}&year=${version.year}`,
+        ).then((r) => (r.ok ? r.json() : []));
+        const mapped = (Array.isArray(rows) ? rows : [])
+          .slice(0, 120)
+          .map((row: { name: string; number: string; accountClass?: string; accountType?: string }) => ({
+            name: String(row.name ?? "").trim(),
+            number: String(row.number ?? "").trim(),
+            group: mapGroup(String(row.accountClass ?? ""), String(row.accountType ?? "")),
+            desc: `${String(version.skrType)}-${String(version.year)}`,
+          }))
+          .filter((row: CategoryCard) => row.name && row.number);
+        if (!cancelled && mapped.length > 0) setCategoryCards(mapped);
+      } catch {
+        if (!cancelled) setCategoryCards(fallbackCategoryCards);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryModalOpen]);
+
   const applyCategory = () => {
-    onChange({ category: draftCategory });
+    onChange({
+      category: draftCategory,
+      account: draftAccount || data.account,
+    });
     setCategoryModalOpen(false);
   };
 
@@ -56,67 +127,11 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
       document.querySelector<HTMLElement>("[data-doc-capture-modal='true']") ??
       document.querySelector<HTMLElement>("[role='dialog']");
     if (!modal) return;
-    modal.style.transition = "transform 300ms ease-out";
-    if (categoryModalOpen) {
-      modal.style.transform = "translateX(-260px)";
-    } else {
-      modal.style.transform = "";
-    }
+    modal.style.transition = "transform 260ms ease-out";
+    modal.style.transform = categoryModalOpen ? "translateX(-120px)" : "";
     return () => {
       modal.style.transform = "";
       modal.style.transition = "";
-    };
-  }, [categoryModalOpen]);
-
-  useEffect(() => {
-    let raf1 = 0;
-    let raf2 = 0;
-    let settleTimer: number | null = null;
-
-    const recalcPanelPosition = () => {
-      const modal =
-        document.querySelector<HTMLElement>("[data-doc-capture-modal='true']") ??
-        document.querySelector<HTMLElement>("[role='dialog']");
-      if (!modal) {
-        const viewportPadding = 16;
-        const width = Math.min(520, Math.max(380, window.innerWidth - viewportPadding * 2));
-        setCategoryPanelStyle({
-          top: viewportPadding,
-          left: Math.max(viewportPadding, window.innerWidth - width - viewportPadding),
-          height: Math.max(520, window.innerHeight - viewportPadding * 2),
-          width,
-        });
-        return;
-      }
-      const rect = modal.getBoundingClientRect();
-      const viewportPadding = 16;
-      const gap = 12;
-      const preferredWidth = 500;
-      const maxWidth = Math.max(360, window.innerWidth - (rect.right + gap + viewportPadding));
-      const width = Math.min(preferredWidth, maxWidth);
-      const left = Math.min(rect.right + gap, Math.max(viewportPadding, window.innerWidth - width - viewportPadding));
-      const top = Math.max(viewportPadding, rect.top + 6);
-      const height = Math.max(520, Math.min(window.innerHeight - top - viewportPadding, rect.height - 12));
-      setCategoryPanelStyle({ top, left, height, width });
-    };
-
-    if (!categoryModalOpen) return;
-    // Recalc mehrfach: sofort, nach dem nächsten Paint und nach Ende der Slide-Animation.
-    recalcPanelPosition();
-    raf1 = requestAnimationFrame(() => {
-      recalcPanelPosition();
-      raf2 = requestAnimationFrame(() => recalcPanelPosition());
-    });
-    settleTimer = window.setTimeout(() => recalcPanelPosition(), 320);
-
-    window.addEventListener("resize", recalcPanelPosition);
-    window.addEventListener("scroll", recalcPanelPosition, true);
-    return () => {
-      if (raf1) cancelAnimationFrame(raf1);
-      if (raf2) cancelAnimationFrame(raf2);
-      if (settleTimer) window.clearTimeout(settleTimer);
-      window.removeEventListener("resize", recalcPanelPosition);
-      window.removeEventListener("scroll", recalcPanelPosition, true);
     };
   }, [categoryModalOpen]);
 
@@ -135,7 +150,7 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
     closeTimerRef.current = window.setTimeout(() => {
       setCategoryModalMounted(false);
       closeTimerRef.current = null;
-    }, 240);
+    }, 220);
   }, [categoryModalOpen]);
 
   useEffect(() => () => {
@@ -221,6 +236,7 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
                 className={`h-10 w-full rounded-xl border border-border px-3 text-left text-sm hover:bg-muted ${frame("category", confidence)}`}
                 onClick={() => {
                   setDraftCategory(data.category ?? "");
+                  setDraftAccount(data.account ?? "");
                   setCategoryModalOpen(true);
                 }}
               >
@@ -291,126 +307,117 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
         </Card>
       </div>
 
-      {categoryModalMounted && categoryPanelStyle ? createPortal(
-        <div
-          className={`fixed z-[180] transition-all duration-300 ease-out ${categoryModalVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
-          style={{
-            top: categoryPanelStyle.top,
-            left: categoryPanelStyle.left,
-            width: categoryPanelStyle.width,
-          }}
-          aria-hidden={!categoryModalVisible}
-        >
-          <div className="rounded-3xl border border-border bg-background shadow-2xl" style={{ height: categoryPanelStyle.height }}>
-            <div className="flex h-full flex-col p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-2xl font-semibold">Kategorie auswählen</h3>
-                <button
-                  type="button"
-                  className="rounded-full p-2 hover:bg-muted"
-                  onClick={() => setCategoryModalOpen(false)}
-                  aria-label="Schließen"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="relative mb-3">
-                <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  className="h-11 pl-9"
-                  placeholder="Suche nach Stichwort, Kategorie oder Buchhaltungskonto"
-                  value={categorySearch}
-                  onChange={(e) => setCategorySearch(e.target.value)}
-                />
-              </div>
-
-              <div className="grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)] gap-3">
-                <aside className="rounded-2xl border border-border bg-background p-2.5">
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Übersicht</p>
-                  {[
-                    { key: "favoriten", label: "Favoriten", icon: Star },
-                    { key: "zuletzt", label: "Zuletzt verwendet", icon: History },
-                    { key: "alle", label: "Alle Kategorien", icon: Grid3X3 },
-                  ].map((item) => {
-                    const Icon = item.icon;
-                    const active = categoryNav === item.key;
-                    return (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => setCategoryNav(item.key)}
-                        className={`mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}
-                      >
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                        {item.label}
-                      </button>
-                    );
-                  })}
-
-                  <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Ausgaben</p>
-                  {[
-                    { icon: Building2, label: "Banken / Finanzen" },
-                    { icon: BriefcaseBusiness, label: "Betriebsbedarf" },
-                    { icon: PenBox, label: "Büro" },
-                    { icon: MonitorCog, label: "Dienstleistung / Beratung" },
-                    { icon: Car, label: "Fahrzeug" },
-                  ].map((item) => {
-                    const Icon = item.icon;
-                    return (
-                    <button key={item.label} type="button" className="mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs hover:bg-muted/70">
-                        <Icon className="h-4 w-4 text-muted-foreground" />
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </aside>
-
-                <div className="no-scrollbar min-h-0 overflow-y-auto pr-1">
-                  <div className="mb-3 rounded-2xl border border-border bg-muted/30 p-2.5 text-xs text-muted-foreground">
-                    Wir haben beliebte Kategorien aus deiner Branche für dich ausgewählt.
+      {categoryModalMounted
+        ? createPortal(
+            <div
+              className={`fixed right-5 top-5 z-[180] transition-all duration-300 ease-out ${categoryModalVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
+              aria-hidden={!categoryModalVisible}
+            >
+              <div className="h-[92vh] w-[min(760px,46vw)] rounded-3xl border border-border bg-background shadow-2xl">
+                <div className="flex h-full flex-col p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-2xl font-semibold">Kategorie auswählen</h3>
+                    <button
+                      type="button"
+                      className="rounded-full p-2 hover:bg-muted"
+                      onClick={() => setCategoryModalOpen(false)}
+                      aria-label="Schließen"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {filteredCards.map((card) => (
-                      <button
-                        key={card.name}
-                        type="button"
-                        onClick={() => setDraftCategory(card.name)}
-                        className={`rounded-2xl border p-2.5 text-left transition-colors hover:bg-muted/60 ${draftCategory === card.name ? "border-primary ring-1 ring-primary/30" : "border-border"}`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-base font-semibold leading-tight">{card.name}</p>
-                          <Star className={`mt-1 h-4 w-4 ${draftCategory === card.name ? "fill-primary text-primary" : "text-muted-foreground"}`} />
-                        </div>
-                        <p className="mt-1 text-xs text-muted-foreground">{card.number}</p>
-                        <p className="mt-2 text-xs text-muted-foreground">{card.desc}</p>
-                      </button>
-                    ))}
+
+                  <div className="relative mb-3">
+                    <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      className="h-11 pl-9"
+                      placeholder="Suche nach Stichwort, Kategorie oder Buchhaltungskonto"
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid min-h-0 flex-1 grid-cols-[170px_minmax(0,1fr)] gap-3">
+                    <aside className="rounded-2xl border border-border bg-background p-2.5">
+                      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Übersicht</p>
+                      {navItems.map((item) => {
+                        const Icon = item.icon;
+                        const active = categoryNav === item.key;
+                        return (
+                          <button
+                            key={item.key}
+                            type="button"
+                            onClick={() => setCategoryNav(item.key)}
+                            className={`mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}
+                          >
+                            <Icon className="h-4 w-4 text-muted-foreground" />
+                            {item.label}
+                          </button>
+                        );
+                      })}
+
+                      <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Ausgaben</p>
+                      {expenseGroups.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <button key={item.label} type="button" className="mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs hover:bg-muted/70">
+                            <Icon className="h-4 w-4 text-muted-foreground" />
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </aside>
+
+                    <div className="no-scrollbar min-h-0 overflow-y-auto pr-1">
+                      <div className="mb-3 rounded-2xl border border-border bg-muted/30 p-2.5 text-xs text-muted-foreground">
+                        Wir haben beliebte Kategorien aus deiner Branche für dich ausgewählt.
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {filteredCards.map((card) => (
+                          <button
+                            key={card.name}
+                            type="button"
+                            onClick={() => {
+                              setDraftCategory(card.name);
+                              setDraftAccount(card.number);
+                            }}
+                            className={`rounded-2xl border p-2.5 text-left transition-colors hover:bg-muted/60 ${draftCategory === card.name ? "border-primary ring-1 ring-primary/30" : "border-border"}`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-base font-semibold leading-tight">{card.name}</p>
+                              <Star className={`mt-1 h-4 w-4 ${draftCategory === card.name ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">{card.number}</p>
+                            <p className="mt-2 text-xs text-muted-foreground">{card.desc}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      className="h-11 rounded-xl border border-border px-5 text-sm hover:bg-muted"
+                      onClick={() => setCategoryModalOpen(false)}
+                    >
+                      Abbrechen
+                    </button>
+                    <button
+                      type="button"
+                      className="h-11 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground hover:brightness-95 disabled:opacity-60"
+                      onClick={applyCategory}
+                      disabled={!draftCategory}
+                    >
+                      Übernehmen
+                    </button>
                   </div>
                 </div>
               </div>
-
-              <div className="mt-4 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  className="h-11 rounded-xl border border-border px-5 text-sm hover:bg-muted"
-                  onClick={() => setCategoryModalOpen(false)}
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="button"
-                  className="h-11 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground hover:brightness-95 disabled:opacity-60"
-                  onClick={applyCategory}
-                  disabled={!draftCategory}
-                >
-                  Übernehmen
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      , document.body) : null}
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

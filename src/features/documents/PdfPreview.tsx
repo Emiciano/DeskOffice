@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Download, FilePenLine, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { apiFetch } from "@/lib/api";
 import type { DocumentItem } from "./types";
 
 type Props = {
@@ -11,8 +12,35 @@ type Props = {
 
 export function PdfPreview({ document, onReplace }: Props) {
   const [zoom, setZoom] = useState(100);
-  const pdfSrc = useMemo(() => `${document.pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`, [document.pdfUrl]);
+  const [resolvedPdfUrl, setResolvedPdfUrl] = useState(document.pdfUrl);
+  const [pdfError, setPdfError] = useState("");
+  const pdfSrc = useMemo(() => resolvedPdfUrl, [resolvedPdfUrl]);
   const pageScale = zoom / 100;
+
+  useEffect(() => {
+    let cancelled = false;
+    setPdfError("");
+    setResolvedPdfUrl(document.pdfUrl);
+
+    if (!document.pdfUrl || !document.pdfUrl.startsWith("/api/documents/")) return () => {
+      cancelled = true;
+    };
+
+    void (async () => {
+      try {
+        const res = await apiFetch(document.pdfUrl);
+        if (!res.ok) throw new Error("Datei konnte nicht geladen werden");
+        const body = (await res.json()) as { dataUrl?: string };
+        if (!cancelled && body.dataUrl) setResolvedPdfUrl(body.dataUrl);
+      } catch {
+        if (!cancelled) setPdfError("PDF konnte nicht geladen werden.");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [document.pdfUrl]);
 
   return (
     <Card className="flex h-full min-w-0 flex-col p-4">
@@ -33,11 +61,16 @@ export function PdfPreview({ document, onReplace }: Props) {
             width: `${100 / pageScale}%`,
           }}
         >
-          <object data={pdfSrc} type="application/pdf" className="h-[1120px] w-full rounded border border-border bg-white">
+          {pdfSrc ? (
             <iframe title={document.fileName} src={pdfSrc} className="h-[1120px] w-full rounded border border-border bg-white" />
-          </object>
+          ) : (
+            <div className="flex h-[1120px] items-center justify-center rounded border border-border bg-white text-sm text-muted-foreground">
+              Keine PDF-Vorschau verfügbar.
+            </div>
+          )}
         </div>
       </div>
+      {pdfError ? <p className="mb-2 text-xs text-rose-600">{pdfError}</p> : null}
 
       <div className="mt-auto flex flex-wrap items-center gap-2">
         <a href={document.pdfUrl} download={document.fileName}>
