@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Search, Star, History, Grid3X3, Building2, BriefcaseBusiness, Car, MonitorCog, PenBox, X } from "lucide-react";
+import {
+  Search,
+  Star,
+  History,
+  Grid3X3,
+  Building2,
+  BriefcaseBusiness,
+  Car,
+  MonitorCog,
+  PenBox,
+  X,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AccountAutocomplete } from "@/features/accounting/components/AccountAutocomplete";
@@ -30,12 +41,42 @@ const frame = (name: keyof DocumentData, confidence?: Record<keyof DocumentData,
 const supplierHints = ["CloudStack GmbH", "Nordlicht Media GmbH", "Musterlieferant AG"];
 
 const fallbackCategoryCards: CategoryCard[] = [
-  { name: "Dienstleister, Agenturen & Freelancer", number: "5900", group: "Dienstleistung / Beratung", desc: "Externe Dienstleistungen für Projekte, Agenturarbeit und freie Mitarbeit." },
-  { name: "Marketing & Werbung", number: "6600", group: "Werbung", desc: "Anzeigen, Sponsoring, Flyer, Online-Marketing und Kampagnenkosten." },
-  { name: "Bürobedarf", number: "6815", group: "Büro", desc: "Verbrauchsmaterial wie Papier, Stifte, Etiketten und Bürokleinteile." },
-  { name: "Software Abos & Lizenzen", number: "6837", group: "Software", desc: "SaaS-Abos, Programme, Lizenzen und Cloud-Tools." },
-  { name: "Reisekosten", number: "6670", group: "Reisekosten", desc: "Bahn, Hotel, Taxi, Flüge und Reisekosten im Geschäftskontext." },
-  { name: "Fahrzeugkosten", number: "4530", group: "Fahrzeug", desc: "Tanken, Wartung, Versicherung und betriebliche Fahrzeugkosten." },
+  {
+    name: "Dienstleister, Agenturen & Freelancer",
+    number: "5900",
+    group: "Dienstleistung / Beratung",
+    desc: "Externe Dienstleistungen für Projekte, Agenturarbeit und freie Mitarbeit.",
+  },
+  {
+    name: "Marketing & Werbung",
+    number: "6600",
+    group: "Betriebsbedarf",
+    desc: "Anzeigen, Sponsoring, Flyer, Online-Marketing und Kampagnenkosten.",
+  },
+  {
+    name: "Bürobedarf",
+    number: "6815",
+    group: "Büro",
+    desc: "Verbrauchsmaterial wie Papier, Stifte, Etiketten und Bürokleinteile.",
+  },
+  {
+    name: "Software Abos & Lizenzen",
+    number: "6837",
+    group: "Dienstleistung / Beratung",
+    desc: "SaaS-Abos, Programme, Lizenzen und Cloud-Tools.",
+  },
+  {
+    name: "Reisekosten",
+    number: "6670",
+    group: "Betriebsbedarf",
+    desc: "Bahn, Hotel, Taxi, Flüge und Reisekosten im Geschäftskontext.",
+  },
+  {
+    name: "Fahrzeugkosten",
+    number: "4530",
+    group: "Fahrzeug",
+    desc: "Tanken, Wartung, Versicherung und betriebliche Fahrzeugkosten.",
+  },
 ];
 
 const navItems = [
@@ -52,6 +93,9 @@ const expenseGroups = [
   { icon: Car, label: "Fahrzeug" },
 ] as const;
 
+const favoriteAccounts = new Set(["5900", "6600", "6815", "6837", "6670", "4530"]);
+const recentAccounts = new Set(["6670", "6815", "6837", "6600"]);
+
 export function DocumentForm({
   data,
   confidence,
@@ -64,17 +108,12 @@ export function DocumentForm({
   const [categoryModalMounted, setCategoryModalMounted] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
-  const [categoryNav, setCategoryNav] = useState("favoriten");
+  const [categoryNav, setCategoryNav] = useState<(typeof navItems)[number]["key"]>("favoriten");
+  const [activeGroup, setActiveGroup] = useState("Alle Kategorien");
   const [draftCategory, setDraftCategory] = useState(data.category ?? "");
   const [draftAccount, setDraftAccount] = useState(data.account ?? "");
   const [categoryCards, setCategoryCards] = useState<CategoryCard[]>(fallbackCategoryCards);
   const closeTimerRef = useRef<number | null>(null);
-
-  const filteredCards = useMemo(() => {
-    const q = categorySearch.trim().toLowerCase();
-    if (!q) return categoryCards;
-    return categoryCards.filter((c) => `${c.name} ${c.number} ${c.group} ${c.desc}`.toLowerCase().includes(q));
-  }, [categorySearch, categoryCards]);
 
   useEffect(() => {
     onCategoryPanelOpenChange?.(categoryModalOpen);
@@ -85,13 +124,14 @@ export function DocumentForm({
     let cancelled = false;
 
     const mapGroup = (accountClass: string, accountType: string): string => {
-      if (accountType === "revenue") return "Einnahmen";
-      if (accountType === "liability") return "Banken / Finanzen";
-      if (accountClass === "4") return "Betriebsbedarf";
+      if (accountType === "liability" || accountType === "tax" || accountType === "bank" || accountType === "cash") {
+        return "Banken / Finanzen";
+      }
+      if (accountClass === "4" || accountClass === "5") return "Betriebsbedarf";
       if (accountClass === "6") return "Büro";
       if (accountClass === "7") return "Dienstleistung / Beratung";
       if (accountClass === "3") return "Fahrzeug";
-      return "Sonstiges";
+      return "Betriebsbedarf";
     };
 
     void (async () => {
@@ -103,16 +143,18 @@ export function DocumentForm({
         const versionRows = (Array.isArray(versions) ? versions : []) as Array<{ skrType: string; year: number }>;
         const version = versionRows[0];
         if (!version?.skrType || !version?.year) return;
+
         const rows = await apiFetch(`/api/accounts?companyId=${companyId}&skrType=${version.skrType}&year=${version.year}`).then((r) => (r.ok ? r.json() : []));
         const mapped = (Array.isArray(rows) ? rows : [])
-          .slice(0, 160)
+          .slice(0, 240)
           .map((row: { name: string; number: string; accountClass?: string; accountType?: string }) => ({
             name: String(row.name ?? "").trim(),
             number: String(row.number ?? "").trim(),
             group: mapGroup(String(row.accountClass ?? ""), String(row.accountType ?? "")),
             desc: `${String(version.skrType)}-${String(version.year)}`,
           }))
-          .filter((row: CategoryCard) => row.name && row.number);
+          .filter((row: CategoryCard) => row.name.length > 0 && row.number.length > 0);
+
         if (!cancelled && mapped.length > 0) setCategoryCards(mapped);
       } catch {
         if (!cancelled) setCategoryCards(fallbackCategoryCards);
@@ -130,6 +172,8 @@ export function DocumentForm({
         window.clearTimeout(closeTimerRef.current);
         closeTimerRef.current = null;
       }
+      setCategoryNav("favoriten");
+      setActiveGroup("Alle Kategorien");
       setCategoryModalMounted(true);
       requestAnimationFrame(() => setCategoryModalVisible(true));
       return;
@@ -142,9 +186,23 @@ export function DocumentForm({
     }, 220);
   }, [categoryModalOpen]);
 
-  useEffect(() => () => {
-    if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+    },
+    [],
+  );
+
+  const filteredCards = useMemo(() => {
+    let rows = categoryCards;
+    if (categoryNav === "favoriten") rows = rows.filter((r) => favoriteAccounts.has(r.number));
+    if (categoryNav === "zuletzt") rows = rows.filter((r) => recentAccounts.has(r.number));
+    if (activeGroup !== "Alle Kategorien") rows = rows.filter((r) => r.group === activeGroup);
+
+    const q = categorySearch.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) => `${r.name} ${r.number} ${r.group} ${r.desc}`.toLowerCase().includes(q));
+  }, [categoryCards, categoryNav, activeGroup, categorySearch]);
 
   const applyCategory = () => {
     onChange({
@@ -180,7 +238,9 @@ export function DocumentForm({
                 </button>
               </div>
               <datalist id="supplier-hints">
-                {supplierHints.map((s) => <option key={s} value={s} />)}
+                {supplierHints.map((s) => (
+                  <option key={s} value={s} />
+                ))}
               </datalist>
             </div>
 
@@ -191,7 +251,9 @@ export function DocumentForm({
                 value={data.type}
                 onChange={(e) => onChange({ type: e.target.value as DocumentData["type"] })}
               >
-                {["Einnahme", "Einnahmenminderung", "Ausgabe", "Ausgabenminderung"].map((s) => <option key={s}>{s}</option>)}
+                {["Einnahme", "Einnahmenminderung", "Ausgabe", "Ausgabenminderung"].map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
               </select>
             </div>
 
@@ -285,7 +347,7 @@ export function DocumentForm({
       {categoryModalMounted
         ? createPortal(
             <div className={`fixed right-4 top-4 z-[180] transition-all duration-300 ease-out ${categoryModalVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}>
-              <div className="h-[92vh] w-[min(860px,52vw)] rounded-3xl border border-border bg-background shadow-2xl">
+              <div className="h-[92vh] w-[min(900px,56vw)] rounded-3xl border border-border bg-background shadow-2xl">
                 <div className="flex h-full flex-col p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-2xl font-semibold">Kategorie auswählen</h3>
@@ -313,11 +375,22 @@ export function DocumentForm({
                         );
                       })}
 
-                      <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Ausgaben</p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveGroup("Alle Kategorien")}
+                        className={`mt-3 mb-2 block w-full rounded-xl px-2.5 py-2 text-left text-xs ${
+                          activeGroup === "Alle Kategorien" ? "bg-muted font-medium" : "hover:bg-muted/70"
+                        }`}
+                      >
+                        Alle Gruppen
+                      </button>
+
+                      <p className="mb-2 mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Ausgaben</p>
                       {expenseGroups.map((item) => {
                         const Icon = item.icon;
+                        const active = activeGroup === item.label;
                         return (
-                          <button key={item.label} type="button" className="mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs hover:bg-muted/70">
+                          <button key={item.label} type="button" onClick={() => setActiveGroup(item.label)} className={`mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}>
                             <Icon className="h-4 w-4 text-muted-foreground" />
                             {item.label}
                           </button>
@@ -348,6 +421,11 @@ export function DocumentForm({
                             <p className="mt-2 text-xs text-muted-foreground">{card.desc}</p>
                           </button>
                         ))}
+                        {filteredCards.length === 0 ? (
+                          <div className="col-span-2 rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                            Keine Kategorien für die aktuelle Auswahl gefunden.
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -356,12 +434,7 @@ export function DocumentForm({
                     <button type="button" className="h-11 rounded-xl border border-border px-5 text-sm hover:bg-muted" onClick={() => setCategoryModalOpen(false)}>
                       Abbrechen
                     </button>
-                    <button
-                      type="button"
-                      className="h-11 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground hover:brightness-95 disabled:opacity-60"
-                      onClick={applyCategory}
-                      disabled={!draftCategory}
-                    >
+                    <button type="button" className="h-11 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground hover:brightness-95 disabled:opacity-60" onClick={applyCategory} disabled={!draftCategory}>
                       Übernehmen
                     </button>
                   </div>
