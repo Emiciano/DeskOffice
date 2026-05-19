@@ -52,7 +52,9 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
   };
 
   useEffect(() => {
-    const modal = document.querySelector<HTMLElement>("[data-doc-capture-modal='true']");
+    const modal =
+      document.querySelector<HTMLElement>("[data-doc-capture-modal='true']") ??
+      document.querySelector<HTMLElement>("[role='dialog']");
     if (!modal) return;
     modal.style.transition = "transform 300ms ease-out";
     if (categoryModalOpen) {
@@ -68,8 +70,20 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
 
   useEffect(() => {
     const recalcPanelPosition = () => {
-      const modal = document.querySelector<HTMLElement>("[data-doc-capture-modal='true']");
-      if (!modal) return;
+      const modal =
+        document.querySelector<HTMLElement>("[data-doc-capture-modal='true']") ??
+        document.querySelector<HTMLElement>("[role='dialog']");
+      if (!modal) {
+        const viewportPadding = 16;
+        const width = Math.min(520, Math.max(380, window.innerWidth - viewportPadding * 2));
+        setCategoryPanelStyle({
+          top: viewportPadding,
+          left: Math.max(viewportPadding, window.innerWidth - width - viewportPadding),
+          height: Math.max(520, window.innerHeight - viewportPadding * 2),
+          width,
+        });
+        return;
+      }
       const rect = modal.getBoundingClientRect();
       const viewportPadding = 16;
       const gap = 16;
