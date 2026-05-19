@@ -69,6 +69,10 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
   }, [categoryModalOpen]);
 
   useEffect(() => {
+    let raf1 = 0;
+    let raf2 = 0;
+    let settleTimer: number | null = null;
+
     const recalcPanelPosition = () => {
       const modal =
         document.querySelector<HTMLElement>("[data-doc-capture-modal='true']") ??
@@ -97,10 +101,20 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
     };
 
     if (!categoryModalOpen) return;
+    // Recalc mehrfach: sofort, nach dem nächsten Paint und nach Ende der Slide-Animation.
     recalcPanelPosition();
+    raf1 = requestAnimationFrame(() => {
+      recalcPanelPosition();
+      raf2 = requestAnimationFrame(() => recalcPanelPosition());
+    });
+    settleTimer = window.setTimeout(() => recalcPanelPosition(), 320);
+
     window.addEventListener("resize", recalcPanelPosition);
     window.addEventListener("scroll", recalcPanelPosition, true);
     return () => {
+      if (raf1) cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+      if (settleTimer) window.clearTimeout(settleTimer);
       window.removeEventListener("resize", recalcPanelPosition);
       window.removeEventListener("scroll", recalcPanelPosition, true);
     };
