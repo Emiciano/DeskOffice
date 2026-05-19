@@ -54,13 +54,15 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
   useEffect(() => {
     const modal = document.querySelector<HTMLElement>("[data-doc-capture-modal='true']");
     if (!modal) return;
+    modal.style.transition = "transform 300ms ease-out";
     if (categoryModalOpen) {
-      modal.classList.add("xl:-translate-x-[360px]");
+      modal.style.transform = "translateX(-360px)";
     } else {
-      modal.classList.remove("xl:-translate-x-[360px]");
+      modal.style.transform = "";
     }
     return () => {
-      modal.classList.remove("xl:-translate-x-[360px]");
+      modal.style.transform = "";
+      modal.style.transition = "";
     };
   }, [categoryModalOpen]);
 
@@ -263,7 +265,7 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
 
       {categoryModalMounted && categoryPanelStyle ? createPortal(
         <div
-          className={`fixed z-[180] hidden xl:block transition-all duration-300 ease-out ${categoryModalVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
+          className={`fixed z-[180] transition-all duration-300 ease-out ${categoryModalVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
           style={{
             top: categoryPanelStyle.top,
             left: categoryPanelStyle.left,
