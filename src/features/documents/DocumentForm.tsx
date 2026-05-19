@@ -31,6 +31,7 @@ type CategoryCard = {
   number: string;
   group: string;
   desc: string;
+  classKey: string;
 };
 
 const low = (v?: number) => (v ?? 1) < 0.75;
@@ -47,18 +48,33 @@ const navItems = [
   { key: "alle", label: "Alle Kategorien", icon: Grid3X3 },
 ] as const;
 
-const expenseGroups = [
-  { icon: Building2, label: "Klasse 0" },
-  { icon: BriefcaseBusiness, label: "Klasse 1" },
-  { icon: PenBox, label: "Klasse 2" },
-  { icon: MonitorCog, label: "Klasse 3" },
-  { icon: Car, label: "Klasse 4" },
-  { icon: Building2, label: "Klasse 5" },
-  { icon: BriefcaseBusiness, label: "Klasse 6" },
-  { icon: MonitorCog, label: "Klasse 7" },
-  { icon: PenBox, label: "Klasse 8" },
-  { icon: Car, label: "Klasse 9" },
-] as const;
+const classLabels: Record<string, string> = {
+  "0": "Klasse 0 · Anlage- und Kapitalkonten",
+  "1": "Klasse 1 · Finanz- und Privatkonten",
+  "2": "Klasse 2 · Abgrenzungskonten",
+  "3": "Klasse 3 · Wareneingang/Bestand",
+  "4": "Klasse 4 · Betriebliche Aufwendungen",
+  "5": "Klasse 5 · Aufwandskonten (SKR-abhängig)",
+  "6": "Klasse 6 · Aufwandskonten (SKR-abhängig)",
+  "7": "Klasse 7 · Bestände/Leistungen",
+  "8": "Klasse 8 · Erlöskonten",
+  "9": "Klasse 9 · Vortrags-/Statistikkonten",
+  x: "Sonstige",
+};
+
+const classIcons: Record<string, typeof Building2> = {
+  "0": Building2,
+  "1": BriefcaseBusiness,
+  "2": PenBox,
+  "3": MonitorCog,
+  "4": Car,
+  "5": Building2,
+  "6": BriefcaseBusiness,
+  "7": MonitorCog,
+  "8": PenBox,
+  "9": Car,
+  x: Grid3X3,
+};
 
 const favoriteAccounts = new Set(["5900", "6600", "6815", "6837", "6670", "4530"]);
 const recentAccounts = new Set(["6670", "6815", "6837", "6600"]);
@@ -90,12 +106,16 @@ export function DocumentForm({
     if (!categoryModalOpen) return;
     let cancelled = false;
 
-    const mapGroup = (accountClass: string, number: string): string => {
+    const mapGroup = (accountClass: string, number: string): { classKey: string; label: string } => {
       const normalizedClass = String(accountClass ?? "").trim();
-      if (normalizedClass && /^[0-9]$/.test(normalizedClass)) return `Klasse ${normalizedClass}`;
+      if (normalizedClass && /^[0-9]$/.test(normalizedClass)) {
+        return { classKey: normalizedClass, label: classLabels[normalizedClass] ?? `Klasse ${normalizedClass}` };
+      }
       const first = String(number ?? "").trim().charAt(0);
-      if (/^[0-9]$/.test(first)) return `Klasse ${first}`;
-      return "Klasse 0";
+      if (/^[0-9]$/.test(first)) {
+        return { classKey: first, label: classLabels[first] ?? `Klasse ${first}` };
+      }
+      return { classKey: "x", label: classLabels.x };
     };
 
     void (async () => {
@@ -111,12 +131,16 @@ export function DocumentForm({
         const rows = await apiFetch(`/api/accounts?companyId=${companyId}&skrType=${version.skrType}&year=${version.year}`).then((r) => (r.ok ? r.json() : []));
         const mapped = (Array.isArray(rows) ? rows : [])
           .slice(0, 240)
-          .map((row: { name: string; number: string; accountClass?: string; accountType?: string }) => ({
+          .map((row: { name: string; number: string; accountClass?: string; accountType?: string }) => {
+            const grp = mapGroup(String(row.accountClass ?? ""), String(row.number ?? ""));
+            return {
             name: String(row.name ?? "").trim(),
             number: String(row.number ?? "").trim(),
-            group: mapGroup(String(row.accountClass ?? ""), String(row.number ?? "")),
+            group: grp.label,
+            classKey: grp.classKey,
             desc: `${String(version.skrType)}-${String(version.year)}`,
-          }))
+            };
+          })
           .filter((row: CategoryCard) => row.name.length > 0 && row.number.length > 0);
 
         if (!cancelled && mapped.length > 0) setCategoryCards(mapped);
@@ -166,6 +190,21 @@ export function DocumentForm({
     if (!q) return rows;
     return rows.filter((r) => `${r.name} ${r.number} ${r.group} ${r.desc}`.toLowerCase().includes(q));
   }, [categoryCards, categoryNav, activeGroup, categorySearch]);
+
+  const visibleClassGroups = useMemo(() => {
+    const keys = new Set(categoryCards.map((c) => c.classKey));
+    return [...keys]
+      .sort((a, b) => {
+        if (a === "x") return 1;
+        if (b === "x") return -1;
+        return Number(a) - Number(b);
+      })
+      .map((key) => ({
+        key,
+        label: classLabels[key] ?? `Klasse ${key}`,
+        icon: classIcons[key] ?? Grid3X3,
+      }));
+  }, [categoryCards]);
 
   const applyCategory = () => {
     onChange({ category: draftCategory, account: draftAccount || data.account });
@@ -344,12 +383,12 @@ export function DocumentForm({
                     Alle Gruppen
                   </button>
 
-                  <p className="mb-2 mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Ausgaben</p>
-                  {expenseGroups.map((item) => {
+                  <p className="mb-2 mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Kontenklassen</p>
+                  {visibleClassGroups.map((item) => {
                     const Icon = item.icon;
                     const active = activeGroup === item.label;
                     return (
-                      <button key={item.label} type="button" onClick={() => setActiveGroup(item.label)} className={`mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}>
+                      <button key={item.key} type="button" onClick={() => setActiveGroup(item.label)} className={`mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}>
                         <Icon className="h-4 w-4 text-muted-foreground" />
                         {item.label}
                       </button>
