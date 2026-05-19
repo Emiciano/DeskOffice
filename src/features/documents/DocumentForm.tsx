@@ -48,7 +48,7 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
 
   return (
     <>
-      <div className={`space-y-3 transition-transform duration-200 ${categoryModalOpen ? "-translate-x-10 xl:-translate-x-20" : ""}`}>
+      <div className="space-y-3">
         <Card className="p-4">
           <h3 className="mb-3 text-lg font-semibold">Belegdaten</h3>
           <div className="grid gap-2.5 md:grid-cols-2">
@@ -196,8 +196,8 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
       </div>
 
       {categoryModalOpen ? (
-        <div className="pointer-events-none fixed inset-0 z-[120] flex items-center justify-end p-4">
-          <div className="pointer-events-auto h-[88vh] w-[min(920px,90vw)] rounded-3xl border border-border bg-card shadow-2xl">
+        <div className="fixed right-6 top-20 z-[140] w-[560px] max-w-[42vw]">
+          <div className="h-[82vh] rounded-3xl border border-border bg-card shadow-2xl">
             <div className="flex h-full flex-col p-4">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-2xl font-semibold">Kategorie auswählen</h3>
@@ -221,8 +221,8 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
                 />
               </div>
 
-              <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] gap-4">
-                <aside className="rounded-2xl border border-border bg-background/60 p-3">
+              <div className="grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)] gap-3">
+                <aside className="rounded-2xl border border-border bg-background p-2.5">
                   <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Übersicht</p>
                   {[
                     { key: "favoriten", label: "Favoriten", icon: Star },
@@ -236,7 +236,7 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
                         key={item.key}
                         type="button"
                         onClick={() => setCategoryNav(item.key)}
-                        className={`mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}
+                        className={`mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs ${active ? "bg-muted font-medium" : "hover:bg-muted/70"}`}
                       >
                         <Icon className="h-4 w-4 text-muted-foreground" />
                         {item.label}
@@ -254,7 +254,7 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
                   ].map((item) => {
                     const Icon = item.icon;
                     return (
-                      <button key={item.label} type="button" className="mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-muted/70">
+                    <button key={item.label} type="button" className="mb-1 flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs hover:bg-muted/70">
                         <Icon className="h-4 w-4 text-muted-foreground" />
                         {item.label}
                       </button>
@@ -263,7 +263,7 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
                 </aside>
 
                 <div className="no-scrollbar min-h-0 overflow-y-auto pr-1">
-                  <div className="mb-3 rounded-2xl border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                  <div className="mb-3 rounded-2xl border border-border bg-muted/30 p-2.5 text-xs text-muted-foreground">
                     Wir haben beliebte Kategorien aus deiner Branche für dich ausgewählt.
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
@@ -272,14 +272,14 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
                         key={card.name}
                         type="button"
                         onClick={() => setDraftCategory(card.name)}
-                        className={`rounded-2xl border p-3 text-left transition-colors hover:bg-muted/60 ${draftCategory === card.name ? "border-primary ring-1 ring-primary/30" : "border-border"}`}
+                        className={`rounded-2xl border p-2.5 text-left transition-colors hover:bg-muted/60 ${draftCategory === card.name ? "border-primary ring-1 ring-primary/30" : "border-border"}`}
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-lg font-semibold leading-tight">{card.name}</p>
+                          <p className="text-base font-semibold leading-tight">{card.name}</p>
                           <Star className={`mt-1 h-4 w-4 ${draftCategory === card.name ? "fill-primary text-primary" : "text-muted-foreground"}`} />
                         </div>
-                        <p className="mt-1 text-sm text-muted-foreground">{card.number}</p>
-                        <p className="mt-3 text-sm text-muted-foreground">{card.desc}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{card.number}</p>
+                        <p className="mt-2 text-xs text-muted-foreground">{card.desc}</p>
                       </button>
                     ))}
                   </div>
@@ -310,4 +310,3 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
     </>
   );
 }
-
