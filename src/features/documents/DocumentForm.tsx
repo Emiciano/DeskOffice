@@ -58,7 +58,7 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
     if (!modal) return;
     modal.style.transition = "transform 300ms ease-out";
     if (categoryModalOpen) {
-      modal.style.transform = "translateX(-360px)";
+      modal.style.transform = "translateX(-260px)";
     } else {
       modal.style.transform = "";
     }
@@ -86,8 +86,8 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
       }
       const rect = modal.getBoundingClientRect();
       const viewportPadding = 16;
-      const gap = 16;
-      const preferredWidth = 520;
+      const gap = 12;
+      const preferredWidth = 500;
       const maxWidth = Math.max(360, window.innerWidth - (rect.right + gap + viewportPadding));
       const width = Math.min(preferredWidth, maxWidth);
       const left = Math.min(rect.right + gap, Math.max(viewportPadding, window.innerWidth - width - viewportPadding));

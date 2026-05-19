@@ -23,7 +23,7 @@ export function Sidebar() {
   const showDocumentChildren = location.pathname === "/belege";
 
   return (
-    <aside className="fixed left-0 top-0 z-30 h-screen w-64 border-r border-border/80 bg-card p-4 shadow-soft backdrop-blur-sm">
+    <aside className="fixed left-4 top-4 z-30 h-[calc(100vh-2rem)] w-64 rounded-3xl border border-border/80 bg-card/95 p-4 shadow-soft backdrop-blur-sm">
       <div className="mb-6 px-2">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">LunaOffice</p>
         <p className="text-lg font-semibold tracking-tight">LunaOffice</p>
