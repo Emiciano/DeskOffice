@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Search, Star, History, Grid3X3, Building2, BriefcaseBusiness, Car, MonitorCog, PenBox, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -32,9 +32,13 @@ const categoryCards = [
 
 export function DocumentForm({ data, confidence, onChange, onCreateCustomer, creatingContact }: Props) {
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [categoryModalMounted, setCategoryModalMounted] = useState(false);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
   const [categoryNav, setCategoryNav] = useState("favoriten");
   const [draftCategory, setDraftCategory] = useState(data.category ?? "");
+  const closeTimerRef = useRef<number | null>(null);
+  const [categoryPanelStyle, setCategoryPanelStyle] = useState<{ top: number; left: number; height: number; width: number } | null>(null);
 
   const filteredCards = useMemo(() => {
     const q = categorySearch.trim().toLowerCase();
@@ -51,14 +55,62 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
     const modal = document.querySelector<HTMLElement>("[data-doc-capture-modal='true']");
     if (!modal) return;
     if (categoryModalOpen) {
-      modal.classList.add("xl:-translate-x-[320px]");
+      modal.classList.add("xl:-translate-x-[360px]");
     } else {
-      modal.classList.remove("xl:-translate-x-[320px]");
+      modal.classList.remove("xl:-translate-x-[360px]");
     }
     return () => {
-      modal.classList.remove("xl:-translate-x-[320px]");
+      modal.classList.remove("xl:-translate-x-[360px]");
     };
   }, [categoryModalOpen]);
+
+  useEffect(() => {
+    const recalcPanelPosition = () => {
+      const modal = document.querySelector<HTMLElement>("[data-doc-capture-modal='true']");
+      if (!modal) return;
+      const rect = modal.getBoundingClientRect();
+      const viewportPadding = 16;
+      const gap = 16;
+      const preferredWidth = 520;
+      const maxWidth = Math.max(360, window.innerWidth - (rect.right + gap + viewportPadding));
+      const width = Math.min(preferredWidth, maxWidth);
+      const left = Math.min(rect.right + gap, Math.max(viewportPadding, window.innerWidth - width - viewportPadding));
+      const top = Math.max(viewportPadding, rect.top + 6);
+      const height = Math.max(520, Math.min(window.innerHeight - top - viewportPadding, rect.height - 12));
+      setCategoryPanelStyle({ top, left, height, width });
+    };
+
+    if (!categoryModalOpen) return;
+    recalcPanelPosition();
+    window.addEventListener("resize", recalcPanelPosition);
+    window.addEventListener("scroll", recalcPanelPosition, true);
+    return () => {
+      window.removeEventListener("resize", recalcPanelPosition);
+      window.removeEventListener("scroll", recalcPanelPosition, true);
+    };
+  }, [categoryModalOpen]);
+
+  useEffect(() => {
+    if (categoryModalOpen) {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+      setCategoryModalMounted(true);
+      requestAnimationFrame(() => setCategoryModalVisible(true));
+      return;
+    }
+
+    setCategoryModalVisible(false);
+    closeTimerRef.current = window.setTimeout(() => {
+      setCategoryModalMounted(false);
+      closeTimerRef.current = null;
+    }, 240);
+  }, [categoryModalOpen]);
+
+  useEffect(() => () => {
+    if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+  }, []);
 
   return (
     <>
@@ -209,9 +261,17 @@ export function DocumentForm({ data, confidence, onChange, onCreateCustomer, cre
         </Card>
       </div>
 
-      {categoryModalOpen ? createPortal(
-        <div className="fixed left-[calc(50%+380px)] top-[56px] z-[180] hidden w-[520px] max-w-[36vw] xl:block">
-          <div className="h-[84vh] rounded-3xl border border-border bg-background shadow-2xl">
+      {categoryModalMounted && categoryPanelStyle ? createPortal(
+        <div
+          className={`fixed z-[180] hidden xl:block transition-all duration-300 ease-out ${categoryModalVisible ? "translate-x-0 opacity-100" : "translate-x-8 opacity-0"}`}
+          style={{
+            top: categoryPanelStyle.top,
+            left: categoryPanelStyle.left,
+            width: categoryPanelStyle.width,
+          }}
+          aria-hidden={!categoryModalVisible}
+        >
+          <div className="rounded-3xl border border-border bg-background shadow-2xl" style={{ height: categoryPanelStyle.height }}>
             <div className="flex h-full flex-col p-4">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-2xl font-semibold">Kategorie auswählen</h3>
