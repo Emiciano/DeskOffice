@@ -49,6 +49,7 @@ export function DocumentsPage() {
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [categoryPanelOpen, setCategoryPanelOpen] = useState(false);
   const [docGroup, setDocGroup] = useState<"Alle" | "Ausgangsbelege" | "Eingangsbelege">("Alle");
   const [docSubType, setDocSubType] = useState("");
   const [creatingContact, setCreatingContact] = useState(false);
@@ -309,8 +310,21 @@ export function DocumentsPage() {
         ) : null}
       </div>
 
-      <Dialog open={captureOpen} onOpenChange={setCaptureOpen}>
-        <DialogContent className="h-[96vh] max-h-[96vh] w-[min(1260px,94vw)] overflow-visible p-3 transition-transform duration-300 ease-out" data-doc-capture-modal="true">
+      <Dialog
+        open={captureOpen}
+        onOpenChange={(open) => {
+          setCaptureOpen(open);
+          if (!open) setCategoryPanelOpen(false);
+        }}
+      >
+        <DialogContent
+          className={`h-[96vh] max-h-[96vh] overflow-visible p-3 transition-all duration-300 ease-out ${
+            categoryPanelOpen
+              ? "w-[min(1240px,72vw)] -translate-x-[170px]"
+              : "w-[min(1260px,94vw)]"
+          }`}
+          data-doc-capture-modal="true"
+        >
           {editingDocument ? (
             <div className="flex h-full min-h-0 flex-col">
               <div className="mb-2 flex items-center gap-2 text-sm">
@@ -383,6 +397,7 @@ export function DocumentsPage() {
                     }
                   }}
                   creatingContact={creatingContact}
+                  onCategoryPanelOpenChange={setCategoryPanelOpen}
                   onBook={() => {
                     const result = bookDocument(editingDocument.id);
                     if ("ok" in result && result.ok) {
